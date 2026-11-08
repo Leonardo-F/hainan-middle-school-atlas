@@ -1438,6 +1438,287 @@ body[data-night='true'] .rail-button .icon-moon {
   background: var(--hairline-soft);
 }
 
+/* Film action · a quieter sibling of the guided tour */
+.dock-button--film svg {
+  color: var(--accent);
+}
+
+.dock-button--film:hover svg,
+.dock-button--film:focus-visible svg {
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Film · letterbox overlay + captions + timeline                    */
+/*  A cinematic layer living inside the stage card: warm-ink bars,     */
+/*  serif subtitles and a hairline progress line.                      */
+/* ------------------------------------------------------------------ */
+
+.film {
+  --film-bar: clamp(30px, 7.5%, 70px);
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.45s var(--ease), visibility 0s linear 0.45s;
+}
+
+.app.is-filming .film {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0s;
+}
+
+.film__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--film-bar);
+  background: #171d1a;
+  transition: transform 0.55s var(--ease);
+}
+
+.film__bar {
+  z-index: 3;
+}
+
+.film__wash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #171d1a;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.film__bar--top {
+  top: 0;
+  transform: translateY(-101%);
+}
+
+.film__bar--bottom {
+  bottom: 0;
+  transform: translateY(101%);
+}
+
+.app.is-filming .film__bar--top,
+.app.is-filming .film__bar--bottom {
+  transform: translateY(0);
+}
+
+.film__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  height: var(--film-bar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 18px;
+  color: #f4ead9;
+}
+
+.film__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.film__title {
+  margin: 0;
+  font-family: var(--cn-serif);
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: #f4ead9;
+  white-space: nowrap;
+}
+
+.film__brand-en {
+  font-size: 5.8px;
+  letter-spacing: 0.16em;
+  color: rgba(244, 234, 217, 0.55);
+  white-space: nowrap;
+}
+
+.film__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.film__rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 6.4px;
+  letter-spacing: 0.14em;
+  color: rgba(244, 234, 217, 0.82);
+}
+
+.film__rec[hidden] {
+  display: none;
+}
+
+.film__rec i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c1503a;
+  box-shadow: 0 0 0 2px rgba(193, 80, 58, 0.24);
+  animation: film-rec 1.4s ease-in-out infinite;
+}
+
+@keyframes film-rec {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.film__btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 25px;
+  padding: 0 11px;
+  border: 1px solid rgba(244, 234, 217, 0.32);
+  border-radius: 3px;
+  background: rgba(244, 234, 217, 0.07);
+  color: #f4ead9;
+  font-family: var(--cn-serif);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+}
+
+.film__btn:hover {
+  background: rgba(244, 234, 217, 0.16);
+  border-color: rgba(244, 234, 217, 0.55);
+}
+
+.film__btn--ghost {
+  background: transparent;
+  color: rgba(244, 234, 217, 0.78);
+}
+
+.film__key {
+  font-size: 5.8px;
+  letter-spacing: 0.12em;
+  opacity: 0.55;
+}
+
+.film__caption-wrap {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(var(--film-bar) + 22px);
+  transform: translateX(-50%);
+  width: min(86%, 620px);
+  text-align: center;
+  color: #f7efe2;
+  transition: opacity 0.4s ease;
+}
+
+.film__caption {
+  margin: 0;
+  font-family: var(--cn-serif);
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 16px rgba(12, 18, 15, 0.62), 0 1px 3px rgba(12, 18, 15, 0.55);
+}
+
+.film__caption-en {
+  margin: 3px 0 0;
+  font-size: 6.4px;
+  letter-spacing: 0.2em;
+  color: rgba(247, 239, 226, 0.72);
+  text-shadow: 0 1px 10px rgba(12, 18, 15, 0.6);
+}
+
+.film__bottom {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--film-bar);
+}
+
+.film__timeline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(244, 234, 217, 0.16);
+  overflow: hidden;
+}
+
+.film__timeline-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #c8aa6e, #e8d3ad);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+.film__meta {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: var(--film-bar);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 6.6px;
+  letter-spacing: 0.14em;
+  color: rgba(244, 234, 217, 0.72);
+}
+
+.film__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.film__meta-sep {
+  opacity: 0.4;
+}
+
+.film__meta-title {
+  margin-left: auto;
+  font-family: var(--cn-serif);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: rgba(244, 234, 217, 0.62);
+}
+
+/* While filming, the atlas chrome steps aside so only the film remains. */
+.app.is-filming .stage-title,
+.app.is-filming .stage-meta,
+.app.is-filming .stage-rail,
+.app.is-filming .light-panel,
+.app.is-filming .command-dock,
+.app.is-filming .map-panel,
+.app.is-filming .stage-foot {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.app.is-filming #scene {
+  pointer-events: none;
+}
+
 /* Light capsule · above dock -------------------------------------- */
 
 .light-panel {
@@ -3031,6 +3312,62 @@ html.show-native-cursor .cursor {
     height: 13px;
   }
 
+  /* Film · compact letterbox on the stage card */
+  .film {
+    --film-bar: clamp(28px, 8%, 46px);
+  }
+
+  .film__top {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .film__title {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .film__brand-en {
+    display: none;
+  }
+
+  .film__btn {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 8px;
+    gap: 4px;
+  }
+
+  .film__rec {
+    font-size: 6px;
+  }
+
+  .film__caption-wrap {
+    bottom: calc(var(--film-bar) + 14px);
+    width: 92%;
+  }
+
+  .film__caption {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+  }
+
+  .film__caption-en {
+    font-size: 5.6px;
+    letter-spacing: 0.14em;
+  }
+
+  .film__meta {
+    left: 12px;
+    right: 12px;
+    font-size: 6px;
+    gap: 5px;
+  }
+
+  .film__meta-title {
+    display: none;
+  }
+
   .light-panel {
     bottom: 60px;
     width: calc(100% - 24px);
@@ -3225,6 +3562,32 @@ html.show-native-cursor .cursor {
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 680px) {
+  .film {
+    --film-bar: clamp(26px, 8.5%, 40px);
+  }
+
+  .film__title {
+    font-size: 11px;
+  }
+
+  .film__key {
+    display: none;
+  }
+
+  .film__btn {
+    height: 21px;
+    padding: 0 7px;
+    font-size: 7.5px;
+  }
+
+  .film__caption {
+    font-size: 12px;
+  }
+
+  .film__caption-wrap {
+    width: 94%;
+  }
+
   .intro {
     padding: 16px 3px 12px;
   }
@@ -3814,6 +4177,10 @@ html.show-native-cursor .cursor {
             <svg class="icon-pause" aria-hidden="true" viewBox="0 0 20 20"><path d="M6 4.5v11M14 4.5v11"/></svg>
             <span class="dock-button__label" data-tour-label>自动导览</span>
           </button>
+          <button class="dock-button dock-button--film" id="filmButton" type="button" title="播放校园巡游影片">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><rect x="2.8" y="5" width="14.4" height="10" rx="1.2"/><path d="M8.4 8l3.6 2-3.6 2z"/></svg>
+            <span>影片</span>
+          </button>
           <span class="dock-sep" aria-hidden="true"></span>
           <button class="dock-button" type="button" data-action="overview" title="回到校园全景">
             <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.2 10l6.8-6 6.8 6M5.2 8.7v7.3h9.6V8.7"/></svg>
@@ -3827,6 +4194,40 @@ html.show-native-cursor .cursor {
             <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
             <span>复位</span>
           </button>
+        </div>
+
+        <div class="film" id="filmLayer" aria-hidden="true">
+          <div class="film__bar film__bar--top" aria-hidden="true"></div>
+          <div class="film__bar film__bar--bottom" aria-hidden="true"></div>
+          <div class="film__wash" id="filmWash" aria-hidden="true"></div>
+          <div class="film__top">
+            <div class="film__brand">
+              <p class="film__title" id="filmTitle">府城校园图志</p>
+              <p class="film__brand-en mono">A CAMPUS ATLAS FILM / 2026</p>
+            </div>
+            <div class="film__top-actions">
+              <span class="film__rec mono" id="filmRec" hidden><i aria-hidden="true"></i>REC</span>
+              <button class="film__btn" id="filmRecord" type="button">录制并下载</button>
+              <button class="film__btn film__btn--ghost" id="filmExit" type="button">
+                退出<span class="film__key mono">ESC</span>
+              </button>
+            </div>
+          </div>
+          <div class="film__caption-wrap">
+            <p class="film__caption" id="filmCaption" aria-live="polite">府城校园</p>
+            <p class="film__caption-en mono" id="filmCaptionEn">FUCHENG CAMPUS</p>
+          </div>
+          <div class="film__bottom">
+            <div class="film__timeline" id="filmProgressBar" role="progressbar" aria-label="影片进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span class="film__timeline-fill" id="filmProgressFill"></span>
+            </div>
+            <div class="film__meta mono">
+              <span class="film__time" id="filmTime">00:00</span>
+              <span class="film__meta-sep" aria-hidden="true">/</span>
+              <span class="film__time" id="filmDuration">01:25</span>
+              <span class="film__meta-title" id="filmMetaTitle">府城校园图志 · 校园巡游</span>
+            </div>
+          </div>
         </div>
 
         <aside class="map-panel" aria-label="校园总平面示意">
@@ -4215,7 +4616,7 @@ html.show-native-cursor .cursor {
 
 	}
 
-	function clamp$2( value, min, max ) {
+	function clamp$3( value, min, max ) {
 
 		return Math.max( min, Math.min( max, value ) );
 
@@ -4503,7 +4904,7 @@ html.show-native-cursor .cursor {
 		DEG2RAD: DEG2RAD,
 		RAD2DEG: RAD2DEG,
 		generateUUID: generateUUID,
-		clamp: clamp$2,
+		clamp: clamp$3,
 		euclideanModulo: euclideanModulo,
 		mapLinear: mapLinear,
 		inverseLerp: inverseLerp,
@@ -4891,7 +5292,7 @@ html.show-native-cursor .cursor {
 
 			// clamp, to handle numerical problems
 
-			return Math.acos( clamp$2( theta, -1, 1 ) );
+			return Math.acos( clamp$3( theta, -1, 1 ) );
 
 		}
 
@@ -7474,7 +7875,7 @@ html.show-native-cursor .cursor {
 
 		angleTo( q ) {
 
-			return 2 * Math.acos( Math.abs( clamp$2( this.dot( q ), -1, 1 ) ) );
+			return 2 * Math.acos( Math.abs( clamp$3( this.dot( q ), -1, 1 ) ) );
 
 		}
 
@@ -8292,7 +8693,7 @@ html.show-native-cursor .cursor {
 
 			// clamp, to handle numerical problems
 
-			return Math.acos( clamp$2( theta, -1, 1 ) );
+			return Math.acos( clamp$3( theta, -1, 1 ) );
 
 		}
 
@@ -10769,7 +11170,7 @@ html.show-native-cursor .cursor {
 
 				case 'XYZ':
 
-					this._y = Math.asin( clamp$2( m13, -1, 1 ) );
+					this._y = Math.asin( clamp$3( m13, -1, 1 ) );
 
 					if ( Math.abs( m13 ) < 0.9999999 ) {
 
@@ -10787,7 +11188,7 @@ html.show-native-cursor .cursor {
 
 				case 'YXZ':
 
-					this._x = Math.asin( - clamp$2( m23, -1, 1 ) );
+					this._x = Math.asin( - clamp$3( m23, -1, 1 ) );
 
 					if ( Math.abs( m23 ) < 0.9999999 ) {
 
@@ -10805,7 +11206,7 @@ html.show-native-cursor .cursor {
 
 				case 'ZXY':
 
-					this._x = Math.asin( clamp$2( m32, -1, 1 ) );
+					this._x = Math.asin( clamp$3( m32, -1, 1 ) );
 
 					if ( Math.abs( m32 ) < 0.9999999 ) {
 
@@ -10823,7 +11224,7 @@ html.show-native-cursor .cursor {
 
 				case 'ZYX':
 
-					this._y = Math.asin( - clamp$2( m31, -1, 1 ) );
+					this._y = Math.asin( - clamp$3( m31, -1, 1 ) );
 
 					if ( Math.abs( m31 ) < 0.9999999 ) {
 
@@ -10841,7 +11242,7 @@ html.show-native-cursor .cursor {
 
 				case 'YZX':
 
-					this._z = Math.asin( clamp$2( m21, -1, 1 ) );
+					this._z = Math.asin( clamp$3( m21, -1, 1 ) );
 
 					if ( Math.abs( m21 ) < 0.9999999 ) {
 
@@ -10859,7 +11260,7 @@ html.show-native-cursor .cursor {
 
 				case 'XZY':
 
-					this._z = Math.asin( - clamp$2( m12, -1, 1 ) );
+					this._z = Math.asin( - clamp$3( m12, -1, 1 ) );
 
 					if ( Math.abs( m12 ) < 0.9999999 ) {
 
@@ -12494,8 +12895,8 @@ html.show-native-cursor .cursor {
 
 			// h,s,l ranges are in 0.0 - 1.0
 			h = euclideanModulo( h, 1 );
-			s = clamp$2( s, 0, 1 );
-			l = clamp$2( l, 0, 1 );
+			s = clamp$3( s, 0, 1 );
+			l = clamp$3( l, 0, 1 );
 
 			if ( s === 0 ) {
 
@@ -12721,7 +13122,7 @@ html.show-native-cursor .cursor {
 
 			ColorManagement.fromWorkingColorSpace( _color.copy( this ), colorSpace );
 
-			return Math.round( clamp$2( _color.r * 255, 0, 255 ) ) * 65536 + Math.round( clamp$2( _color.g * 255, 0, 255 ) ) * 256 + Math.round( clamp$2( _color.b * 255, 0, 255 ) );
+			return Math.round( clamp$3( _color.r * 255, 0, 255 ) ) * 65536 + Math.round( clamp$3( _color.g * 255, 0, 255 ) ) * 256 + Math.round( clamp$3( _color.b * 255, 0, 255 ) );
 
 		}
 
@@ -36989,7 +37390,7 @@ void main() {
 
 					vec.normalize();
 
-					const theta = Math.acos( clamp$2( tangents[ i - 1 ].dot( tangents[ i ] ), -1, 1 ) ); // clamp for floating pt errors
+					const theta = Math.acos( clamp$3( tangents[ i - 1 ].dot( tangents[ i ] ), -1, 1 ) ); // clamp for floating pt errors
 
 					normals[ i ].applyMatrix4( mat.makeRotationAxis( vec, theta ) );
 
@@ -37003,7 +37404,7 @@ void main() {
 
 			if ( closed === true ) {
 
-				let theta = Math.acos( clamp$2( normals[ 0 ].dot( normals[ segments ] ), -1, 1 ) );
+				let theta = Math.acos( clamp$3( normals[ 0 ].dot( normals[ segments ] ), -1, 1 ) );
 				theta /= segments;
 
 				if ( tangents[ 0 ].dot( vec.crossVectors( normals[ 0 ], normals[ segments ] ) ) > 0 ) {
@@ -42737,7 +43138,7 @@ void main() {
 			} else {
 
 				this.theta = Math.atan2( x, z );
-				this.phi = Math.acos( clamp$2( y / this.radius, -1, 1 ) );
+				this.phi = Math.acos( clamp$3( y / this.radius, -1, 1 ) );
 
 			}
 
@@ -46563,9 +46964,9 @@ void main() {
 	      "style": "generic"
 	    },
 	    {
-	      // 1444498450（© OpenStreetMap contributors, ODbL）：此前曾按 2023 校庆 VLOG
-	      // 暂定为女生宿舍；2026-11 用户指出女生宿舍实际位于其南侧草地（下方新增轮廓），
-	      // 故此栋恢复为未命名体块，避免重复/错位。
+	      // 1444498450（© OpenStreetMap contributors, ODbL）：未命名体块。
+	      // 曾暂定女生宿舍，但 2026-11 用户指出位置不对，女生宿舍体量已先删除；
+	      // 待确认真实位置后再补建，此栋保持普通体块。
 	      "id": "1444498450",
 	      "name": "",
 	      "poly": [
@@ -46604,49 +47005,6 @@ void main() {
 	      "floors": 4,
 	      "roof": 0,
 	      "style": "generic"
-	    },
-	    {
-	      // 女生宿舍（2026-11 用户指认位置）：位于原 1444498450 南侧草地、靠近校园东南边界；
-	      // 轮廓为写意推测（非 OSM），约 52 m × 15 m、与东侧建筑同向；楼前红漆牌坊
-	      // 「尚德 睿智 唯实 创新」与校庆 VLOG 影像一致。场景构建器 buildDorm 按 style:'dorm' 触发。
-	      "id": "dorm-south",
-	      "name": "女生宿舍",
-	      "poly": [
-	        [
-	          76.85,
-	          49.67
-	        ],
-	        [
-	          57.99,
-	          31.77
-	        ],
-	        [
-	          63.15,
-	          26.33
-	        ],
-	        [
-	          82.01,
-	          44.23
-	        ],
-	        [
-	          76.85,
-	          49.67
-	        ]
-	      ],
-	      "center": [
-	        70,
-	        38
-	      ],
-	      "obb": [
-	        26,
-	        7.5,
-	        136.5
-	      ],
-	      "area": 195,
-	      "kind": "named",
-	      "floors": 6,
-	      "roof": 0,
-	      "style": "dorm"
 	    },
 	    {
 	      // 图书馆（2026-11 新增）：公开影像中校园北缘偏东有一座三层白瓷砖图书馆（绿色玻璃
@@ -49003,7 +49361,7 @@ void main() {
 	  return mesh;
 	}
 
-	function addBox(parent, mat, position, scale) {
+	function addBox$1(parent, mat, position, scale) {
 	  return solid(parent, unitBox, mat, position, scale);
 	}
 
@@ -49233,8 +49591,8 @@ void main() {
 	    [0, height + 0.09, 0],
 	    [ridge, height + 0.09, 0]
 	  ], 0.12, 32, 6);
-	  addBox(group, white, [0, -0.24, 0], [width - 1.3, 0.3, depth - 0.25]);
-	  addBox(group, mats.gold || white, [0, -0.42, 0], [width - 1.5, 0.06, depth - 0.34]);
+	  addBox$1(group, white, [0, -0.24, 0], [width - 1.3, 0.3, depth - 0.25]);
+	  addBox$1(group, mats.gold || white, [0, -0.42, 0], [width - 1.5, 0.06, depth - 0.34]);
 	  return group;
 	}
 
@@ -49326,7 +49684,7 @@ void main() {
 	  }
 
 	  // 正脊与两端起翘
-	  addBox(group, edge, [0, height + 0.06, 0], [width - 0.1, 0.16, 0.22]);
+	  addBox$1(group, edge, [0, height + 0.06, 0], [width - 0.1, 0.16, 0.22]);
 	  for (const side of [-1, 1]) {
 	    addTube(group, edge, [
 	      [side * (halfW - 0.62), height + 0.12, 0],
@@ -49355,7 +49713,7 @@ void main() {
 	    group.add(instanced);
 	  }
 
-	  addBox(group, white, [0, -0.2, 0], [width - 0.6, 0.26, depth - 0.3]);
+	  addBox$1(group, white, [0, -0.2, 0], [width - 0.6, 0.26, depth - 0.3]);
 	  return group;
 	}
 
@@ -49366,10 +49724,10 @@ void main() {
 	  lion.rotation.y = rotation;
 	  lion.scale.setScalar(scale);
 	  parent.add(lion);
-	  addBox(lion, mats.stone, [0, 0.14, 0], [0.98, 0.28, 1.06]);
-	  addBox(lion, mats.stone, [0, 0.35, 0], [0.85, 0.14, 0.94]);
-	  addBox(lion, mats.stone, [0, 0.78, 0], [0.63, 0.75, 0.72]);
-	  addBox(lion, mats.white, [0, 1.16, 0], [0.85, 0.14, 0.92]);
+	  addBox$1(lion, mats.stone, [0, 0.14, 0], [0.98, 0.28, 1.06]);
+	  addBox$1(lion, mats.stone, [0, 0.35, 0], [0.85, 0.14, 0.94]);
+	  addBox$1(lion, mats.stone, [0, 0.78, 0], [0.63, 0.75, 0.72]);
+	  addBox$1(lion, mats.white, [0, 1.16, 0], [0.85, 0.14, 0.92]);
 	  addBall(lion, mats.stone, [0, 1.52, -0.1], [0.32, 0.43, 0.33]);
 	  addBall(lion, mats.stone, [0, 1.86, 0.15], [0.32, 0.36, 0.3]);
 	  for (const side of [-1, 1]) {
@@ -49379,7 +49737,7 @@ void main() {
 	    addRod(lion, mats.stone, [side * 0.2, 1.4, 0.2], [side * 0.2, 1.68, 0.14], 0.105);
 	  }
 	  addBall(lion, mats.stone, [0, 1.82, 0.4], [0.2, 0.13, 0.14]);
-	  addBox(lion, mats.darkStone, [0, 1.78, 0.5], [0.17, 0.03, 0.015]);
+	  addBox$1(lion, mats.darkStone, [0, 1.78, 0.5], [0.17, 0.03, 0.015]);
 	  addBall(lion, mats.stone, [0, 1.9, 0.48], [0.08, 0.06, 0.055]);
 	  for (let i = 0; i < 12; i += 1) {
 	    const a = (i / 12) * Math.PI * 2;
@@ -49654,8 +50012,8 @@ void main() {
 
 	  /** 回纹装饰带：金框 + 青灰底 + 正反两面回纹贴面。 */
 	  const friezeBand = (x, y, width, depth, height, kind) => {
-	    addBox(group, mats.gold, [x, y, 0], [width, height + 0.09, depth + 0.05]);
-	    addBox(group, mats.azure, [x, y, 0], [width - 0.06, height + 0.02, depth + 0.07]);
+	    addBox$1(group, mats.gold, [x, y, 0], [width, height + 0.09, depth + 0.05]);
+	    addBox$1(group, mats.azure, [x, y, 0], [width - 0.06, height + 0.02, depth + 0.07]);
 	    const material = friezeMaterial(kind, width);
 	    for (const side of [-1, 1]) {
 	      const mesh = new Mesh(new PlaneGeometry(width - 0.14, height - 0.02), material);
@@ -49668,7 +50026,7 @@ void main() {
 	  /** 门洞上角的金色回纹雀替（照片中洞口两上角的金线转角纹样）。 */
 	  const cornerFret = (x, y, dir) => {
 	    const z = 0.64;
-	    const bar = (px, py, w, h) => addBox(group, mats.gold, [px, py, z], [w, h, 0.05]);
+	    const bar = (px, py, w, h) => addBox$1(group, mats.gold, [px, py, z], [w, h, 0.05]);
 	    // 角上的金色回纹：横梁 + 竖枋 + 内折两道
 	    bar(x + dir * 0.4, y + 0.82, 0.82, 0.07);
 	    bar(x + dir * 0.02, y + 0.42, 0.07, 0.82);
@@ -49678,35 +50036,35 @@ void main() {
 	  };
 
 	  /* ---------------------------- 台基与踏步 ------------------------- */
-	  addBox(group, mats.stoneLight, [0, PLATFORM_TOP / 2, 0], [sx(24.4), PLATFORM_TOP, 4.4]);
-	  addBox(group, mats.stone, [0, PLATFORM_TOP - 0.03, 0], [sx(24.44), 0.06, 4.46]);
+	  addBox$1(group, mats.stoneLight, [0, PLATFORM_TOP / 2, 0], [sx(24.4), PLATFORM_TOP, 4.4]);
+	  addBox$1(group, mats.stone, [0, PLATFORM_TOP - 0.03, 0], [sx(24.44), 0.06, 4.46]);
 	  // 门前一级石线踏步（照片中校门入口处的浅踏步）
-	  addBox(group, mats.stone, [0, 0.04, 2.28], [sx(24.4), 0.08, 0.52]);
-	  addBox(group, mats.stoneLight, [0, 0.075, 2.31], [sx(24.4), 0.05, 0.42]);
+	  addBox$1(group, mats.stone, [0, 0.04, 2.28], [sx(24.4), 0.08, 0.52]);
+	  addBox$1(group, mats.stoneLight, [0, 0.075, 2.31], [sx(24.4), 0.05, 0.42]);
 
 	  /* ---------------------------- 四根门柱 --------------------------- */
 	  const pillar = (x, top, inner) => {
 	    const p = PLATFORM_TOP;
 	    // 柱础：石座 + 收分 + 两道金线
-	    addBox(group, mats.stoneLight, [x, p + 0.09, 0], [1.66, 0.18, 1.74]);
-	    addBox(group, mats.cream, [x, p + 0.37, 0], [1.52, 0.38, 1.6]);
-	    addBox(group, mats.gold, [x, p + 0.52, 0], [1.56, 0.03, 1.64]);
-	    addBox(group, mats.cream, [x, p + 0.62, 0], [1.38, 0.16, 1.46]);
+	    addBox$1(group, mats.stoneLight, [x, p + 0.09, 0], [1.66, 0.18, 1.74]);
+	    addBox$1(group, mats.cream, [x, p + 0.37, 0], [1.52, 0.38, 1.6]);
+	    addBox$1(group, mats.gold, [x, p + 0.52, 0], [1.56, 0.03, 1.64]);
+	    addBox$1(group, mats.cream, [x, p + 0.62, 0], [1.38, 0.16, 1.46]);
 	    // 柱身
 	    const bodyBottom = p + 0.7;
 	    const bodyTop = top - 0.42;
-	    addBox(group, mats.white, [x, (bodyBottom + bodyTop) / 2, 0], [PILLAR_W, bodyTop - bodyBottom, PILLAR_D]);
+	    addBox$1(group, mats.white, [x, (bodyBottom + bodyTop) / 2, 0], [PILLAR_W, bodyTop - bodyBottom, PILLAR_D]);
 	    // 金色横带
 	    for (const y of [1.22, 2.72, 4.22, 5.72, 7.22]) {
 	      if (y > bodyTop - 0.32) continue;
-	      addBox(group, mats.gold, [x, y, 0], [PILLAR_W + 0.05, 0.055, PILLAR_D + 0.05]);
-	      addBox(group, mats.brass, [x, y - 0.048, 0], [PILLAR_W + 0.02, 0.022, PILLAR_D + 0.02]);
+	      addBox$1(group, mats.gold, [x, y, 0], [PILLAR_W + 0.05, 0.055, PILLAR_D + 0.05]);
+	      addBox$1(group, mats.brass, [x, y - 0.048, 0], [PILLAR_W + 0.02, 0.022, PILLAR_D + 0.02]);
 	    }
 	    // 柱身正面竖向双金线（靠柱边，照片中开间两侧的金色立柱线）
 	    for (const dx of [-0.535, 0.535]) {
-	      addBox(group, mats.gold, [x + dx, (p + 1.0 + bodyTop) / 2, PILLAR_D / 2 + 0.012],
+	      addBox$1(group, mats.gold, [x + dx, (p + 1.0 + bodyTop) / 2, PILLAR_D / 2 + 0.012],
 	        [0.028, bodyTop - p - 1.0, 0.02]);
-	      addBox(group, mats.gold, [x + dx, (p + 1.0 + bodyTop) / 2, -PILLAR_D / 2 - 0.012],
+	      addBox$1(group, mats.gold, [x + dx, (p + 1.0 + bodyTop) / 2, -PILLAR_D / 2 - 0.012],
 	        [0.028, bodyTop - p - 1.0, 0.02]);
 	    }
 	    // 柱身正面挂板：内柱为玻璃告示牌，外柱为铜质铭牌
@@ -49719,29 +50077,29 @@ void main() {
 	         { y: 3.56, w: 0.72, h: 0.52, material: mats.wood }];
 	    boards.forEach((board) => {
 	      if (board.y > bodyTop - 0.45) return;
-	      addBox(group, mats.brass, [x, board.y, PILLAR_D / 2 + 0.03], [board.w + 0.1, board.h + 0.09, 0.04]);
-	      addBox(group, mats.darkStone, [x, board.y, PILLAR_D / 2 + 0.052], [board.w + 0.03, board.h + 0.02, 0.02]);
-	      addBox(group, board.material, [x, board.y, PILLAR_D / 2 + 0.064], [board.w - 0.04, board.h - 0.03, 0.012]);
-	      addBox(group, mats.cream, [x, board.y + board.h * 0.22, PILLAR_D / 2 + 0.073], [board.w * 0.6, 0.016, 0.006]);
-	      addBox(group, mats.cream, [x, board.y + board.h * 0.1, PILLAR_D / 2 + 0.073], [board.w * 0.72, 0.012, 0.006]);
+	      addBox$1(group, mats.brass, [x, board.y, PILLAR_D / 2 + 0.03], [board.w + 0.1, board.h + 0.09, 0.04]);
+	      addBox$1(group, mats.darkStone, [x, board.y, PILLAR_D / 2 + 0.052], [board.w + 0.03, board.h + 0.02, 0.02]);
+	      addBox$1(group, board.material, [x, board.y, PILLAR_D / 2 + 0.064], [board.w - 0.04, board.h - 0.03, 0.012]);
+	      addBox$1(group, mats.cream, [x, board.y + board.h * 0.22, PILLAR_D / 2 + 0.073], [board.w * 0.6, 0.016, 0.006]);
+	      addBox$1(group, mats.cream, [x, board.y + board.h * 0.1, PILLAR_D / 2 + 0.073], [board.w * 0.72, 0.012, 0.006]);
 	    });
 	    // 柱头：青灰束带 + 白身叠涩 + 金线
-	    addBox(group, mats.gold, [x, top - 0.42, 0], [1.34, 0.05, 1.42]);
-	    addBox(group, mats.azure, [x, top - 0.31, 0], [1.32, 0.18, 1.4]);
-	    addBox(group, mats.cream, [x, top - 0.12, 0], [1.56, 0.22, 1.64]);
-	    addBox(group, mats.white, [x, top + 0.01, 0], [1.7, 0.1, 1.78]);
-	    addBox(group, mats.gold, [x, top + 0.065, 0], [1.62, 0.02, 1.7]);
+	    addBox$1(group, mats.gold, [x, top - 0.42, 0], [1.34, 0.05, 1.42]);
+	    addBox$1(group, mats.azure, [x, top - 0.31, 0], [1.32, 0.18, 1.4]);
+	    addBox$1(group, mats.cream, [x, top - 0.12, 0], [1.56, 0.22, 1.64]);
+	    addBox$1(group, mats.white, [x, top + 0.01, 0], [1.7, 0.1, 1.78]);
+	    addBox$1(group, mats.gold, [x, top + 0.065, 0], [1.62, 0.02, 1.7]);
 	  };
 
 	  /* ---------------------------- 石狮 ------------------------------- */
 	  const lionMount = (x) => {
 	    const p = PLATFORM_TOP;
 	    // 石座：圭脚 + 束腰（正面嵌铭） + 座面
-	    addBox(group, mats.stoneLight, [x, p + 0.06, 1.5], [1.04, 0.12, 1.04]);
-	    addBox(group, mats.stone, [x, p + 0.34, 1.5], [0.82, 0.44, 0.82]);
-	    addBox(group, mats.darkStone, [x, p + 0.35, 1.92], [0.54, 0.28, 0.03]);
-	    addBox(group, mats.stoneLight, [x, p + 0.61, 1.5], [0.94, 0.1, 0.94]);
-	    addBox(group, mats.stone, [x, p + 0.68, 1.5], [0.86, 0.05, 0.86]);
+	    addBox$1(group, mats.stoneLight, [x, p + 0.06, 1.5], [1.04, 0.12, 1.04]);
+	    addBox$1(group, mats.stone, [x, p + 0.34, 1.5], [0.82, 0.44, 0.82]);
+	    addBox$1(group, mats.darkStone, [x, p + 0.35, 1.92], [0.54, 0.28, 0.03]);
+	    addBox$1(group, mats.stoneLight, [x, p + 0.61, 1.5], [0.94, 0.1, 0.94]);
+	    addBox$1(group, mats.stone, [x, p + 0.68, 1.5], [0.86, 0.05, 0.86]);
 	    const lion = addStoneLion(group, mats, x, 1.5, 0.84, 0);
 	    lion.position.y = p + 0.705;
 	  };
@@ -49776,8 +50134,8 @@ void main() {
 	    const count = Math.max(2, Math.floor(width / step));
 	    for (let i = 0; i <= count; i += 1) {
 	      const px = x - width / 2 + (i * width) / count;
-	      addBox(group, mats.white, [px, y, z], [0.1, 0.1, 0.22]);
-	      addBox(group, mats.gold, [px, y - 0.065, z], [0.07, 0.03, 0.18]);
+	      addBox$1(group, mats.white, [px, y, z], [0.1, 0.1, 0.22]);
+	      addBox$1(group, mats.gold, [px, y - 0.065, z], [0.07, 0.03, 0.18]);
 	    }
 	  };
 
@@ -49785,10 +50143,10 @@ void main() {
 	  const bay = (spec, bands) => {
 	    const { x, w, bottom, top, depth } = spec;
 	    const height = top - bottom;
-	    addBox(group, mats.white, [x, (bottom + top) / 2, 0], [w, height, depth]);
+	    addBox$1(group, mats.white, [x, (bottom + top) / 2, 0], [w, height, depth]);
 	    // 额枋上下金线
-	    addBox(group, mats.gold, [x, bottom + 0.05, 0], [w - 0.06, 0.04, depth + 0.04]);
-	    addBox(group, mats.gold, [x, top - 0.05, 0], [w - 0.06, 0.04, depth + 0.04]);
+	    addBox$1(group, mats.gold, [x, bottom + 0.05, 0], [w - 0.06, 0.04, depth + 0.04]);
+	    addBox$1(group, mats.gold, [x, top - 0.05, 0], [w - 0.06, 0.04, depth + 0.04]);
 	    for (const band of bands) {
 	      friezeBand(x, band.y, w, depth, band.h, band.kind);
 	    }
@@ -49818,10 +50176,10 @@ void main() {
 
 	  /* ---------------------------- 中央门额 --------------------------- */
 	  const plaqueY = L.plaque.y;
-	  addBox(group, mats.gold, [0, plaqueY, 0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
-	  addBox(group, mats.cream, [0, plaqueY, 0.665], [sx(9.1), sx(1.96), 0.06]);
-	  addBox(group, mats.gold, [0, plaqueY + sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
-	  addBox(group, mats.gold, [0, plaqueY - sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
+	  addBox$1(group, mats.gold, [0, plaqueY, 0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
+	  addBox$1(group, mats.cream, [0, plaqueY, 0.665], [sx(9.1), sx(1.96), 0.06]);
+	  addBox$1(group, mats.gold, [0, plaqueY + sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
+	  addBox$1(group, mats.gold, [0, plaqueY - sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
 	  // 2013 年照片与参考作品中门额均为传统右读「海南中學」。
 	  const plaqueTexture = tex.gatePlaqueTraditional || tex.gatePlaque;
 	  if (plaqueTexture) {
@@ -49829,19 +50187,19 @@ void main() {
 	      x: 0, y: plaqueY, z: 0.7, w: sx(8.86), h: sx(8.86 / 4.6)
 	    });
 	  } else {
-	    addBox(group, mats.cream, [0, plaqueY, 0.7], [sx(8.86), sx(8.86 / 4.6), 0.02]);
+	    addBox$1(group, mats.cream, [0, plaqueY, 0.7], [sx(8.86), sx(8.86 / 4.6), 0.02]);
 	  }
 	  // 门额下沿的金线托座
-	  addBox(group, mats.gold, [0, plaqueY - sx(1.02), 0.6], [sx(9.3), 0.05, 0.06]);
+	  addBox$1(group, mats.gold, [0, plaqueY - sx(1.02), 0.6], [sx(9.3), 0.05, 0.06]);
 	  // 校内一侧的门额：用左读「海南中学」，供校内轴线视角观看
-	  addBox(group, mats.gold, [0, plaqueY, -0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
-	  addBox(group, mats.cream, [0, plaqueY, -0.665], [sx(9.1), sx(1.96), 0.06]);
+	  addBox$1(group, mats.gold, [0, plaqueY, -0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
+	  addBox$1(group, mats.cream, [0, plaqueY, -0.665], [sx(9.1), sx(1.96), 0.06]);
 	  if (tex.gatePlaque) {
 	    addPlaque(group, M.signMaterial(tex.gatePlaque, true), {
 	      x: 0, y: plaqueY, z: -0.7, w: sx(8.86), h: sx(8.86 / 4.6), rotation: Math.PI
 	    });
 	  }
-	  addBox(group, mats.gold, [0, plaqueY - sx(1.02), -0.6], [sx(9.3), 0.05, 0.06]);
+	  addBox$1(group, mats.gold, [0, plaqueY - sx(1.02), -0.6], [sx(9.3), 0.05, 0.06]);
 
 	  /* ---------------------------- 三段曲面瓦顶 ----------------------- */
 	  addChineseRoof(group, mats, { ...L.centralRoof, tiles: true, detail: true });
@@ -49877,9 +50235,9 @@ void main() {
 	    slab.receiveShadow = true;
 	    group.add(slab);
 	    for (const side of [-1, 1]) {
-	      addBox(group, mats.white, [cx, top + 0.045, side * (halfW - 0.03)], [len + 0.04, 0.07, 0.1]);
+	      addBox$1(group, mats.white, [cx, top + 0.045, side * (halfW - 0.03)], [len + 0.04, 0.07, 0.1]);
 	    }
-	    addBox(group, mats.roofEdge, [cx, top + rise + 0.03, 0], [len + 0.06, 0.07, 0.16]);
+	    addBox$1(group, mats.roofEdge, [cx, top + rise + 0.03, 0], [len + 0.06, 0.07, 0.16]);
 	  };
 
 	  for (const side of [-1, 1]) {
@@ -49888,23 +50246,23 @@ void main() {
 	    const a1 = sx(12.72);
 	    const aLen = a1 - a0;
 	    const aMid = side * (a0 + aLen / 2);
-	    addBox(group, mats.stoneLight, [aMid, 0.11, 0], [aLen, 0.22, 0.72]);
-	    addBox(group, mats.white, [aMid, 1.185, 0], [aLen, 2.15, 0.68]);
-	    addBox(group, mats.gold, [aMid, 1.62, 0], [aLen + 0.01, 0.035, 0.7]);
-	    addBox(group, mats.gold, [aMid, 2.12, 0], [aLen + 0.01, 0.03, 0.7]);
+	    addBox$1(group, mats.stoneLight, [aMid, 0.11, 0], [aLen, 0.22, 0.72]);
+	    addBox$1(group, mats.white, [aMid, 1.185, 0], [aLen, 2.15, 0.68]);
+	    addBox$1(group, mats.gold, [aMid, 1.62, 0], [aLen + 0.01, 0.035, 0.7]);
+	    addBox$1(group, mats.gold, [aMid, 2.12, 0], [aLen + 0.01, 0.03, 0.7]);
 	    tileCoping(aMid, aLen, 2.15, 0.54, 0.3);
 	    // 过渡石柱墩
-	    addBox(group, mats.stoneLight, [side * sx(12.98), 1.2, 0], [0.5, 2.4, 0.74]);
-	    addBox(group, mats.gold, [side * sx(12.98), 2.2, 0], [0.52, 0.03, 0.76]);
-	    addBox(group, mats.stone, [side * sx(12.98), 2.42, 0], [0.64, 0.1, 0.92]);
-	    addBox(group, mats.stoneLight, [side * sx(12.98), 2.51, 0], [0.54, 0.08, 0.82]);
-	    addBox(group, mats.roofEdge, [side * sx(12.98), 2.585, 0], [0.38, 0.09, 0.5]);
+	    addBox$1(group, mats.stoneLight, [side * sx(12.98), 1.2, 0], [0.5, 2.4, 0.74]);
+	    addBox$1(group, mats.gold, [side * sx(12.98), 2.2, 0], [0.52, 0.03, 0.76]);
+	    addBox$1(group, mats.stone, [side * sx(12.98), 2.42, 0], [0.64, 0.1, 0.92]);
+	    addBox$1(group, mats.stoneLight, [side * sx(12.98), 2.51, 0], [0.54, 0.08, 0.82]);
+	    addBox$1(group, mats.roofEdge, [side * sx(12.98), 2.585, 0], [0.38, 0.09, 0.5]);
 	    // 低墙返段：与校园围墙同高同厚，压顶顶面 1.82 m 齐平
 	    const b0 = sx(13.23);
 	    const bLen = L.wallHalf - b0;
-	    addBox(group, mats.stoneLight, [side * (b0 + bLen / 2), 0.1, 0], [bLen, 0.2, 0.7]);
-	    addBox(group, mats.white, [side * (b0 + bLen / 2), 0.8, 0], [bLen, 1.6, 0.68]);
-	    addBox(group, mats.roofEdge, [side * (b0 + bLen / 2), 1.71, 0], [bLen, 0.22, 1.0]);
+	    addBox$1(group, mats.stoneLight, [side * (b0 + bLen / 2), 0.1, 0], [bLen, 0.2, 0.7]);
+	    addBox$1(group, mats.white, [side * (b0 + bLen / 2), 0.8, 0], [bLen, 1.6, 0.68]);
+	    addBox$1(group, mats.roofEdge, [side * (b0 + bLen / 2), 1.71, 0], [bLen, 0.22, 1.0]);
 	  }
 
 	  return finalize(group);
@@ -50145,7 +50503,7 @@ void main() {
 	  const pavingDark = M.darkPaving || mats.darkPaving || stoneDark;
 
 	  /* ---------------- 便捷构件 ---------------- */
-	  const box = (parent, mat, x, y, z, w, h, d) => addBox(parent, mat, [x, y, z], [w, h, d]);
+	  const box = (parent, mat, x, y, z, w, h, d) => addBox$1(parent, mat, [x, y, z], [w, h, d]);
 
 	  /** 在 parent 局部坐标 +z 面朝外构建一段瓦顶（米）。 */
 	  function roofAt(parent, options, small = false) {
@@ -50697,8 +51055,8 @@ void main() {
 	  const shaftTop = 3.9;
 
 	  // 青花瓷风格柱础
-	  addBox(parent, mats.stoneLight, [x, FLOOR$1 + 0.16, z], [0.68, 0.32, 0.68]);
-	  addBox(parent, mats.azure, [x, FLOOR$1 + 0.24, z], [0.56, 0.16, 0.56]);
+	  addBox$1(parent, mats.stoneLight, [x, FLOOR$1 + 0.16, z], [0.68, 0.32, 0.68]);
+	  addBox$1(parent, mats.azure, [x, FLOOR$1 + 0.24, z], [0.56, 0.16, 0.56]);
 	  for (const dx of [-0.16, 0, 0.16]) {
 	    addBall(parent, mats.white, [x + dx, FLOOR$1 + 0.24, z + 0.286], [0.045, 0.055, 0.02], 0);
 	  }
@@ -50707,7 +51065,7 @@ void main() {
 	  addCylinder(parent, mats.red, [x, (shaftBot + shaftTop) / 2, z], 0.235, 0.265, shaftTop - shaftBot, 14);
 	  // 金线柱身：三竖线 + 上下金箍
 	  for (const dx of [-0.115, 0, 0.115]) {
-	    addBox(parent, mats.gold, [x + dx, (shaftBot + shaftTop) / 2, z + 0.238], [0.034, shaftTop - shaftBot - 0.55, 0.02]);
+	    addBox$1(parent, mats.gold, [x + dx, (shaftBot + shaftTop) / 2, z + 0.238], [0.034, shaftTop - shaftBot - 0.55, 0.02]);
 	  }
 	  addCylinder(parent, mats.gold, [x, shaftBot + 0.26, z], 0.26, 0.268, 0.05, 14);
 	  addCylinder(parent, mats.gold, [x, shaftTop - 0.24, z], 0.245, 0.25, 0.05, 14);
@@ -50744,32 +51102,32 @@ void main() {
 
 	  const fd = 0.1;
 	  // 深色窗套与玻璃
-	  addBox(g, mats.darkWood, [0, h / 2, fd / 2], [w + 0.3, h + 0.3, fd]);
-	  addBox(g, mats.darkGlass, [0, h / 2, fd + 0.01], [w, h, 0.05]);
+	  addBox$1(g, mats.darkWood, [0, h / 2, fd / 2], [w + 0.3, h + 0.3, fd]);
+	  addBox$1(g, mats.darkGlass, [0, h / 2, fd + 0.01], [w, h, 0.05]);
 
 	  // 外窗框（红木）
-	  addBox(g, mats.red, [-(w / 2 + 0.07), h / 2, fd + 0.04], [0.15, h + 0.3, 0.1]);
-	  addBox(g, mats.red, [w / 2 + 0.07, h / 2, fd + 0.04], [0.15, h + 0.3, 0.1]);
-	  addBox(g, mats.red, [0, h + 0.145, fd + 0.04], [w + 0.3, 0.17, 0.1]);
-	  addBox(g, mats.red, [0, -0.075, fd + 0.04], [w + 0.3, 0.15, 0.1]);
+	  addBox$1(g, mats.red, [-(w / 2 + 0.07), h / 2, fd + 0.04], [0.15, h + 0.3, 0.1]);
+	  addBox$1(g, mats.red, [w / 2 + 0.07, h / 2, fd + 0.04], [0.15, h + 0.3, 0.1]);
+	  addBox$1(g, mats.red, [0, h + 0.145, fd + 0.04], [w + 0.3, 0.17, 0.1]);
+	  addBox$1(g, mats.red, [0, -0.075, fd + 0.04], [w + 0.3, 0.15, 0.1]);
 
 	  // 下部实木板
 	  const lowH = h * 0.3;
-	  addBox(g, mats.wood, [0, lowH / 2, fd + 0.03], [w, lowH, 0.07]);
+	  addBox$1(g, mats.wood, [0, lowH / 2, fd + 0.03], [w, lowH, 0.07]);
 	  for (const dx of [-w / 4, 0, w / 4]) {
-	    addBox(g, mats.darkWood, [dx, lowH / 2, fd + 0.08], [0.045, lowH, 0.03]);
+	    addBox$1(g, mats.darkWood, [dx, lowH / 2, fd + 0.08], [0.045, lowH, 0.03]);
 	  }
-	  addBox(g, mats.red, [0, lowH + 0.02, fd + 0.06], [w, 0.1, 0.09]);
+	  addBox$1(g, mats.red, [0, lowH + 0.02, fd + 0.06], [w, 0.1, 0.09]);
 
 	  // 上部格心：中竖梃 + 两横梃
 	  const gTop = h - lowH;
-	  addBox(g, mats.red, [0, lowH + gTop / 2, fd + 0.06], [0.075, gTop, 0.09]);
+	  addBox$1(g, mats.red, [0, lowH + gTop / 2, fd + 0.06], [0.075, gTop, 0.09]);
 	  for (const t of [0.34, 0.67]) {
-	    addBox(g, mats.red, [0, lowH + gTop * t, fd + 0.06], [w, 0.06, 0.09]);
+	    addBox$1(g, mats.red, [0, lowH + gTop * t, fd + 0.06], [w, 0.06, 0.09]);
 	  }
 
 	  // 石窗台
-	  addBox(g, mats.stoneLight, [0, -0.22, fd + 0.02], [w + 0.42, 0.13, 0.22]);
+	  addBox$1(g, mats.stoneLight, [0, -0.22, fd + 0.02], [w + 0.42, 0.13, 0.22]);
 	}
 
 	/** 中央红木双开门：门框、两扇格心门、横披窗。 */
@@ -50780,14 +51138,14 @@ void main() {
 	  const transomTop = transomBottom + 0.36;
 
 	  // 门槛与门框
-	  addBox(parent, mats.stone, [0, FLOOR$1 + 0.035, zf + 0.14], [2.95, 0.07, 0.3]);
+	  addBox$1(parent, mats.stone, [0, FLOOR$1 + 0.035, zf + 0.14], [2.95, 0.07, 0.3]);
 	  for (const side of [-1, 1]) {
-	    addBox(parent, mats.red, [side * 1.42, (FLOOR$1 + doorTop) / 2, zf + 0.08], [0.2, doorTop - FLOOR$1, 0.24]);
+	    addBox$1(parent, mats.red, [side * 1.42, (FLOOR$1 + doorTop) / 2, zf + 0.08], [0.2, doorTop - FLOOR$1, 0.24]);
 	  }
-	  addBox(parent, mats.red, [0, doorTop - 0.08, zf + 0.08], [3.05, 0.16, 0.24]);
+	  addBox$1(parent, mats.red, [0, doorTop - 0.08, zf + 0.08], [3.05, 0.16, 0.24]);
 
 	  // 深色门洞衬底
-	  addBox(parent, mats.darkWood, [0, FLOOR$1 + 1.35, zf + 0.05], [2.62, 2.72, 0.08]);
+	  addBox$1(parent, mats.darkWood, [0, FLOOR$1 + 1.35, zf + 0.05], [2.62, 2.72, 0.08]);
 
 	  // 两扇门：红木格心门（共享木格门纹理）
 	  for (const side of [-1, 1]) {
@@ -50798,12 +51156,12 @@ void main() {
 	  }
 
 	  // 门楣与横披窗
-	  addBox(parent, mats.red, [0, transomBottom, zf + 0.11], [2.66, 0.09, 0.16]);
-	  addBox(parent, mats.red, [0, transomTop, zf + 0.11], [2.66, 0.09, 0.16]);
+	  addBox$1(parent, mats.red, [0, transomBottom, zf + 0.11], [2.66, 0.09, 0.16]);
+	  addBox$1(parent, mats.red, [0, transomTop, zf + 0.11], [2.66, 0.09, 0.16]);
 	  const ty = (transomBottom + transomTop) / 2;
 	  for (let i = 0; i < 4; i += 1) {
-	    addBox(parent, mats.darkGlass, [-0.93 + i * 0.62, ty, zf + 0.12], [0.5, 0.3, 0.04]);
-	    addBox(parent, mats.red, [-0.62 + i * 0.62, ty, zf + 0.13], [0.075, 0.34, 0.05]);
+	    addBox$1(parent, mats.darkGlass, [-0.93 + i * 0.62, ty, zf + 0.12], [0.5, 0.3, 0.04]);
+	    addBox$1(parent, mats.red, [-0.62 + i * 0.62, ty, zf + 0.13], [0.075, 0.34, 0.05]);
 	  }
 	}
 
@@ -50829,10 +51187,10 @@ void main() {
 	  parent.add(frame);
 
 	  // 深色匾板 + 金边
-	  addBox(parent, mats.darkWood, [0, bottom + 0.4, zf + 0.14], [2.68, 0.66, 0.07]);
-	  addBox(parent, mats.gold, [0, bottom + 0.4, zf + 0.175], [2.76, 0.045, 0.02]);
+	  addBox$1(parent, mats.darkWood, [0, bottom + 0.4, zf + 0.14], [2.68, 0.66, 0.07]);
+	  addBox$1(parent, mats.gold, [0, bottom + 0.4, zf + 0.175], [2.76, 0.045, 0.02]);
 	  for (const side of [-1, 1]) {
-	    addBox(parent, mats.gold, [side * 1.37, bottom + 0.4, zf + 0.175], [0.04, 0.7, 0.02]);
+	    addBox$1(parent, mats.gold, [side * 1.37, bottom + 0.4, zf + 0.175], [0.04, 0.7, 0.02]);
 	  }
 
 	  // 匾额贴图（ctx.tex.fengqiPlaque）
@@ -50852,9 +51210,9 @@ void main() {
 	  const hw = len / 2;
 
 	  // 石质压条
-	  addBox(g, mats.stoneLight, [0, FLOOR$1 + 0.05, 0], [len + 0.06, 0.1, 0.34]);
+	  addBox$1(g, mats.stoneLight, [0, FLOOR$1 + 0.05, 0], [len + 0.06, 0.1, 0.34]);
 	  // 红下枋
-	  addBox(g, mats.red, [0, FLOOR$1 + 0.2, 0], [len, 0.14, 0.24]);
+	  addBox$1(g, mats.red, [0, FLOOR$1 + 0.2, 0], [len, 0.14, 0.24]);
 	  // 黄色琉璃透花板
 	  const panel = new Mesh(new PlaneGeometry(len - 0.18, 0.5), mats.balustrade);
 	  panel.position.set(0, FLOOR$1 + 0.55, 0.005);
@@ -50862,9 +51220,9 @@ void main() {
 	  g.add(panel);
 	  // 红木边框
 	  for (const side of [-1, 1]) {
-	    addBox(g, mats.red, [side * (hw - 0.06), FLOOR$1 + 0.55, 0], [0.13, 0.7, 0.2]);
+	    addBox$1(g, mats.red, [side * (hw - 0.06), FLOOR$1 + 0.55, 0], [0.13, 0.7, 0.2]);
 	  }
-	  addBox(g, mats.red, [0, FLOOR$1 + 0.83, 0], [len, 0.09, 0.2]);
+	  addBox$1(g, mats.red, [0, FLOOR$1 + 0.83, 0], [len, 0.09, 0.2]);
 
 	  // 透空菱花图案（栏板与扶手之间的空档）
 	  const motifs = Math.max(2, Math.round(len / 1.1));
@@ -50879,8 +51237,8 @@ void main() {
 	  }
 
 	  // 红色扶手 + 金线
-	  addBox(g, mats.red, [0, FLOOR$1 + 1.1, 0], [len + 0.14, 0.16, 0.34]);
-	  addBox(g, mats.gold, [0, FLOOR$1 + 1.02, 0.18], [len, 0.035, 0.02]);
+	  addBox$1(g, mats.red, [0, FLOOR$1 + 1.1, 0], [len + 0.14, 0.16, 0.34]);
+	  addBox$1(g, mats.gold, [0, FLOOR$1 + 1.02, 0.18], [len, 0.035, 0.02]);
 	}
 
 	/** 石凳。 */
@@ -50889,11 +51247,11 @@ void main() {
 	  g.position.set(x, 0, z);
 	  g.rotation.y = ry;
 	  parent.add(g);
-	  addBox(g, mats.stoneLight, [0, 0.56, 0], [1.75, 0.14, 0.58]);
+	  addBox$1(g, mats.stoneLight, [0, 0.56, 0], [1.75, 0.14, 0.58]);
 	  for (const side of [-1, 1]) {
-	    addBox(g, mats.stone, [side * 0.62, 0.24, 0], [0.24, 0.48, 0.5]);
+	    addBox$1(g, mats.stone, [side * 0.62, 0.24, 0], [0.24, 0.48, 0.5]);
 	  }
-	  addBox(g, mats.darkStone, [0, 0.42, 0], [1.3, 0.08, 0.34]);
+	  addBox$1(g, mats.darkStone, [0, 0.42, 0], [1.3, 0.08, 0.34]);
 	}
 
 	/** 石盆植栽。 */
@@ -50927,12 +51285,12 @@ void main() {
 	  parent.add(g);
 
 	  // 台座（下枋 + 方座 + 压顶）
-	  addBox(g, mats.stone, [0, 0.1, 0], [2.1, 0.2, 2.1]);
-	  addBox(g, mats.darkStone, [0, 0.72, 0], [1.56, 1.04, 1.56]);
-	  addBox(g, mats.stone, [0, 1.3, 0], [1.72, 0.14, 1.72]);
+	  addBox$1(g, mats.stone, [0, 0.1, 0], [2.1, 0.2, 2.1]);
+	  addBox$1(g, mats.darkStone, [0, 0.72, 0], [1.56, 1.04, 1.56]);
+	  addBox$1(g, mats.stone, [0, 1.3, 0], [1.72, 0.14, 1.72]);
 	  // 红色说明牌：固定在台座 +z 侧（庭院一侧），不随人物朝向转动
-	  addBox(g, mats.red, [0, 0.66, 0.79], [0.72, 0.44, 0.03]);
-	  addBox(g, mats.gold, [0, 0.87, 0.81], [0.76, 0.02, 0.015]);
+	  addBox$1(g, mats.red, [0, 0.66, 0.79], [0.72, 0.44, 0.03]);
+	  addBox$1(g, mats.gold, [0, 0.87, 0.81], [0.76, 0.02, 0.015]);
 
 	  // 人物本体：单独一层，随 ry 转向
 	  const figure = new Group();
@@ -50949,7 +51307,7 @@ void main() {
 	    addCylinder(figure, bronze, [0, b + yy, 0], r, r + 0.03, 0.06, 14);
 	  }
 	  // 袍前襟
-	  addBox(figure, bronze, [0, b + 0.75, 0.44], [0.035, 1.1, 0.03]);
+	  addBox$1(figure, bronze, [0, b + 0.75, 0.44], [0.035, 1.1, 0.03]);
 	  // 腰束带
 	  addCylinder(figure, bronze, [0, b + 1.3, 0], 0.4, 0.39, 0.1, 12);
 	  // 上身、肩与领口
@@ -50975,10 +51333,10 @@ void main() {
 	    addBall(figure, bronze, [side * 0.13, b + 1.46, 0.31], [0.13, 0.17, 0.13], 0);
 	  }
 	  // 笏板
-	  addBox(figure, bronze, [0, b + 1.6, 0.39], [0.3, 0.46, 0.05]);
-	  addBox(figure, mats.gold, [0, b + 1.68, 0.42], [0.26, 0.055, 0.02]);
+	  addBox$1(figure, bronze, [0, b + 1.6, 0.39], [0.3, 0.46, 0.05]);
+	  addBox$1(figure, mats.gold, [0, b + 1.68, 0.42], [0.26, 0.055, 0.02]);
 	  // 足
-	  addBox(figure, bronze, [0, b + 0.04, 0.16], [0.44, 0.08, 0.3]);
+	  addBox$1(figure, bronze, [0, b + 0.04, 0.16], [0.44, 0.08, 0.3]);
 	}
 
 
@@ -51081,7 +51439,7 @@ void main() {
 	    addTube(group, edge, [[side * tw, height + 0.06, -td], [side * tw, height + 0.06, td]], 0.07, 12, 6);
 	  }
 	  // 封住顶部洞口，避免俯视看穿
-	  addBox(group, mats.roofEdge || edge, [0, height - 0.03, 0], [topWidth, 0.08, topDepth]);
+	  addBox$1(group, mats.roofEdge || edge, [0, height - 0.03, 0], [topWidth, 0.08, topDepth]);
 
 	  // 翼角起翘
 	  for (const sign of [-1, 1]) {
@@ -51127,8 +51485,8 @@ void main() {
 	  group.add(caps);
 
 	  // 檐下白色封檐板与金线
-	  addBox(group, white, [0, -0.24, 0], [width - 1.3, 0.3, depth - 0.25]);
-	  addBox(group, mats.gold || white, [0, -0.42, 0], [width - 1.5, 0.06, depth - 0.34]);
+	  addBox$1(group, white, [0, -0.24, 0], [width - 1.3, 0.3, depth - 0.25]);
+	  addBox$1(group, mats.gold || white, [0, -0.42, 0], [width - 1.5, 0.06, depth - 0.34]);
 	  return group;
 	}
 
@@ -51149,32 +51507,32 @@ void main() {
 	  group.name = 'fengqi hall';
 
 	  /* ---------------- 台基、廊下地面、台阶 ---------------- */
-	  addBox(group, mats.stone, [0, PLAT / 2, (PLAT_Z0 + PLAT_Z1) / 2], [PLAT_W, PLAT, PLAT_Z1 - PLAT_Z0]);
+	  addBox$1(group, mats.stone, [0, PLAT / 2, (PLAT_Z0 + PLAT_Z1) / 2], [PLAT_W, PLAT, PLAT_Z1 - PLAT_Z0]);
 	  // 台基压顶石
-	  addBox(group, mats.stoneLight, [0, PLAT + 0.04, PLAT_Z1 - 0.18], [PLAT_W + 0.06, 0.1, 0.42]);
-	  addBox(group, mats.stoneLight, [0, PLAT + 0.04, PLAT_Z0 + 0.18], [PLAT_W + 0.06, 0.1, 0.42]);
+	  addBox$1(group, mats.stoneLight, [0, PLAT + 0.04, PLAT_Z1 - 0.18], [PLAT_W + 0.06, 0.1, 0.42]);
+	  addBox$1(group, mats.stoneLight, [0, PLAT + 0.04, PLAT_Z0 + 0.18], [PLAT_W + 0.06, 0.1, 0.42]);
 	  // 廊下红褐色地面
-	  addBox(group, mats.terraTile, [0, PLAT + 0.03, 4.95], [PLAT_W - 0.3, 0.06, 3.3]);
+	  addBox$1(group, mats.terraTile, [0, PLAT + 0.03, 4.95], [PLAT_W - 0.3, 0.06, 3.3]);
 
 	  // 台阶（4 级，红石踏面 + 深色条石收边）
 	  for (let i = 0; i < 3; i += 1) {
 	    const h = PLAT - STAIR_RISE * (i + 1);
 	    const zc = PLAT_Z1 + STAIR_RUN$1 * (i + 0.5);
-	    addBox(group, mats.terraTile, [0, h / 2, zc], [STAIR_W, h, STAIR_RUN$1 + 0.02]);
+	    addBox$1(group, mats.terraTile, [0, h / 2, zc], [STAIR_W, h, STAIR_RUN$1 + 0.02]);
 	    for (const side of [-1, 1]) {
-	      addBox(group, mats.darkStone, [side * (STAIR_W / 2 - 0.09), h - 0.03, zc], [0.2, 0.07, STAIR_RUN$1 + 0.04]);
+	      addBox$1(group, mats.darkStone, [side * (STAIR_W / 2 - 0.09), h - 0.03, zc], [0.2, 0.07, STAIR_RUN$1 + 0.04]);
 	    }
 	  }
 	  // 台阶两侧垂带石
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.darkStone, [side * (STAIR_W / 2 + 0.16), 0.36, PLAT_Z1 + 0.52], [0.3, 0.72, 1.12]);
+	    addBox$1(group, mats.darkStone, [side * (STAIR_W / 2 + 0.16), 0.36, PLAT_Z1 + 0.52], [0.3, 0.72, 1.12]);
 	  }
 
 	  /* ---------------- 主体：白墙 + 门窗 ---------------- */
-	  addBox(group, mats.white, [0, (PLAT + WALL_TOP) / 2, (HALL_BACK + HALL_FRONT) / 2],
+	  addBox$1(group, mats.white, [0, (PLAT + WALL_TOP) / 2, (HALL_BACK + HALL_FRONT) / 2],
 	    [W$2, BODY_H, HALL_FRONT - HALL_BACK]);
 	  // 墙脚石
-	  addBox(group, mats.darkStone, [0, PLAT + 0.08, (HALL_BACK + HALL_FRONT) / 2], [W$2 + 0.04, 0.16, HALL_FRONT - HALL_BACK + 0.04]);
+	  addBox$1(group, mats.darkStone, [0, PLAT + 0.08, (HALL_BACK + HALL_FRONT) / 2], [W$2 + 0.04, 0.16, HALL_FRONT - HALL_BACK + 0.04]);
 
 	  // 正门、四扇前窗
 	  doorUnit(group, mats, M);
@@ -51206,24 +51564,24 @@ void main() {
 	  }
 
 	  // 前额枋
-	  addBox(group, mats.red, [0, 4.56, COL_Z$1], [21.7, 0.3, 0.28]);
-	  addBox(group, mats.gold, [0, 4.69, COL_Z$1 + 0.16], [21.7, 0.035, 0.02]);
-	  addBox(group, mats.gold, [0, 4.43, COL_Z$1 + 0.16], [21.7, 0.035, 0.02]);
+	  addBox$1(group, mats.red, [0, 4.56, COL_Z$1], [21.7, 0.3, 0.28]);
+	  addBox$1(group, mats.gold, [0, 4.69, COL_Z$1 + 0.16], [21.7, 0.035, 0.02]);
+	  addBox$1(group, mats.gold, [0, 4.43, COL_Z$1 + 0.16], [21.7, 0.035, 0.02]);
 	  // 侧额枋
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.red, [side * 11.55, 4.56, 4.45], [0.28, 0.3, 3.5]);
-	    addBox(group, mats.gold, [side * 11.71, 4.69, 4.45], [0.02, 0.035, 3.5]);
+	    addBox$1(group, mats.red, [side * 11.55, 4.56, 4.45], [0.28, 0.3, 3.5]);
+	    addBox$1(group, mats.gold, [side * 11.71, 4.69, 4.45], [0.02, 0.035, 3.5]);
 	  }
 	  // 廊下顶棚（深色）
-	  addBox(group, mats.darkWood, [0, 4.66, 4.5], [23.5, 0.07, 3.4]);
+	  addBox$1(group, mats.darkWood, [0, 4.66, 4.5], [23.5, 0.07, 3.4]);
 	  // 檐口椽头
 	  for (let i = 0; i <= 21; i += 1) {
 	    const x = -10.5 + i;
-	    addBox(group, mats.darkWood, [x, 4.66, 6.4], [0.1, 0.1, 0.52]);
+	    addBox$1(group, mats.darkWood, [x, 4.66, 6.4], [0.1, 0.1, 0.52]);
 	  }
 	  for (const side of [-1, 1]) {
 	    for (let i = 0; i < 4; i += 1) {
-	      addBox(group, mats.darkWood, [side * 11.85, 4.66, 4.9 - i * 0.8], [0.52, 0.1, 0.1]);
+	      addBox$1(group, mats.darkWood, [side * 11.85, 4.66, 4.9 - i * 0.8], [0.52, 0.1, 0.1]);
 	    }
 	  }
 
@@ -51255,9 +51613,9 @@ void main() {
 	    y: UPPER_Y, width: 23.1, depth: 11.2, height: UPPER_H, flare: 0.3
 	  });
 	  // 两檐之间的暗部：填补缝隙、形成檐下阴影
-	  addBox(group, mats.darkMetal, [0, 6.1, -1.5], [18.4, 0.7, 8.2]);
+	  addBox$1(group, mats.darkMetal, [0, 6.1, -1.5], [18.4, 0.7, 8.2]);
 	  // 上层檐底深色望板（避免仰视时看到大面积米色封檐板底）
-	  addBox(group, mats.darkMetal, [0, 6.15, -1.3], [21.4, 0.05, 10.5]);
+	  addBox$1(group, mats.darkMetal, [0, 6.15, -1.3], [21.4, 0.05, 10.5]);
 
 	  /* ---------------- 灰石庭院 ---------------- */
 	  // 2026-11 用户反馈要求夫子像后移到距门约 7–8 m。场景主路 newMainRoad 在模块外，
@@ -51267,29 +51625,29 @@ void main() {
 	  //   - 前部只加一条 7.6 m 宽（±3.8 m）的中央铺地 z 10.0–12.5，覆盖 2.1 m 见方的台座
 	  //     （z≈9.70–11.80），并把压路面积压到最小；
 	  //   - 主庭院前端两肩补压边石，保证 T 形铺地有完整收边。
-	  addBox(group, mats.darkPaving, [0, 0.05, (7.0 + COURT_MID) / 2], [17.2, 0.1, COURT_MID - 7.0]);
-	  addBox(group, mats.darkPaving, [0, 0.05, (COURT_MID + COURT_FRONT) / 2],
+	  addBox$1(group, mats.darkPaving, [0, 0.05, (7.0 + COURT_MID) / 2], [17.2, 0.1, COURT_MID - 7.0]);
+	  addBox$1(group, mats.darkPaving, [0, 0.05, (COURT_MID + COURT_FRONT) / 2],
 	    [COURT_APRON_HALF * 2, 0.1, COURT_FRONT - COURT_MID]);
 	  // 中央铺地前沿石 + 主庭院前端两肩压边石
-	  addBox(group, mats.stoneLight, [0, 0.08, COURT_FRONT - 0.08], [COURT_APRON_HALF * 2 + 0.2, 0.14, 0.22]);
+	  addBox$1(group, mats.stoneLight, [0, 0.08, COURT_FRONT - 0.08], [COURT_APRON_HALF * 2 + 0.2, 0.14, 0.22]);
 	  for (const side of [-1, 1]) {
 	    const shoulderW = 8.6 - COURT_APRON_HALF;
-	    addBox(group, mats.stoneLight,
+	    addBox$1(group, mats.stoneLight,
 	      [side * (COURT_APRON_HALF + shoulderW / 2), 0.08, COURT_MID - 0.06],
 	      [shoulderW, 0.14, 0.22]);
 	  }
 	  // 铺地分缝：主庭院（z 7.3–9.9，全宽）+ 中央铺地（z 10.1–12.4）
 	  for (let i = -4; i <= 4; i += 1) {
-	    addBox(group, mats.darkStone, [i * 1.9, 0.105, 8.6], [0.03, 0.012, 2.6]);
+	    addBox$1(group, mats.darkStone, [i * 1.9, 0.105, 8.6], [0.03, 0.012, 2.6]);
 	    if (Math.abs(i * 1.9) <= COURT_APRON_HALF) {
-	      addBox(group, mats.darkStone, [i * 1.9, 0.105, (COURT_MID + COURT_FRONT) / 2 - 0.05],
+	      addBox$1(group, mats.darkStone, [i * 1.9, 0.105, (COURT_MID + COURT_FRONT) / 2 - 0.05],
 	        [0.03, 0.012, COURT_FRONT - COURT_MID - 0.3]);
 	    }
 	  }
 	  // 两侧红土花池 + 灌木
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.terraTile, [side * 10.2, 0.11, 8.3], [3.2, 0.22, 3.2]);
-	    addBox(group, mats.stoneLight, [side * 10.2, 0.15, 6.72], [3.3, 0.2, 0.2]);
+	    addBox$1(group, mats.terraTile, [side * 10.2, 0.11, 8.3], [3.2, 0.22, 3.2]);
+	    addBox$1(group, mats.stoneLight, [side * 10.2, 0.15, 6.72], [3.3, 0.2, 0.2]);
 	    addBall(group, mats.leafDeep, [side * 9.6, 0.55, 7.3], [0.62, 0.42, 0.55], 1);
 	    addBall(group, mats.leafDeep, [side * 11.0, 0.48, 9.0], [0.55, 0.36, 0.5], 0);
 	    addBall(group, mats.leaf, [side * 9.9, 0.62, 9.3], [0.42, 0.3, 0.4], 0);
@@ -51382,21 +51740,21 @@ void main() {
 	  g.rotation.y = rotation;
 	  parent.add(g);
 	  // 窗套（深色木）
-	  addBox(g, mats.darkWood, [0, 0, 0.015], [w + 0.2, h + 0.2, 0.1]);
+	  addBox$1(g, mats.darkWood, [0, 0, 0.015], [w + 0.2, h + 0.2, 0.1]);
 	  // 窗芯贴图
 	  const pane = new Mesh(new PlaneGeometry(w, h), material);
 	  pane.position.z = 0.075;
 	  pane.receiveShadow = true;
 	  g.add(pane);
 	  // 红木外框
-	  addBox(g, mats.red, [0, h / 2 + 0.075, 0.085], [w + 0.34, 0.15, 0.1]);
-	  addBox(g, mats.red, [0, -h / 2 - 0.075, 0.085], [w + 0.34, 0.15, 0.1]);
+	  addBox$1(g, mats.red, [0, h / 2 + 0.075, 0.085], [w + 0.34, 0.15, 0.1]);
+	  addBox$1(g, mats.red, [0, -h / 2 - 0.075, 0.085], [w + 0.34, 0.15, 0.1]);
 	  for (const dx of [-(w / 2 + 0.075), w / 2 + 0.075]) {
-	    addBox(g, mats.red, [dx, 0, 0.085], [0.15, h + 0.3, 0.1]);
+	    addBox$1(g, mats.red, [dx, 0, 0.085], [0.15, h + 0.3, 0.1]);
 	  }
-	  if (!door) addBox(g, mats.red, [0, 0, 0.085], [0.07, h, 0.085]);
+	  if (!door) addBox$1(g, mats.red, [0, 0, 0.085], [0.07, h, 0.085]);
 	  // 窗台
-	  if (sill) addBox(g, mats.stoneLight, [0, -h / 2 - 0.2, 0.14], [w + 0.56, 0.13, 0.3]);
+	  if (sill) addBox$1(g, mats.stoneLight, [0, -h / 2 - 0.2, 0.14], [w + 0.56, 0.13, 0.3]);
 	  return g;
 	}
 
@@ -51582,23 +51940,23 @@ void main() {
 	  parent.add(g);
 	  const half = length / 2;
 	  // 上下横杆
-	  addBox(g, mats.red, [0, height, 0], [length, 0.11, 0.13]);
-	  addBox(g, mats.red, [0, 0.17, 0], [length, 0.11, 0.13]);
+	  addBox$1(g, mats.red, [0, height, 0], [length, 0.11, 0.13]);
+	  addBox$1(g, mats.red, [0, 0.17, 0], [length, 0.11, 0.13]);
 	  // 立柱
 	  const posts = Math.max(2, Math.round(length / 1.35));
 	  for (let i = 0; i <= posts; i += 1) {
 	    const t = -half + (i / posts) * length;
-	    addBox(g, mats.red, [t, height * 0.56, 0], [0.12, height * 1.02, 0.12]);
+	    addBox$1(g, mats.red, [t, height * 0.56, 0], [0.12, height * 1.02, 0.12]);
 	  }
 	  // 密棂条
 	  const bars = Math.round(length / 0.26);
 	  for (let i = 0; i < bars; i += 1) {
 	    const t = -half + 0.1 + (i / Math.max(1, bars - 1)) * (length - 0.2);
-	    addBox(g, mats.red, [t, height * 0.56, 0.015], [0.048, height * 0.82, 0.05]);
+	    addBox$1(g, mats.red, [t, height * 0.56, 0.015], [0.048, height * 0.82, 0.05]);
 	  }
 	  // 金色回纹带
-	  addBox(g, mats.gold, [0, height * 0.8, 0.04], [length - 0.16, 0.035, 0.02]);
-	  addBox(g, mats.gold, [0, height * 0.36, 0.04], [length - 0.16, 0.035, 0.02]);
+	  addBox$1(g, mats.gold, [0, height * 0.8, 0.04], [length - 0.16, 0.035, 0.02]);
+	  addBox$1(g, mats.gold, [0, height * 0.36, 0.04], [length - 0.16, 0.035, 0.02]);
 	  return g;
 	}
 
@@ -51616,21 +51974,21 @@ void main() {
 	  g.scale.setScalar(scale);
 	  parent.add(g);
 	  // 座石
-	  addBox(g, mats.darkStone, [0, seatH * 0.46, -0.02], [0.84, seatH * 0.92, 0.76]);
-	  addBox(g, mats.darkStone, [0.05, seatH * 0.95, 0.04], [0.88, 0.1, 0.8]);
+	  addBox$1(g, mats.darkStone, [0, seatH * 0.46, -0.02], [0.84, seatH * 0.92, 0.76]);
+	  addBox$1(g, mats.darkStone, [0.05, seatH * 0.95, 0.04], [0.88, 0.1, 0.8]);
 	  const y0 = seatH;
 	  // 腿
 	  for (const dx of [-0.14, 0.14]) {
 	    addRod(g, m, [dx, y0 + 0.06, 0.02], [dx, y0 + 0.1, 0.34], 0.085);
 	    addRod(g, m, [dx, y0 + 0.1, 0.34], [dx * 1.08, 0.14, 0.42], 0.075);
-	    addBox(g, m, [dx * 1.08, 0.07, 0.48], [0.17, 0.13, 0.3]);
+	    addBox$1(g, m, [dx * 1.08, 0.07, 0.48], [0.17, 0.13, 0.3]);
 	  }
 	  // 臀 / 躯干
-	  addBox(g, m, [0, y0 + 0.1, 0], [0.44, 0.26, 0.36]);
+	  addBox$1(g, m, [0, y0 + 0.1, 0], [0.44, 0.26, 0.36]);
 	  const torsoH = robe ? 0.6 : 0.52;
 	  addCylinder(g, m, [0, y0 + 0.12 + torsoH / 2, 0.02], robe ? 0.17 : 0.16,
 	    robe ? 0.26 : 0.2, torsoH, 10);
-	  addBox(g, m, [0, y0 + 0.12 + torsoH - 0.03, 0.02], [0.5, 0.12, 0.27]);
+	  addBox$1(g, m, [0, y0 + 0.12 + torsoH - 0.03, 0.02], [0.5, 0.12, 0.27]);
 	  // 手臂
 	  for (const side of [-1, 1]) {
 	    addRod(g, m, [side * 0.22, y0 + 0.12 + torsoH - 0.09, 0.03], [side * 0.25, y0 + 0.22, 0.3], 0.06);
@@ -51649,7 +52007,7 @@ void main() {
 	function addFrontSteps(parent, mats, { x = 0, z = 0, width = 8.4, count = 3, rise = 0.15, run = 0.4 }) {
 	  for (let i = 0; i < count; i += 1) {
 	    const h = rise * (count - i);
-	    addBox(parent, i % 2 ? mats.stoneLight : mats.stone,
+	    addBox$1(parent, i % 2 ? mats.stoneLight : mats.stone,
 	      [x, h / 2, z + run * (i + 0.5)],
 	      [width - i * 0.35, h, run + 0.02]);
 	  }
@@ -51671,37 +52029,37 @@ void main() {
 	  /* ---------------- 台基、台阶与堂前铺地 ---------------- */
 	  const platX = SKIRT_X - 0.4;
 	  // 下层散水台阶
-	  addBox(group, mats.stone, [0, 0.11, 0.1], [platX * 2 + 0.5, 0.22, 12.1]);
+	  addBox$1(group, mats.stone, [0, 0.11, 0.1], [platX * 2 + 0.5, 0.22, 12.1]);
 	  // 上层台基
-	  addBox(group, mats.stone, [0, PLATFORM / 2 + 0.1, 0.1], [platX * 2, PLATFORM, 11.9]);
-	  addBox(group, mats.stoneLight, [0, PLATFORM + 0.06, 0.1], [platX * 2 - 0.16, 0.14, 11.7]);
-	  addBox(group, mats.stoneLight, [0, PLATFORM + 0.04, 5.94], [platX * 2 - 0.1, 0.14, 0.2]);
+	  addBox$1(group, mats.stone, [0, PLATFORM / 2 + 0.1, 0.1], [platX * 2, PLATFORM, 11.9]);
+	  addBox$1(group, mats.stoneLight, [0, PLATFORM + 0.06, 0.1], [platX * 2 - 0.16, 0.14, 11.7]);
+	  addBox$1(group, mats.stoneLight, [0, PLATFORM + 0.04, 5.94], [platX * 2 - 0.1, 0.14, 0.2]);
 	  // 正面台阶
 	  addFrontSteps(group, mats, { z: 5.98, width: 8.8, count: 3, rise: 0.18, run: 0.4 });
 	  // 堂前铺地：2026-11 群像后移（距门约 7.5 m）后，铺地自 z 6.575 延伸到 12.6，
 	  // 保证 8.0 × 2.4 m 的群像基座（z≈9.70–12.10）完全落在铺地上；前端补压边石。
 	  const COURT_FRONT_Z = 12.6;
 	  const courtZ0 = 6.575;
-	  addBox(group, mats.paving, [0, 0.05, (courtZ0 + COURT_FRONT_Z) / 2], [21, 0.1, COURT_FRONT_Z - courtZ0]);
-	  addBox(group, mats.stoneLight, [0, 0.07, 6.55], [21, 0.1, 0.22]);
-	  addBox(group, mats.stoneLight, [0, 0.08, COURT_FRONT_Z - 0.05], [21, 0.14, 0.22]);
+	  addBox$1(group, mats.paving, [0, 0.05, (courtZ0 + COURT_FRONT_Z) / 2], [21, 0.1, COURT_FRONT_Z - courtZ0]);
+	  addBox$1(group, mats.stoneLight, [0, 0.07, 6.55], [21, 0.1, 0.22]);
+	  addBox$1(group, mats.stoneLight, [0, 0.08, COURT_FRONT_Z - 0.05], [21, 0.14, 0.22]);
 	  for (let i = 0; i < 8; i += 1) {
-	    addBox(group, mats.darkPaving, [0, 0.1, 6.98 + i * 0.72], [15.4 - i * 0.3, 0.02, 0.28]);
+	    addBox$1(group, mats.darkPaving, [0, 0.1, 6.98 + i * 0.72], [15.4 - i * 0.3, 0.02, 0.28]);
 	  }
 
 	  /* ---------------- 一层：白墙 + 灰绿墙裙 ---------------- */
-	  addBox(group, mats.white, [0, (PLATFORM + GF_TOP) / 2, BODY_ZC], [W$1, GF_TOP - PLATFORM, BODY_D]);
+	  addBox$1(group, mats.white, [0, (PLATFORM + GF_TOP) / 2, BODY_ZC], [W$1, GF_TOP - PLATFORM, BODY_D]);
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.white, [side * (W$1 / 2 - 0.14), (PLATFORM + GF_TOP) / 2, (BODY_FRONT + END_FRONT) / 2],
+	    addBox$1(group, mats.white, [side * (W$1 / 2 - 0.14), (PLATFORM + GF_TOP) / 2, (BODY_FRONT + END_FRONT) / 2],
 	      [0.28, GF_TOP - PLATFORM, END_FRONT - BODY_FRONT]);
 	  }
 	  const dadoH = 0.8;
 	  const dadoY = PLATFORM + dadoH / 2;
-	  addBox(group, mats.azure, [0, dadoY, BODY_FRONT + 0.03], [W$1 + 0.04, dadoH, 0.1]);
-	  addBox(group, mats.azure, [0, dadoY, BODY_BACK - 0.03], [W$1 + 0.04, dadoH, 0.1]);
+	  addBox$1(group, mats.azure, [0, dadoY, BODY_FRONT + 0.03], [W$1 + 0.04, dadoH, 0.1]);
+	  addBox$1(group, mats.azure, [0, dadoY, BODY_BACK - 0.03], [W$1 + 0.04, dadoH, 0.1]);
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.azure, [side * (W$1 / 2 + 0.03), dadoY, BODY_ZC], [0.1, dadoH, BODY_D + 0.04]);
-	    addBox(group, mats.azure, [side * (W$1 / 2 - 0.14), dadoY, (BODY_FRONT + END_FRONT) / 2],
+	    addBox$1(group, mats.azure, [side * (W$1 / 2 + 0.03), dadoY, BODY_ZC], [0.1, dadoH, BODY_D + 0.04]);
+	    addBox$1(group, mats.azure, [side * (W$1 / 2 - 0.14), dadoY, (BODY_FRONT + END_FRONT) / 2],
 	      [0.3, dadoH, END_FRONT - BODY_FRONT]);
 	  }
 
@@ -51741,8 +52099,8 @@ void main() {
 	  for (const x of COLUMNS_X) {
 	    addPorchColumn(group, mats, { x, y: PLATFORM, z: COL_Z, height: gfColH - 0.34, radius: 0.25 });
 	  }
-	  addBox(group, mats.red, [0, GF_TOP - 0.3, COL_Z], [W$1 - 0.3, 0.3, 0.44]);
-	  addBox(group, mats.gold, [0, GF_TOP - 0.47, COL_Z], [W$1 - 0.36, 0.075, 0.5]);
+	  addBox$1(group, mats.red, [0, GF_TOP - 0.3, COL_Z], [W$1 - 0.3, 0.3, 0.44]);
+	  addBox$1(group, mats.gold, [0, GF_TOP - 0.47, COL_Z], [W$1 - 0.36, 0.075, 0.5]);
 	  // 檐下雀替
 	  for (const x of COLUMNS_X) {
 	    for (const side of [-1, 1]) {
@@ -51752,7 +52110,7 @@ void main() {
 	    }
 	  }
 	  // 廊下铺地
-	  addBox(group, mats.stoneLight, [0, PLATFORM + 0.06, (BODY_FRONT + BALCONY_Z) / 2],
+	  addBox$1(group, mats.stoneLight, [0, PLATFORM + 0.06, (BODY_FRONT + BALCONY_Z) / 2],
 	    [W$1 - 0.3, 0.12, BALCONY_Z - BODY_FRONT - 0.1]);
 
 	  /* ---------------- 一层顶部绿色腰檐 ---------------- */
@@ -51769,13 +52127,13 @@ void main() {
 	  });
 
 	  /* ---------------- 二层：白墙 + 格窗 + 露台红栏 ---------------- */
-	  addBox(group, mats.white, [0, (GF_TOP + UF_TOP) / 2, BODY_ZC], [W$1, UF_TOP - GF_TOP, BODY_D]);
+	  addBox$1(group, mats.white, [0, (GF_TOP + UF_TOP) / 2, BODY_ZC], [W$1, UF_TOP - GF_TOP, BODY_D]);
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.white, [side * (W$1 / 2 - 0.14), (GF_TOP + UF_TOP) / 2, (BODY_FRONT + END_FRONT) / 2],
+	    addBox$1(group, mats.white, [side * (W$1 / 2 - 0.14), (GF_TOP + UF_TOP) / 2, (BODY_FRONT + END_FRONT) / 2],
 	      [0.28, UF_TOP - GF_TOP, END_FRONT - BODY_FRONT]);
 	  }
 	  // 露台楼板
-	  addBox(group, mats.stoneLight, [0, GF_TOP - 0.11, (BODY_FRONT + BALCONY_Z) / 2],
+	  addBox$1(group, mats.stoneLight, [0, GF_TOP - 0.11, (BODY_FRONT + BALCONY_Z) / 2],
 	    [W$1 + 0.04, 0.22, BALCONY_Z - BODY_FRONT + 0.06]);
 	  // 二层正面格窗 + 中央通露台格扇门
 	  addLatticeWindow(group, mats, doorMat, {
@@ -51820,8 +52178,8 @@ void main() {
 	  for (const x of COLUMNS_X) {
 	    addPorchColumn(group, mats, { x, y: GF_TOP, z: COL_Z, height: ufColH - 0.3, radius: 0.21 });
 	  }
-	  addBox(group, mats.red, [0, UF_TOP - 0.24, COL_Z], [W$1 - 0.3, 0.32, 0.42]);
-	  addBox(group, mats.gold, [0, UF_TOP - 0.44, COL_Z], [W$1 - 0.36, 0.07, 0.48]);
+	  addBox$1(group, mats.red, [0, UF_TOP - 0.24, COL_Z], [W$1 - 0.3, 0.32, 0.42]);
+	  addBox$1(group, mats.gold, [0, UF_TOP - 0.44, COL_Z], [W$1 - 0.36, 0.07, 0.48]);
 	  for (const x of COLUMNS_X) {
 	    for (const side of [-1, 1]) {
 	      const bracket = addBracket(group, mats, x, UF_TOP - 0.36, COL_Z - 0.18, side);
@@ -51830,12 +52188,12 @@ void main() {
 	    }
 	  }
 	  // 檐下白色封檐板
-	  addBox(group, mats.white, [0, UF_TOP - 0.02, COL_Z + 0.16], [W$1 - 0.2, 0.24, 0.24]);
+	  addBox$1(group, mats.white, [0, UF_TOP - 0.02, COL_Z + 0.16], [W$1 - 0.2, 0.24, 0.24]);
 
 	  /* ---------------- 「衍林堂」匾额 ---------------- */
 	  const plaqueMat = M.signMaterial(tex.yanlinPlaque, true);
-	  addBox(group, mats.darkWood, [0, 3.73, BODY_FRONT + 0.06], [3.0, 0.8, 0.12]);
-	  addBox(group, mats.red, [0, 3.73, BODY_FRONT + 0.115], [2.9, 0.72, 0.03]);
+	  addBox$1(group, mats.darkWood, [0, 3.73, BODY_FRONT + 0.06], [3.0, 0.8, 0.12]);
+	  addBox$1(group, mats.red, [0, 3.73, BODY_FRONT + 0.115], [2.9, 0.72, 0.03]);
 	  addPlaque(group, plaqueMat, { x: 0, y: 3.73, z: BODY_FRONT + 0.14, w: 2.7, h: 0.6 });
 
 	  /* ---------------- 主屋顶：绿色曲面双坡顶 + 白色山墙 ---------------- */
@@ -51856,9 +52214,9 @@ void main() {
 	  // 定位依据见文件上方 STATUE_Z / STATUE_FACING 注释：正门中轴、台基与台阶之外、距门约 7.5 m。
 	  const statueZ = STATUE_Z;
 	  const faceFlip = 0 ;
-	  addBox(group, mats.darkStone, [0, 0.16, statueZ], [7.2, 0.32, 2.0]);
-	  addBox(group, mats.darkPaving, [0, 0.33, statueZ], [6.9, 0.06, 1.7]);
-	  addBox(group, mats.stoneLight, [0, 0.06, statueZ], [8.0, 0.12, 2.4]);
+	  addBox$1(group, mats.darkStone, [0, 0.16, statueZ], [7.2, 0.32, 2.0]);
+	  addBox$1(group, mats.darkPaving, [0, 0.33, statueZ], [6.9, 0.06, 1.7]);
+	  addBox$1(group, mats.stoneLight, [0, 0.06, statueZ], [8.0, 0.12, 2.4]);
 	  // 钟衍林先生（居中，座石略高）与四名学生
 	  addSeatedFigure(group, mats, { x: 0, z: statueZ - 0.2, seatH: 0.62, ry: 0.12 + faceFlip, scale: 1.08, robe: true });
 	  addSeatedFigure(group, mats, { x: -2.5, z: statueZ + 0.18, seatH: 0.38, ry: 0.72 + faceFlip, scale: 0.96 });
@@ -51871,8 +52229,8 @@ void main() {
 	  }
 	  // 两侧说明石
 	  for (const side of [-1, 1]) {
-	    addBox(group, mats.granite, [side * 4.9, 0.4, statueZ + 0.2], [0.7, 0.8, 0.42]);
-	    addBox(group, mats.stoneLight, [side * 4.9, 0.82, statueZ + 0.2], [0.82, 0.06, 0.52]);
+	    addBox$1(group, mats.granite, [side * 4.9, 0.4, statueZ + 0.2], [0.7, 0.8, 0.42]);
+	    addBox$1(group, mats.stoneLight, [side * 4.9, 0.82, statueZ + 0.2], [0.82, 0.06, 0.52]);
 	  }
 
 	  return finalize(group);
@@ -52094,7 +52452,7 @@ void main() {
 	  const flower = new MeshStandardMaterial({ color: 0xb45a84, roughness: 0.9 });
 
 	  /* ---------------- 便捷构件 ---------------- */
-	  const box = (mat, x, y, z, w, h, d) => addBox(group, mat, [x, y, z], [w, h, d]);
+	  const box = (mat, x, y, z, w, h, d) => addBox$1(group, mat, [x, y, z], [w, h, d]);
 
 	  /** 绿色玻璃水平窗带：白框 + 通长玻璃 + 白色竖梃。 */
 	  const ribbon = (x, y, z, width, height, { mullions = 8, facing = 1, sill = true } = {}) => {
@@ -52456,6 +52814,711 @@ void main() {
 	  }
 
 	  return finalize(group);
+	}
+
+	/**
+	 * js/interiors.js —— 重点建筑首层室内场景（供自动化影片「进入建筑内部」使用）。
+	 *
+	 * 设计说明
+	 * --------
+	 * 场景约定（与 js/site.js / js/campus-accurate.js 一致）：
+	 *   1 场景单位 = 2 m；x = 东，z = 南（北 = -z）；建筑群组基座 y = 0.06。
+	 *   建筑群组用「中心点 + rotation.y」放样：
+	 *     主教学楼  js/landmarks/teaching.js，rotation.y = deg(-obb[2]) = deg(-138.5)；前端 +z 朝西北校园内。
+	 *     图书馆    js/landmarks/library.js， rotation.y = deg(180 - obb[2]) = deg(41.5)；前端 +z 朝东南。
+	 *     凤栖堂    js/landmarks/fengqi.js，  rotation.y = deg(180 - obb[2]) = deg(39.75)；前端 +z 朝庭院。
+	 *   因此本模块为每栋建筑建一个与外壳完全同位置/同旋转的 Group，室内几何一律用
+	 *   **该建筑的局部坐标**（场景单位）书写，再由 localToWorld() 把机位换算成世界坐标。
+	 *
+	 * 为什么室内不会被外壳挡住/看不到：
+	 *   三栋外壳都是实体 Box/Extrude，材质单面（FrontSide）。从建筑内部看时，外壳面都是
+	 *   背面 → 被剔除；而室外看时外壳正面不透明 → 室内被完全遮住。因此把室内几何塞进
+	 *   外壳体积内既能从内部看到，也不会影响外景。室内自带地板/天花/四面墙，形成封闭房间。
+	 *
+	 * 尺度依据（各模块的米制常量 × 0.5 = 场景单位）：
+	 *   主教学楼：TOTAL_L 114 m → 57，WING_FRONT 8.2 m → 4.1，BACK_Z -7.8 m → -3.9，
+	 *            PLINTH 0.75 m → 0.375（室内地面），中央门厅通高 CENTER_GROUND_TOP 7.5 m → 3.75。
+	 *   图书馆：  W 38 m → 19，D 20 m → 10，PLINTH 1.1 m → 0.55，一层顶板 F1_TOP 5.3 m → 2.65。
+	 *   凤栖堂：  W 22.1 m → 11.05，HALL_FRONT 3.25 m → 1.625，HALL_BACK -6.25 m → -3.125，
+	 *            FLOOR 0.78 m → 0.39，WALL_TOP 5.05 m → 2.525。
+	 *   除地板/天花与灯具外不新增外部资源；黑板、书架书脊用 Canvas 现场绘制（Node 下容错）。
+	 *
+	 * 导出：buildInteriors({ M, tex, reducedMotion }) → { group, cameras }
+	 *   group   室内全部几何 + 暖点光（Lead 会 world.add，dispose 由 world.traverse 覆盖）
+	 *   cameras 固定键名：mainHallLobby / mainHallCorridor / mainHallClassroom /
+	 *           libraryReading / fengqiHall，每项 { position:[x,y,z], target:[x,y,z], fov }，
+	 *           世界场景坐标，相机高度约 1.2–1.5（人眼高度 = 地面 + 约 0.8 单位 ≈ 1.6 m）。
+	 */
+
+	const D2R = Math.PI / 180;
+	const BASE_Y = 0.06;          // 与 campus-accurate.js 中建筑 group.position.y 一致
+
+	/* ------------------------------------------------------------------ */
+	/*  小工具                                                             */
+	/* ------------------------------------------------------------------ */
+
+	function findBuilding(name) {
+	  const b = SITE$1.buildings.find((item) => item.name === name);
+	  if (!b) throw new Error(`interiors.js: site.js 缺少建筑「${name}」`);
+	  return b;
+	}
+
+	/** 建筑局部坐标（场景单位）→ 世界坐标；ly 为相对群组基座的高度。 */
+	function localToWorld(b, rotDeg, [lx, ly, lz]) {
+	  const th = rotDeg * D2R;
+	  const c = Math.cos(th);
+	  const s = Math.sin(th);
+	  return [
+	    b.center[0] + c * lx + s * lz,
+	    BASE_Y + ly,
+	    b.center[1] - s * lx + c * lz
+	  ];
+	}
+
+	/** 盒体：y 为几何中心高度（局部坐标）。 */
+	function addBox(parent, material, w, h, d, x, y, z, ry = 0) {
+	  const mesh = new Mesh(new BoxGeometry(w, h, d), material);
+	  mesh.position.set(x, y, z);
+	  mesh.rotation.y = ry;
+	  mesh.castShadow = false;
+	  mesh.receiveShadow = true;
+	  parent.add(mesh);
+	  return mesh;
+	}
+
+	/** 沿 x 方向的墙（法线朝 ±z），z 固定。 */
+	function wallX(parent, material, z, x0, x1, y0, y1, thickness = 0.12) {
+	  if (x1 - x0 < 1e-3 || y1 - y0 < 1e-3) return null;
+	  return addBox(parent, material, x1 - x0, y1 - y0, thickness,
+	    (x0 + x1) / 2, (y0 + y1) / 2, z);
+	}
+
+	/** 沿 z 方向的墙（法线朝 ±x），x 固定。 */
+	function wallZ(parent, material, x, z0, z1, y0, y1, thickness = 0.12) {
+	  if (z1 - z0 < 1e-3 || y1 - y0 < 1e-3) return null;
+	  return addBox(parent, material, thickness, y1 - y0, z1 - z0,
+	    x, (y0 + y1) / 2, (z0 + z1) / 2);
+	}
+
+	/** 发光/透光面板（不需要光照，视觉上像窗/灯）。 */
+	function addPane(parent, material, w, h, x, y, z, ry = 0, d = 0.05) {
+	  return addBox(parent, material, w, h, d, x, y, z, ry);
+	}
+
+	/** Canvas 贴图（Node / 无 document 时返回 null，调用方需容错）。 */
+	function makeCanvasTexture(w, h, draw) {
+	  if (typeof document === 'undefined') return null;
+	  const canvas = document.createElement('canvas');
+	  canvas.width = w;
+	  canvas.height = h;
+	  const ctx = canvas.getContext('2d');
+	  draw(ctx, w, h);
+	  const texture = new CanvasTexture(canvas);
+	  texture.colorSpace = SRGBColorSpace;
+	  texture.anisotropy = 4;
+	  return texture;
+	}
+
+	/** 暖点光（室内专用；强度/距离都限制在房间尺度，避免溢到外景）。 */
+	function addWarmLight(parent, x, y, z, intensity, distance) {
+	  const light = new PointLight(0xffcf9e, intensity, distance, 2);
+	  light.position.set(x, y, z);
+	  light.castShadow = false;
+	  parent.add(light);
+	  return light;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  材质                                                               */
+	/* ------------------------------------------------------------------ */
+
+	function buildMats(M, tex) {
+	  const mat = (color, extra = {}) => new MeshStandardMaterial({ color, roughness: 0.9, ...extra });
+	  const signMaterial = (map) => (map
+	    ? (M.signMaterial ? M.signMaterial(map, true) : mat(0xffffff, { map }))
+	    : mat(0xcfc3a8));
+	  const blackboardMap = makeCanvasTexture(1024, 384, (g, w, h) => {
+	    g.fillStyle = '#26362f';
+	    g.fillRect(0, 0, w, h);
+	    g.strokeStyle = 'rgba(238,232,214,.18)';
+	    g.lineWidth = 10;
+	    g.strokeRect(18, 18, w - 36, h - 36);
+	    g.fillStyle = 'rgba(240,235,220,.86)';
+	    g.font = '600 96px "Songti SC", "STSong", "Noto Serif SC", serif';
+	    g.textAlign = 'center';
+	    g.textBaseline = 'middle';
+	    g.fillText('海 南 中 學', w / 2, h * 0.36);
+	    g.font = '500 44px "Songti SC", "STSong", serif';
+	    g.fillStyle = 'rgba(240,235,220,.6)';
+	    g.fillText('— 自 强 不 息 · 厚 德 载 物 —', w / 2, h * 0.66);
+	    g.strokeStyle = 'rgba(240,235,220,.45)';
+	    g.lineWidth = 5;
+	    for (const y of [h * 0.82, h * 0.89]) {
+	      g.beginPath();
+	      g.moveTo(w * 0.2, y);
+	      g.lineTo(w * 0.8, y);
+	      g.stroke();
+	    }
+	  });
+	  const bookSpineMap = makeCanvasTexture(512, 256, (g, w, h) => {
+	    g.fillStyle = '#3a2d22';
+	    g.fillRect(0, 0, w, h);
+	    const colors = ['#8a4b32', '#33594a', '#8c6a3a', '#5a3d55', '#7a3b3b', '#3f4f6b', '#6d5b3a'];
+	    const shelfs = 4;
+	    const rows = 4;
+	    const rowH = h / rows;
+	    for (let r = 0; r < rows; r += 1) {
+	      g.fillStyle = '#241a12';
+	      g.fillRect(0, r * rowH + rowH - 7, w, 7);   // 每层隔板
+	      let x = 8;
+	      let i = 0;
+	      while (x < w - 10) {
+	        const bw = 12 + ((i * 7 + r * 11) % 13);
+	        const bh = rowH * (0.62 + ((i * 5 + r * 3) % 4) * 0.07);
+	        g.fillStyle = colors[(i + r * 3) % colors.length];
+	        g.fillRect(x, r * rowH + rowH - 7 - bh, bw - 3, bh);
+	        g.fillStyle = 'rgba(240,228,200,.4)';
+	        g.fillRect(x + 2, r * rowH + rowH - 7 - bh + 6, bw - 7, 3);
+	        x += bw;
+	        i += 1;
+	      }
+	    }
+	    g.fillStyle = 'rgba(0,0,0,.18)';
+	    for (let s = 1; s < shelfs; s += 1) g.fillRect(0, (s * h) / shelfs - 2, w, 3);
+	  });
+	  // 地面：浅暖灰石砖网格（Canvas）——给室内一个可读的尺度/透视参照
+	  const tileMap = makeCanvasTexture(512, 512, (g, w, h) => {
+	    g.fillStyle = '#b9b0a0';
+	    g.fillRect(0, 0, w, h);
+	    const n = 4;
+	    for (let r = 0; r < n; r += 1) {
+	      for (let c = 0; c < n; c += 1) {
+	        const v = 172 + ((r * 7 + c * 5) % 4) * 6;
+	        g.fillStyle = `rgb(${v + 8},${v + 4},${v - 6})`;
+	        g.fillRect((c * w) / n + 2, (r * h) / n + 2, w / n - 4, h / n - 4);
+	      }
+	    }
+	    g.strokeStyle = 'rgba(74,68,58,.22)';
+	    g.lineWidth = 2;
+	    for (let i = 0; i <= n; i += 1) {
+	      g.beginPath(); g.moveTo((i * w) / n, 0); g.lineTo((i * w) / n, h); g.stroke();
+	      g.beginPath(); g.moveTo(0, (i * h) / n); g.lineTo(w, (i * h) / n); g.stroke();
+	    }
+	  });
+	  if (tileMap) {
+	    tileMap.wrapS = tileMap.wrapT = RepeatWrapping;
+	    tileMap.repeat.set(3, 3);
+	  }
+	  const woodMap = makeCanvasTexture(512, 512, (g, w, h) => {
+	    g.fillStyle = '#7a5a3c';
+	    g.fillRect(0, 0, w, h);
+	    const rows = 8;
+	    for (let r = 0; r < rows; r += 1) {
+	      const v = 108 + ((r * 13) % 5) * 9;
+	      g.fillStyle = `rgb(${v + 34},${v - 4},${v - 42})`;
+	      g.fillRect(0, (r * h) / rows + 2, w, h / rows - 4);
+	      g.strokeStyle = 'rgba(40,28,18,.28)';
+	      g.lineWidth = 2;
+	      g.beginPath(); g.moveTo(0, (r * h) / rows); g.lineTo(w, (r * h) / rows); g.stroke();
+	    }
+	  });
+	  if (woodMap) {
+	    woodMap.wrapS = woodMap.wrapT = RepeatWrapping;
+	    woodMap.repeat.set(2, 4);
+	  }
+	  return {
+	    wall: M.plasterWarm || M.plasterPale,
+	    wainscot: M.darkWood,
+	    stoneBase: M.stone,
+	    ceilingDark: mat(0xd8cdb9),
+	    floorTile: tileMap ? mat(0xd9d2c3, { map: tileMap, roughness: 0.95 }) : M.stoneLight,
+	    floorWood: woodMap ? mat(0xcbb08e, { map: woodMap, roughness: 0.92 }) : (M.warmWood || M.redWood),
+	    carpet: new MeshStandardMaterial({ color: 0x7c3a2e, roughness: 0.96 }),
+	    wallOld: M.plasterPale,
+	    wallWarm: M.plasterWarm,
+	    stoneFloor: M.stoneLight,   // 兼容旧引用
+	    woodFloor: M.warmWood || M.redWood,
+	    ceiling: M.plasterWarm,
+	    wallBase: M.stoneLight,
+	    wood: M.warmWood || M.redWood,
+	    redWood: M.redWood,
+	    darkWood: M.darkWood,
+	    stoneDark: M.stoneDark || M.stone,
+	    glass: M.glassBand,
+	    leaf: M.leaf,
+	    brass: M.bronze || M.gold,
+	    deskTop: M.warmWood || M.redWood,
+	    chair: M.courtBlue || M.darkWood,
+	    daylight: new MeshBasicMaterial({ color: 0xf2e6cb }),
+	    glow: new MeshBasicMaterial({ color: 0xffe2b4 }),
+	    white: M.whiteBand || M.plasterPale,
+	    blackboard: blackboardMap ? mat(0xffffff, { map: blackboardMap, roughness: 0.86 }) : mat(0x26362f),
+	    bookSpines: bookSpineMap ? mat(0xffffff, { map: bookSpineMap, roughness: 0.88 }) : mat(0x6d4a33),
+	    plaqueMain: signMaterial(tex && tex.mainPlaque),
+	    plaqueFengqi: signMaterial(tex && tex.fengqiPlaque)
+	  };
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  1) 主教学楼（teaching.js）：门厅 + 中央走廊 + 一间教室              */
+	/* ------------------------------------------------------------------ */
+	/**
+	 * 局部坐标：x = 沿楼长轴（±28.6 为楼身端部），+z = 正面（校园内）。
+	 * 中央体块宽 30 m → ±7.5；两翼在 |x| > 7.5；主体进深 16 m（前墙 +4.1，后墙 -3.9）。
+	 * 室内地面 = 基座顶 PLINTH = 0.375；门厅吊顶 3.30（保留通高门厅感），
+	 * 两翼首层吊顶 1.98（层高约 3.2 m + 梁板）。
+	 */
+	function buildMainHallInterior(root, mats, cameras) {
+	  const b = findBuilding('主教学楼');
+	  const ROT = -138.5;                       // teaching.js: rotation.y = deg(-obb[2])
+	  const g = new Group();
+	  g.name = 'interior: main hall';
+	  g.position.set(b.center[0], BASE_Y, b.center[1]);
+	  g.rotation.y = ROT * D2R;
+	  root.add(g);
+
+	  const F = 0.375;                          // 首层地面（PLINTH 0.75 m × 0.5）
+	  // 门厅夹在教学楼中央两座深色石材竖塔之间（TOWER_INNER 11 m → ±5.5 场景单位）：
+	  // x 取 ±5.3 才能确保室内不被模块的石塔实体穿透（此前 ±7.3 会在画面里看到石塔内壁）。
+	  const LOBBY = { x0: -5.3, x1: 5.3, z0: -3.66, z1: 4.02, ceil: 3.30 };
+	  const WING = { ceil: 1.98 };
+	  const CORR = { x0: 7.3, x1: 22.6, z0: 1.46, z1: 3.16 };
+	  // 教室位置避开 1↔办公楼 西侧 OSM 连廊（其柱列在主楼局部 x 8.75–11.68,
+	  // z > -4 的区域会伸进主楼体量内），因此取右翼 x 12.2–17.4 一段。
+	  const ROOM = { x0: 12.2, x1: 17.4, z0: -3.5, z1: 1.46 };
+
+	  /* ---------------- 门厅 ---------------- */
+	  addBox(g, mats.floorTile, LOBBY.x1 - LOBBY.x0 + 0.3, 0.08, LOBBY.z1 - LOBBY.z0 + 0.3,
+	    0, F - 0.04, (LOBBY.z0 + LOBBY.z1) / 2);
+	  addBox(g, mats.ceilingDark, LOBBY.x1 - LOBBY.x0 + 0.3, 0.1, LOBBY.z1 - LOBBY.z0 + 0.3,
+	    0, LOBBY.ceil + 0.05, (LOBBY.z0 + LOBBY.z1) / 2);
+	  // 门厅红毯（加强地面透视与「门厅」识别度）
+	  addBox(g, mats.carpet, 2.2, 0.03, 5.4, 0, F + 0.015, -0.9);
+	  // 墙：前墙（中央大门 3.4 宽 + 门头）、后墙、左墙、右墙（通走廊门洞）
+	  const frontZ = LOBBY.z1 - 0.06;
+	  const backZ = LOBBY.z0 + 0.06;
+	  wallX(g, mats.wall, frontZ, LOBBY.x0, -1.7, F, LOBBY.ceil);
+	  wallX(g, mats.wall, frontZ, 1.7, LOBBY.x1, F, LOBBY.ceil);
+	  wallX(g, mats.wall, frontZ, -1.7, 1.7, F + 2.3, LOBBY.ceil);          // 门头
+	  wallX(g, mats.wall, backZ, LOBBY.x0, LOBBY.x1, F, LOBBY.ceil);
+	  wallZ(g, mats.wall, LOBBY.x0 + 0.06, LOBBY.z0, LOBBY.z1, F, LOBBY.ceil);
+	  const doorZ0 = CORR.z0 + 0.02;
+	  const doorZ1 = CORR.z1 - 0.02;
+	  // 右墙留一个通向右翼走廊的门洞（门洞后是暗色过道；走廊机位单独在翼楼里）
+	  wallZ(g, mats.wall, LOBBY.x1 - 0.06, LOBBY.z0, doorZ0, F, LOBBY.ceil);
+	  wallZ(g, mats.wall, LOBBY.x1 - 0.06, doorZ1, LOBBY.z1, F, LOBBY.ceil);
+	  wallZ(g, mats.wall, LOBBY.x1 - 0.06, doorZ0, doorZ1, F + 1.85, LOBBY.ceil); // 洞头
+	  addBox(g, mats.stoneDark, 0.14, 1.85, doorZ1 - doorZ0, LOBBY.x1 + 0.02, F + 0.93, (doorZ0 + doorZ1) / 2);
+	  for (const dz of [doorZ0, doorZ1]) addBox(g, mats.darkWood, 0.16, 1.85, 0.12, LOBBY.x1 - 0.05, F + 0.93, dz);
+	  // 墙裙（深木色）与踢脚线：给浅色墙面增加对比与尺度
+	  for (const seg of [[LOBBY.x0, -1.7], [1.7, LOBBY.x1]]) {
+	    addBox(g, mats.wainscot, seg[1] - seg[0], 0.42, 0.06, (seg[0] + seg[1]) / 2, F + 0.21, frontZ - 0.09);
+	    addBox(g, mats.stoneBase, seg[1] - seg[0], 0.1, 0.1, (seg[0] + seg[1]) / 2, F + 0.05, frontZ - 0.11);
+	  }
+	  addBox(g, mats.wainscot, LOBBY.x1 - LOBBY.x0, 0.42, 0.06, 0, F + 0.21, backZ + 0.09);
+	  addBox(g, mats.stoneBase, LOBBY.x1 - LOBBY.x0, 0.1, 0.1, 0, F + 0.05, backZ + 0.11);
+	  for (const side of [-1, 1]) {
+	    const wx = side < 0 ? LOBBY.x0 + 0.09 : LOBBY.x1 - 0.09;
+	    addBox(g, mats.wainscot, 0.06, 0.42, LOBBY.z1 - LOBBY.z0, wx, F + 0.21, (LOBBY.z0 + LOBBY.z1) / 2);
+	  }
+	  // 大门门框 + 室外亮光（在实体外壳内部，视觉上像门外天光）
+	  for (const dx of [-1.72, 1.72]) {
+	    addBox(g, mats.darkWood, 0.16, 2.3, 0.22, dx, F + 1.15, frontZ);
+	  }
+	  addBox(g, mats.darkWood, 3.6, 0.14, 0.22, 0, F + 2.36, frontZ);
+	  addPane(g, mats.daylight, 3.2, 2.15, 0, F + 1.12, frontZ + 0.16);
+	  // 两根方柱 + 金线柱头
+	  for (const dx of [-3.2, 3.2]) {
+	    addBox(g, mats.stoneLight, 0.44, LOBBY.ceil - F, 0.44, dx, (F + LOBBY.ceil) / 2, 1.1);
+	    addBox(g, mats.brass, 0.5, 0.09, 0.5, dx, LOBBY.ceil - 0.08, 1.1);
+	    addBox(g, mats.stoneDark, 0.56, 0.12, 0.56, dx, F + 0.06, 1.1);
+	  }
+	  // 两侧墙面挂画/告示（增强墙面尺度）
+	  for (const side of [-1, 1]) {
+	    addBox(g, mats.darkWood, 0.06, 0.9, 1.7, side * (LOBBY.x1 - 0.16), F + 1.75, -0.3);
+	    addPane(g, mats.white, 0.02, 0.72, side * (LOBBY.x1 - 0.2), F + 1.75, -0.3, 0, 1.4);
+	  }
+	  // 服务台 / 「中央教学楼」匾额 / 长凳 / 花盆
+	  addBox(g, mats.wood, 2.8, 0.08, 0.72, 0, F + 0.44, -2.55);
+	  addBox(g, mats.redWood, 2.8, 0.42, 0.1, 0, F + 0.22, -2.18);
+	  addBox(g, mats.redWood, 0.1, 0.42, 0.7, -1.4, F + 0.22, -2.55);
+	  addBox(g, mats.redWood, 0.1, 0.42, 0.7, 1.4, F + 0.22, -2.55);
+	  const plaque = new Mesh(new PlaneGeometry(3.8, 0.9), mats.plaqueMain);
+	  plaque.position.set(0, 2.42, backZ + 0.07);
+	  plaque.receiveShadow = true;
+	  g.add(plaque);
+	  for (const dx of [-2.9, 2.9]) {
+	    addBox(g, mats.wood, 1.9, 0.1, 0.5, dx, F + 0.42, -1.5);
+	    addBox(g, mats.wood, 1.9, 0.5, 0.1, dx, F + 0.62, -1.73);
+	    addBox(g, mats.darkWood, 0.09, 0.42, 0.44, dx - 0.8, F + 0.21, -1.5);
+	    addBox(g, mats.darkWood, 0.09, 0.42, 0.44, dx + 0.8, F + 0.21, -1.5);
+	  }
+	  for (const dx of [-4.5, 4.5]) {
+	    const pot = new Mesh(new CylinderGeometry(0.36, 0.42, 0.42, 12), mats.stoneDark);
+	    pot.position.set(dx, F + 0.21, 1.6);
+	    pot.castShadow = false;
+	    g.add(pot);
+	    const bush = new Mesh(new CylinderGeometry(0.3, 0.34, 0.62, 10), mats.leaf);
+	    bush.position.set(dx, F + 0.7, 1.6);
+	    g.add(bush);
+	  }
+	  for (const dx of [-2.8, 2.8]) addPane(g, mats.glow, 2.6, 0.05, dx, LOBBY.ceil - 0.04, 0.2, 0, 0.7);
+	  addWarmLight(g, 0, Math.min(2.55, LOBBY.ceil - 0.5), 0.2, 7, 16);
+
+	  /* ---------------- 中央走廊（右翼首层） ---------------- */
+	  const corridorLen = CORR.x1 - CORR.x0;
+	  const corridorCx = (CORR.x0 + CORR.x1) / 2;
+	  const corridorCz = (CORR.z0 + CORR.z1) / 2;
+	  const corridorW = CORR.z1 - CORR.z0;
+	  addBox(g, mats.floorTile, corridorLen + 0.2, 0.08, corridorW + 0.2, corridorCx, F - 0.04, corridorCz);
+	  addBox(g, mats.ceilingDark, corridorLen + 0.2, 0.1, corridorW + 0.2, corridorCx, WING.ceil + 0.05, corridorCz);
+	  const corrWallZ0 = CORR.z0 + 0.05;
+	  const corrWallZ1 = CORR.z1 - 0.05;
+	  // 北墙（教室侧）：留教室门洞
+	  const roomDoor0 = 13.2;
+	  const roomDoor1 = 14.7;
+	  wallX(g, mats.wall, corrWallZ0, CORR.x0, roomDoor0, F, WING.ceil);
+	  wallX(g, mats.wall, corrWallZ0, roomDoor1, CORR.x1, F, WING.ceil);
+	  wallX(g, mats.wall, corrWallZ0, roomDoor0, roomDoor1, F + 1.78, WING.ceil);
+	  // 南墙（临空侧）：通长墙 + 内嵌发光窗带
+	  wallX(g, mats.wall, corrWallZ1, CORR.x0, CORR.x1, F, WING.ceil);
+	  for (let i = 0; i < 6; i += 1) {
+	    const wx = CORR.x0 + 1.7 + i * 2.2;
+	    addPane(g, mats.daylight, 1.62, 0.62, wx, F + 0.95, corrWallZ1 - 0.09);
+	    addBox(g, mats.white, 1.7, 0.06, 0.09, wx, F + 0.62, corrWallZ1 - 0.1);
+	    addBox(g, mats.white, 1.7, 0.06, 0.09, wx, F + 1.28, corrWallZ1 - 0.1);
+	  }
+	  // 走廊西端封墙（走廊与门厅之间被石材门塔分隔，影片用镜头切换衔接）
+	  wallZ(g, mats.wall, CORR.x0 + 0.05, CORR.z0, CORR.z1, F, WING.ceil);
+	  // 走廊墙裙
+	  addBox(g, mats.wainscot, corridorLen, 0.4, 0.06, corridorCx, F + 0.2, corrWallZ0 + 0.09);
+	  addBox(g, mats.wainscot, corridorLen, 0.4, 0.06, corridorCx, F + 0.2, corrWallZ1 - 0.09);
+	  // 走廊尽端墙 + 窗
+	  wallZ(g, mats.wall, CORR.x1 - 0.06, CORR.z0, CORR.z1, F, WING.ceil);
+	  addPane(g, mats.daylight, 0.95, 0.9, CORR.x1 - 0.13, F + 1.1, corridorCz, 0);
+	  // 教室门框
+	  for (const wx of [roomDoor0, roomDoor1]) {
+	    addBox(g, mats.darkWood, 0.12, 1.78, 0.2, wx, F + 0.89, corrWallZ0);
+	  }
+	  addBox(g, mats.darkWood, roomDoor1 - roomDoor0 + 0.1, 0.12, 0.2, (roomDoor0 + roomDoor1) / 2, F + 1.78, corrWallZ0);
+	  // 走廊吊顶灯带
+	  for (let i = 0; i < 4; i += 1) {
+	    addPane(g, mats.glow, 1.8, 0.05, CORR.x0 + 2.2 + i * 3.6, WING.ceil - 0.04, corridorCz, 0, 0.55);
+	  }
+	  // 走廊北墙公告栏（写意）
+	  for (const wx of [14.2, 17.6, 20.4]) addPane(g, mats.white, 1.9, 0.72, wx, F + 1.18, corrWallZ0 + 0.1);
+
+	  /* ---------------- 一间教室（右翼，走廊北侧） ---------------- */
+	  const roomCx = (ROOM.x0 + ROOM.x1) / 2;
+	  const roomCz = (ROOM.z0 + ROOM.z1) / 2;
+	  addBox(g, mats.floorTile, ROOM.x1 - ROOM.x0 + 0.2, 0.08, ROOM.z1 - ROOM.z0 + 0.2,
+	    roomCx, F - 0.04, roomCz);
+	  addBox(g, mats.ceilingDark, ROOM.x1 - ROOM.x0 + 0.2, 0.1, ROOM.z1 - ROOM.z0 + 0.2,
+	    roomCx, WING.ceil + 0.05, roomCz);
+	  // 侧墙与后墙（前墙 = 走廊北墙，已建）
+	  wallZ(g, mats.wall, ROOM.x0 + 0.06, ROOM.z0, ROOM.z1, F, WING.ceil);
+	  wallZ(g, mats.wall, ROOM.x1 - 0.06, ROOM.z0, ROOM.z1, F, WING.ceil);
+	  wallX(g, mats.wall, ROOM.z0 + 0.06, ROOM.x0, ROOM.x1, F, WING.ceil);
+	  // 教室墙裙
+	  addBox(g, mats.wainscot, ROOM.x1 - ROOM.x0, 0.4, 0.06, roomCx, F + 0.2, ROOM.z0 + 0.15);
+	  addBox(g, mats.wainscot, 0.06, 0.4, ROOM.z1 - ROOM.z0, ROOM.x0 + 0.14, F + 0.2, roomCz);
+	  addBox(g, mats.wainscot, 0.06, 0.4, ROOM.z1 - ROOM.z0, ROOM.x1 - 0.14, F + 0.2, roomCz);
+	  // 后墙高窗（发光条）+ 白色窗台
+	  for (const wx of [13.2, 14.8, 16.4]) {
+	    addPane(g, mats.daylight, 1.3, 0.62, wx, F + 1.02, ROOM.z0 + 0.14);
+	    addBox(g, mats.white, 1.38, 0.06, 0.1, wx, F + 0.69, ROOM.z0 + 0.14);
+	    addBox(g, mats.white, 1.38, 0.05, 0.1, wx, F + 1.35, ROOM.z0 + 0.14);
+	  }
+	  // 黑板 + 讲台
+	  addBox(g, mats.darkWood, 3.7, 1.06, 0.07, roomCx, F + 0.94, ROOM.z0 + 0.13);
+	  const board = new Mesh(new PlaneGeometry(3.5, 0.94), mats.blackboard);
+	  board.position.set(roomCx, F + 0.94, ROOM.z0 + 0.17);
+	  board.receiveShadow = true;
+	  g.add(board);
+	  addBox(g, mats.darkWood, 3.6, 0.06, 0.16, roomCx, F + 0.40, ROOM.z0 + 0.2);
+	  addBox(g, mats.wood, 0.95, 0.55, 0.5, roomCx, F + 0.275, -2.95);
+	  addBox(g, mats.darkWood, 1.05, 0.06, 0.56, roomCx, F + 0.57, -2.95);
+	  // 课桌椅：3 列 × 3 排（简化 box 组合）
+	  const deskX = [13.3, 14.8, 16.3];
+	  const deskZ = [0.86, -0.14, -1.14];
+	  for (let r = 0; r < deskZ.length; r += 1) {
+	    for (let c = 0; c < deskX.length; c += 1) {
+	      const dx = deskX[c];
+	      const dz = deskZ[r];
+	      addBox(g, mats.deskTop, 0.66, 0.05, 0.4, dx, F + 0.37, dz);
+	      addBox(g, mats.stoneDark, 0.58, 0.32, 0.06, dx, F + 0.18, dz + 0.14);
+	      addBox(g, mats.chair, 0.34, 0.05, 0.32, dx, F + 0.25, dz + 0.46);
+	      addBox(g, mats.chair, 0.34, 0.36, 0.05, dx, F + 0.44, dz + 0.62);
+	    }
+	  }
+	  for (const wx of [11.1, 13.3]) addPane(g, mats.glow, 1.5, 0.05, wx, WING.ceil - 0.04, -0.5, 0, 0.55);
+	  addWarmLight(g, roomCx, WING.ceil - 0.28, -0.4, 5.5, 10);
+
+	  /* ---------------- 机位（世界坐标） ---------------- */
+	  const toW = (p) => localToWorld(b, ROT, p);
+	  // 门厅机位：从入口内侧斜 45° 望向走廊门洞——同时纳入接待台、方柱、
+	  // 红毯与通向右翼走廊的门洞（Lead 2026-11 反馈：原机位太贴墙，需看到门厅纵深）。
+	  // 机位贴近大门中轴（x≈-0.9）：影片「沿视反方向退回 4.2 单位再推入」时，
+	  // 反向射线正好穿过入口门洞（门洞 x∈[-1.7,1.7]），进门镜头不会撞墙。
+	  cameras.mainHallLobby = {
+	    position: toW([-0.9, F + 0.95, 3.4]),
+	    target: toW([2.2, F + 0.78, -2.6]),
+	    fov: 64
+	  };
+	  cameras.mainHallCorridor = {
+	    position: toW([8.35, F + 0.84, 2.30]),
+	    target: toW([21.9, F + 0.76, 2.30]),
+	    fov: 60
+	  };
+	  // 机位放在教室门内侧、面向课桌与黑板（同时兼顾影片从走廊门口推入）
+	  cameras.mainHallClassroom = {
+	    position: toW([13.5, F + 0.88, 1.12]),
+	    target: toW([15.2, F + 0.66, -3.2]),
+	    fov: 58
+	  };
+	  return g;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  2) 图书馆（library.js）：首层阅览室                                 */
+	/* ------------------------------------------------------------------ */
+	/**
+	 * 局部坐标：x = 面宽（W 38 m → ±9.5），+z = 正面（东南校园内，D 20 m → ±5.0）。
+	 * 室内地面 = 台地标高 PLINTH = 0.55；一层顶板 F1_TOP 5.3 m → 2.65，吊顶 2.52。
+	 */
+	function buildLibraryInterior(root, mats, cameras) {
+	  const b = findBuilding('图书馆');
+	  const ROT = 180 - 138.5;                  // library.js 集成：rotation.y = deg(180 - obb[2])
+	  const g = new Group();
+	  g.name = 'interior: library reading room';
+	  g.position.set(b.center[0], BASE_Y, b.center[1]);
+	  g.rotation.y = ROT * D2R;
+	  root.add(g);
+
+	  const F = 0.55;                           // PLINTH 1.1 m × 0.5
+	  const CEIL = 2.52;
+	  const ROOM = { x0: -9.15, x1: 9.15, z0: -4.85, z1: 4.85 };
+	  const w = ROOM.x1 - ROOM.x0;
+	  const d = ROOM.z1 - ROOM.z0;
+	  const cx = (ROOM.x0 + ROOM.x1) / 2;
+	  const cz = (ROOM.z0 + ROOM.z1) / 2;
+	  const frontZ = ROOM.z1 - 0.06;
+	  const backZ = ROOM.z0 + 0.06;
+	  // 木地板 / 吊顶
+	  addBox(g, mats.floorWood, w + 0.24, 0.07, d + 0.24, cx, F - 0.035, cz);
+	  addBox(g, mats.ceilingDark, w + 0.24, 0.1, d + 0.24, cx, CEIL + 0.05, cz);
+	  // 墙：入口（拱门近似为矩形门洞，宽 2.9、高 2.0）+ 门头
+	  const archX = -1.8;
+	  wallX(g, mats.wall, frontZ, ROOM.x0, archX - 1.45, F, CEIL);
+	  wallX(g, mats.wall, frontZ, archX + 1.45, ROOM.x1, F, CEIL);
+	  wallX(g, mats.wall, frontZ, archX - 1.45, archX + 1.45, F + 2.0, CEIL);
+	  wallX(g, mats.wall, backZ, ROOM.x0, ROOM.x1, F, CEIL);
+	  wallZ(g, mats.wall, ROOM.x0 + 0.06, ROOM.z0, ROOM.z1, F, CEIL);
+	  wallZ(g, mats.wall, ROOM.x1 - 0.06, ROOM.z0, ROOM.z1, F, CEIL);
+	  // 入口门洞亮光 + 白色门套
+	  addPane(g, mats.daylight, 2.86, 2.0, archX, F + 1.0, frontZ + 0.16);
+	  for (const dx of [-1.48, 1.48]) addBox(g, mats.white, 0.16, 2.0, 0.22, archX + dx, F + 1.0, frontZ);
+	  // 高窗（前墙左右 + 后墙）
+	  for (let i = 0; i < 3; i += 1) {
+	    addPane(g, mats.daylight, 1.7, 0.58, 2.4 + i * 2.2, F + 1.95, frontZ - 0.09);
+	    addPane(g, mats.daylight, 1.7, 0.58, ROOM.x0 + 1.3 + i * 2.2, F + 1.95, frontZ - 0.09);
+	  }
+	  for (let i = 0; i < 4; i += 1) {
+	    addPane(g, mats.daylight, 1.6, 0.9, -6.4 + i * 3.4, F + 1.6, backZ + 0.14);
+	    addBox(g, mats.white, 1.7, 0.06, 0.1, -6.4 + i * 3.4, F + 1.12, backZ + 0.14);
+	  }
+	  // 墙裙（深木色）+ 踢脚线
+	  addBox(g, mats.wainscot, w, 0.46, 0.06, cx, F + 0.23, backZ + 0.14);
+	  addBox(g, mats.wainscot, w, 0.46, 0.06, cx, F + 0.23, frontZ - 0.14);
+	  addBox(g, mats.wainscot, 0.06, 0.46, d, ROOM.x0 + 0.14, F + 0.23, cz);
+	  addBox(g, mats.wainscot, 0.06, 0.46, d, ROOM.x1 - 0.14, F + 0.23, cz);
+	  addBox(g, mats.stoneBase, w, 0.08, 0.1, cx, F + 0.04, backZ + 0.15);
+	  addBox(g, mats.stoneBase, w, 0.08, 0.1, cx, F + 0.04, frontZ - 0.15);
+	  /* 书架（两组：后墙一排 + 前墙一排），书架正面贴「书脊」Canvas 贴图 */
+	  const shelfUnit = (x, z, ry, width) => {
+	    const s = new Group();
+	    s.position.set(x, 0, z);
+	    s.rotation.y = ry;
+	    const h = 1.56;
+	    addBox(s, mats.darkWood, width, h, 0.08, 0, F + h / 2, -0.24);            // 背板
+	    for (const sideX of [-width / 2 + 0.04, width / 2 - 0.04]) {
+	      addBox(s, mats.darkWood, 0.08, h, 0.56, sideX, F + h / 2, 0.02);        // 侧板
+	    }
+	    for (const y of [F + 0.34, F + 0.74, F + 1.14, F + 1.52]) {
+	      addBox(s, mats.darkWood, width - 0.08, 0.05, 0.54, 0, y, 0.02);         // 层板
+	    }
+	    const spines = new Mesh(new PlaneGeometry(width - 0.16, h - 0.14), mats.bookSpines);
+	    spines.position.set(0, F + h / 2 - 0.02, 0.30);
+	    s.add(spines);
+	    g.add(s);
+	    return s;
+	  };
+	  // 后墙一排（面朝室内 +z）
+	  for (const x of [-6.1, -2, 2.1, 6.2]) shelfUnit(x, ROOM.z0 + 0.62, 0, 3.9);
+	  // 前墙一排（避开入口，面朝室内 -z）
+	  for (const x of [3.2, 7.3]) shelfUnit(x, ROOM.z1 - 0.62, Math.PI, 3.7);
+	  /* 阅览长桌 + 台灯 + 座椅 */
+	  const tableXs = [-3.4, 2.6];
+	  for (const tx of tableXs) {
+	    addBox(g, mats.wood, 3.4, 0.09, 1.0, tx, F + 0.74, 0.6);
+	    for (const lx of [-1.45, 1.45]) {
+	      for (const lz of [-0.38, 0.38]) {
+	        addBox(g, mats.darkWood, 0.09, 0.7, 0.09, tx + lx, F + 0.35, 0.6 + lz);
+	      }
+	    }
+	    addBox(g, mats.darkWood, 3.3, 0.06, 0.12, tx, F + 0.4, 0.6);
+	    for (const seatX of [-0.9, 0.9]) {
+	      addBox(g, mats.chair, 0.4, 0.06, 0.4, tx + seatX, F + 0.42, 1.28);
+	      addBox(g, mats.chair, 0.4, 0.4, 0.06, tx + seatX, F + 0.62, 1.5);
+	      addBox(g, mats.darkWood, 0.08, 0.4, 0.08, tx + seatX - 0.15, F + 0.21, 1.28);
+	      addBox(g, mats.darkWood, 0.08, 0.4, 0.08, tx + seatX + 0.15, F + 0.21, 1.28);
+	    }
+	  }
+	  // 台灯：三盏（灯罩发光）
+	  for (const [lx, lz] of [[-4.4, 0.25], [-2.4, 0.95], [3.4, 0.25]]) {
+	    addBox(g, mats.darkWood, 0.16, 0.03, 0.16, lx, F + 0.8, lz);
+	    const stem = new Mesh(new CylinderGeometry(0.03, 0.03, 0.34, 6), mats.brass);
+	    stem.position.set(lx, F + 0.98, lz);
+	    g.add(stem);
+	    addBox(g, mats.glow, 0.36, 0.04, 0.26, lx, F + 1.12, lz);
+	  }
+	  // 服务台（入口内侧）
+	  addBox(g, mats.wood, 2.4, 0.72, 0.7, 3.4, F + 0.36, 3.7);
+	  addBox(g, mats.redWood, 2.5, 0.07, 0.8, 3.4, F + 0.75, 3.7);
+	  // 吊顶灯带
+	  for (const lx of [-5.2, 0, 5.2]) addPane(g, mats.glow, 3.2, 0.05, lx, CEIL - 0.04, 0.3, 0, 0.5);
+	  addWarmLight(g, 0, CEIL - 0.35, 0.4, 6.5, 15);
+
+	  const toW = (p) => localToWorld(b, ROT, p);
+	  // 机位在入口拱门中轴附近（拱门 x=-1.8，宽 2.9），影片推门而入时反向射线穿过拱洞
+	  cameras.libraryReading = {
+	    position: toW([-1.8, F + 0.86, 3.9]),
+	    target: toW([2.2, F + 0.62, -2.9]),
+	    fov: 58
+	  };
+	  return g;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  3) 凤栖堂（fengqi.js）：内部厅堂                                    */
+	/* ------------------------------------------------------------------ */
+	/**
+	 * 局部坐标：x = 面宽（W 22.1 m → ±11.05，内墙 ±5.45），+z = 堂前庭院。
+	 * 进深：HALL_FRONT 3.25 m → 1.625，HALL_BACK -6.25 m → -3.125。
+	 * 地面 FLOOR 0.78 m → 0.39；墙顶 WALL_TOP 5.05 m → 2.525，吊顶 2.42。
+	 */
+	function buildFengqiInterior(root, mats, cameras) {
+	  const b = findBuilding('凤栖堂');
+	  const ROT = 180 - 140.25;                 // fengqi.js 集成：rotation.y = deg(180 - obb[2])
+	  const g = new Group();
+	  g.name = 'interior: fengqi hall';
+	  g.position.set(b.center[0], BASE_Y, b.center[1]);
+	  g.rotation.y = ROT * D2R;
+	  root.add(g);
+
+	  const F = 0.39;                           // FLOOR 0.78 m × 0.5
+	  const CEIL = 2.42;
+	  const ROOM = { x0: -5.25, x1: 5.25, z0: -2.95, z1: 1.52 };
+	  const w = ROOM.x1 - ROOM.x0;
+	  const d = ROOM.z1 - ROOM.z0;
+	  const cx = 0;
+	  const cz = (ROOM.z0 + ROOM.z1) / 2;
+	  const frontZ = ROOM.z1 - 0.06;
+	  const backZ = ROOM.z0 + 0.06;
+	  // 灰石地砖 + 中央红毯 + 天花板
+	  addBox(g, mats.floorTile, w + 0.2, 0.07, d + 0.2, cx, F - 0.035, cz);
+	  addBox(g, mats.carpet, 1.3, 0.025, 3.5, cx, F + 0.03, -0.65);
+	  addBox(g, mats.ceilingDark, w + 0.2, 0.1, d + 0.2, cx, CEIL + 0.05, cz);
+	  // 石质踢脚（灰石台基地面的延续）
+	  addBox(g, mats.stoneDark, w, 0.18, 0.08, cx, F + 0.09, backZ + 0.1);
+	  addBox(g, mats.stoneDark, w, 0.18, 0.08, cx, F + 0.09, frontZ - 0.1);
+	  // 墙：前墙中央门（宽 2.2、高 1.85）+ 门头；后墙；侧墙（各两窗）
+	  wallX(g, mats.wall, frontZ, ROOM.x0, -1.1, F, CEIL);
+	  wallX(g, mats.wall, frontZ, 1.1, ROOM.x1, F, CEIL);
+	  wallX(g, mats.wall, frontZ, -1.1, 1.1, F + 1.85, CEIL);
+	  wallX(g, mats.wall, backZ, ROOM.x0, ROOM.x1, F, CEIL);
+	  wallZ(g, mats.wall, ROOM.x0 + 0.06, ROOM.z0, ROOM.z1, F, CEIL);
+	  wallZ(g, mats.wall, ROOM.x1 - 0.06, ROOM.z0, ROOM.z1, F, CEIL);
+	  // 庭院天光（在实体外壳内，读作门外亮光）
+	  addPane(g, mats.daylight, 2.2, 1.85, 0, F + 0.94, frontZ + 0.16);
+	  for (const dx of [-1.12, 1.12]) addBox(g, mats.redWood, 0.16, 1.85, 0.2, dx, F + 0.92, frontZ);
+	  // 侧墙窗（发光）
+	  for (const side of [-1, 1]) {
+	    for (const wz of [-1.9, 0.6]) {
+	      addPane(g, mats.daylight, 0.08, 0.8, side * (ROOM.x1 - 0.11), F + 1.35, wz);
+	      addBox(g, mats.white, 0.12, 0.08, 1.05, side * (ROOM.x1 - 0.1), F + 0.92, wz);
+	    }
+	  }
+	  // 红柱 4 根 + 柱础 + 横梁
+	  for (const cxs of [-3.3, 3.3]) {
+	    for (const czs of [-2.3, -0.9]) {
+	      const col = new Mesh(new CylinderGeometry(0.13, 0.15, CEIL - F, 10), mats.redWood);
+	      col.position.set(cxs, (F + CEIL) / 2, czs);
+	      col.castShadow = false;
+	      g.add(col);
+	      addBox(g, mats.stoneLight, 0.36, 0.12, 0.36, cxs, F + 0.06, czs);
+	    }
+	  }
+	  for (const czs of [-2.3, -0.9]) addBox(g, mats.redWood, 10.4, 0.16, 0.18, 0, CEIL - 0.16, czs);
+	  // 两盏红灯笼（暖光）挂在梁下，增加厅堂层次
+	  for (const lx of [-1.9, 1.9]) {
+	    addBox(g, mats.brass, 0.04, 0.3, 0.04, lx, CEIL - 0.36, -1.5);
+	    addBox(g, mats.carpet, 0.34, 0.42, 0.34, lx, CEIL - 0.72, -1.5);
+	    addPane(g, mats.glow, 0.24, 0.06, lx, CEIL - 0.94, -1.5, 0, 0.2);
+	  }
+	  // 后屏：红木框 + 「凤栖堂」匾额 + 条案
+	  addBox(g, mats.redWood, 3.0, 0.14, 0.16, 0, 2.06, backZ + 0.1);
+	  addBox(g, mats.redWood, 3.0, 0.14, 0.16, 0, 1.3, backZ + 0.1);
+	  for (const dx of [-1.45, 1.45]) addBox(g, mats.redWood, 0.14, 0.9, 0.16, dx, 1.68, backZ + 0.1);
+	  const plaque = new Mesh(new PlaneGeometry(2.5, 0.7), mats.plaqueFengqi);
+	  plaque.position.set(0, 1.68, backZ + 0.19);
+	  plaque.receiveShadow = true;
+	  g.add(plaque);
+	  addBox(g, mats.darkWood, 2.6, 0.08, 0.62, 0, F + 0.78, backZ + 0.55);
+	  addBox(g, mats.darkWood, 0.16, 0.72, 0.5, -1.15, F + 0.4, backZ + 0.55);
+	  addBox(g, mats.darkWood, 0.16, 0.72, 0.5, 1.15, F + 0.4, backZ + 0.55);
+	  // 两侧展柜（深木底 + 玻璃罩）
+	  for (const side of [-1, 1]) {
+	    addBox(g, mats.darkWood, 0.62, 0.55, 1.7, side * 4.55, F + 0.275, -1.2);
+	    addBox(g, mats.glass, 0.66, 0.5, 1.74, side * 4.55, F + 0.8, -1.2);
+	    addBox(g, mats.white, 0.7, 0.05, 1.8, side * 4.55, F + 1.08, -1.2);
+	  }
+	  // 吊顶木梁 + 灯
+	  for (const bz of [-2.2, -0.65, 0.95]) addBox(g, mats.redWood, 10.3, 0.12, 0.16, 0, CEIL - 0.06, bz);
+	  for (const lx of [-2.4, 2.4]) addPane(g, mats.glow, 1.5, 0.05, lx, CEIL - 0.13, -0.6, 0, 0.5);
+	  addWarmLight(g, 0, CEIL - 0.5, -0.7, 5, 9.5);
+
+	  const toW = (p) => localToWorld(b, ROT, p);
+	  // 机位在正门中轴（门洞 x∈[-1.1,1.1]），反向推进可穿过门洞进入厅堂
+	  cameras.fengqiHall = {
+	    position: toW([0, F + 0.92, 1.2]),
+	    target: toW([-1.6, F + 0.72, -2.66]),
+	    fov: 64
+	  };
+	  return g;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  入口                                                               */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * 构建三栋建筑的室内场景。
+	 * @param {{ M: object, tex: object, reducedMotion?: boolean }} ctx
+	 * @returns {{ group: THREE.Group, cameras: Record<string, { position:number[], target:number[], fov:number }> }}
+	 */
+	function buildInteriors(ctx = {}) {
+	  const { M, tex } = ctx;
+	  if (!M) throw new Error('interiors.js: buildInteriors 需要 ctx.M（材质库）');
+	  const mats = buildMats(M, tex || {});
+	  const group = new Group();
+	  group.name = 'interiors';
+	  group.userData.isInterior = true;
+	  const cameras = {};
+	  buildMainHallInterior(group, mats, cameras);
+	  buildLibraryInterior(group, mats, cameras);
+	  buildFengqiInterior(group, mats, cameras);
+	  return { group, cameras };
 	}
 
 	const TAU$1 = Math.PI * 2;
@@ -54038,6 +55101,17 @@ void main() {
 	    buildHall(b);
 	  }
 
+	  /* ---------------------------- interiors (task-10) ----------------- */
+	  /**
+	   * 室内场景：主教学楼首层 / 图书馆首层阅览室 / 凤栖堂内部厅堂。
+	   * 独立模块 js/interiors.js 用与外壳相同的中心点 + rotation.y 建局部坐标房间，
+	   * 机位以世界坐标返回（interiorCameras），供自动化影片进入建筑内部使用。
+	   * 室内几何全部位于实体外壳体积内：外壳单面材质，从内部看被剔除、从外部看不可见，
+	   * 因此不影响现有外景；灯光为 2~3 盏低强度暖点光，dispose 时随 world.traverse 释放。
+	   */
+	  const interiors = buildInteriors({ M, tex});
+	  world.add(interiors.group);
+
 	  /* ---------------------------- OSM corridors (需求 4/5) ------------- */
 	  /**
 	   * 连廊：site.js 的三块未命名 OSM 多边形就是连廊本体（Lead 转发的卫星/平面叠图结论）：
@@ -54661,12 +55735,12 @@ void main() {
 	    { name: 'hall3', pts: [[18, 40], [32, 42], [36, 38], [20, 30], [16, 34]] },
 	    { name: 'science', pts: [[30, -17], [45, -2], [42, 5], [30, 10], [22, -10]] },
 	    { name: 'gym', pts: [[-40, 18], [-36, 20], [-32, 27], [-32, 37], [-36, 43], [-40, 45]] },
-	    { name: 'yanlin', pts: [[-8, -70], [-2, -68], [4, -66], [10, -67], [12, -70], [10, -76], [2, -80], [-6, -78]] },
+	    { name: 'yanlin', pts: [[-8, -70], [-2, -68], [4, -66], [10, -67], [12, -70], [10, -76], [-2, -85], [-6, -78]] },
 	    { name: 'fengqi', pts: [[-43, -40], [-38, -40], [-34, -43], [-32, -47], [-34, -52]] },
 	    // 艺术楼放大并南移后，艺术楼/曲水流觞两条路线改为绕新体量外圈
 	    { name: 'art', pts: [[30, 10], [36, 15], [42, 19], [48, 21], [54, 20], [59, 15], [63, 8], [65, 4], [65, 0], [62, -3], [58, -5], [52, -8], [46, -4], [42, -3], [35, 2], [31, 5], [30, 7]] },
 	    { name: 'stream', pts: [[56.46, -11.34], [60.2, -11.92], [64.47, -9.08], [66.76, -4.5], [65.74, -0.86], [62.0, -0.28], [57.73, -3.12], [55.44, -7.7]] },
-	    { name: 'southgate', pts: [[48, 81], [55, 77], [63, 82], [63, 89], [55, 92], [49, 87]] },
+	    { name: 'southgate', pts: [[48, 81], [55, 77], [60, 80], [52, 86], [49, 87]] },
 	    { name: 'tree', pts: [[-12, -44], [-7, -43], [-2, -46], [-3, -50], [-9, -51], [-13, -48]] },
 	    { name: 'hand', pts: [[16, -4], [23, -2], [27, -7], [24, -13], [17, -12], [14, -8]] },
 	    { name: 'east', pts: [[66, -15], [74, -8], [77, 2], [69, 6], [62, -2]] },
@@ -54782,6 +55856,248 @@ void main() {
 	      stride: rand(10.0, 13.0),
 	      phase: rand(0, TAU$1),
 	      run: true
+	    });
+	  }
+
+	  /* ---------------------------- student weather behaviour (task-12) -- */
+	  /**
+	   * 学生天气行为 + 建筑碰撞避让（用户反馈：雨天学生要打伞或躲雨；学生不应穿进建筑）。
+	   *
+	   * 避雨点（世界场景坐标，均为校园内、且在全部 site.buildings 外扩 0.85 单位之外，
+	   * 由 /tmp 脚本逐点校验过；≈ 各建筑门廊/檐廊/雨棚下方）：
+	   *   主教学楼前门廊 (-5.41,-36.35)、办公楼西连廊下 (-3.37,-14.59)、
+	   *   办公楼东连廊下 (13.55,-33.22)、科学馆入口 (21.73,-11.38)、
+	   *   凤栖堂檐廊 (-42.36,-45.42)、衍林堂檐廊 (3.33,-76.32)、
+	   *   图书馆门廊 (31.02,-64.06)、体育馆雨棚 (-56.33,34.58)、主席台顶棚 (-47.20,-7.60)。
+	   * 每个点再沿切线展开 3 个站位，避免多人叠在一起。
+	   *
+	   * 状态机：'walk' 沿原 CatmullRom 路线走 → 遇雨：一半学生（编号偶数）撑伞继续走
+	   * （1.35× 速度），其余 + 全部跑道跑步学生进入 'shelter' 小跑去最近空位避雨点，
+	   * 到达后转 'shelterIdle' 站立；雨停/转雪 → 回到 'walk'（offset 取最近曲线点，
+	   * 避免瞬移跳变）；雪天不打伞、不躲雨，速度 0.82×。
+	   *
+	   * 碰撞：所有学生每帧最终位置做一次「建筑多边形外扩 0.85 推回 + 校园红线内推回」，
+	   * 沿最近边法线推出（walk 状态每帧由曲线重算，因此推回不会累积、不会抖动）。
+	   */
+	  const RAINY_WEATHERS = new Set(['light-rain', 'heavy-rain', 'thunder', 'typhoon']);
+	  const COLLISION_MARGIN = 0.85;
+	  let weatherId = 'clear';
+
+	  // ---- 避雨点与站位 ----
+	  const shelterSpots = [
+	    { name: '主教学楼前门廊', p: [-5.41, -36.35], tangent: [0.663, 0.749] },
+	    { name: '办公楼西连廊下', p: [-3.37, -14.59], tangent: [0.752, -0.659] },
+	    { name: '办公楼东连廊下', p: [13.55, -33.22], tangent: [0.749, -0.663] },
+	    { name: '科学馆入口', p: [21.73, -11.38], tangent: [0.663, 0.749] },
+	    { name: '凤栖堂檐廊', p: [-42.36, -45.42], tangent: [-0.64, -0.769] },
+	    { name: '衍林堂檐廊', p: [3.33, -76.32], tangent: [-0.636, -0.772] },
+	    { name: '图书馆门廊', p: [31.02, -64.06], tangent: [-0.663, -0.749] },
+	    { name: '体育馆雨棚', p: [-56.33, 34.58], tangent: [0.785, -0.619] },
+	    { name: '主席台顶棚', p: [-47.2, -7.6], tangent: [0.663, 0.749] }
+	  ];
+	  const SHELTER_SLOT_OFFSETS = [-0.55, 0, 0.55];
+	  shelterSpots.forEach((spot) => {
+	    spot.slots = SHELTER_SLOT_OFFSETS.map((offset) => [
+	      spot.p[0] + spot.tangent[0] * offset,
+	      spot.p[1] + spot.tangent[1] * offset
+	    ]);
+	    spot.occupied = new Array(spot.slots.length).fill(false);
+	  });
+
+	  // ---- 雨伞（共享几何/材质，仅雨天可见）----
+	  const umbrellaCanopyGeo = new ConeGeometry(1.02, 0.42, 8, 1, false);
+	  const umbrellaShaftGeo = new CylinderGeometry(0.028, 0.028, 1.5, 5);
+	  const umbrellaCanopyMat = new MeshStandardMaterial({
+	    color: 0x2f3b49, roughness: 0.82, flatShading: true
+	  });
+	  const umbrellaShaftMat = new MeshStandardMaterial({
+	    color: 0x6b6660, roughness: 0.8
+	  });
+
+	  // ---- 建筑碰撞预计算（含 bbox 加速）----
+	  const collisionPolys = site.buildings.map((b) => {
+	    const poly = b.poly.slice(0, -1);
+	    let minX = Infinity;
+	    let maxX = -Infinity;
+	    let minZ = Infinity;
+	    let maxZ = -Infinity;
+	    let cx = 0;
+	    let cz = 0;
+	    for (const [x, z] of poly) {
+	      minX = Math.min(minX, x);
+	      maxX = Math.max(maxX, x);
+	      minZ = Math.min(minZ, z);
+	      maxZ = Math.max(maxZ, z);
+	      cx += x / poly.length;
+	      cz += z / poly.length;
+	    }
+	    return {
+	      poly,
+	      cx,
+	      cz,
+	      minX: minX - COLLISION_MARGIN - 0.2,
+	      maxX: maxX + COLLISION_MARGIN + 0.2,
+	      minZ: minZ - COLLISION_MARGIN - 0.2,
+	      maxZ: maxZ + COLLISION_MARGIN + 0.2
+	    };
+	  });
+	  // 校园红线外推回用（每帧只对越界者做一次）
+	  function pushInsideCampus(x, z) {
+	    if (pointInPoly(x, z, site.campusOutline)) return [x, z];
+	    let bestD = Infinity;
+	    let qx = x;
+	    let qz = z;
+	    const outline = site.campusOutline;
+	    for (let i = 0; i < outline.length; i += 1) {
+	      const [x1, z1] = outline[i];
+	      const [x2, z2] = outline[(i + 1) % outline.length];
+	      const dx = x2 - x1;
+	      const dz = z2 - z1;
+	      const l2 = dx * dx + dz * dz || 1e-9;
+	      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / l2));
+	      const px = x1 + t * dx;
+	      const pz = z1 + t * dz;
+	      const d = Math.hypot(x - px, z - pz);
+	      if (d < bestD) { bestD = d; qx = px; qz = pz; }
+	    }
+	    const c = centroid(site.campusOutline);
+	    let nx = c[0] - qx;
+	    let nz = c[1] - qz;
+	    const len = Math.hypot(nx, nz) || 1;
+	    return [qx + (nx / len) * 0.35, qz + (nz / len) * 0.35];
+	  }
+	  /** 沿最近边法线把 (x,z) 推出所有建筑多边形（外扩 COLLISION_MARGIN）。 */
+	  function resolveStudentPosition(x, z) {
+	    let px = x;
+	    let pz = z;
+	    for (let pass = 0; pass < 3; pass += 1) {
+	      let moved = false;
+	      for (const cp of collisionPolys) {
+	        if (px < cp.minX || px > cp.maxX || pz < cp.minZ || pz > cp.maxZ) continue;
+	        const inside = pointInPoly(px, pz, cp.poly);
+	        let bestD = Infinity;
+	        let qx = px;
+	        let qz = pz;
+	        for (let i = 0; i < cp.poly.length; i += 1) {
+	          const [x1, z1] = cp.poly[i];
+	          const [x2, z2] = cp.poly[(i + 1) % cp.poly.length];
+	          const dx = x2 - x1;
+	          const dz = z2 - z1;
+	          const l2 = dx * dx + dz * dz || 1e-9;
+	          const t = Math.max(0, Math.min(1, ((px - x1) * dx + (pz - z1) * dz) / l2));
+	          const ex = x1 + t * dx;
+	          const ez = z1 + t * dz;
+	          const d = Math.hypot(px - ex, pz - ez);
+	          if (d < bestD) { bestD = d; qx = ex; qz = ez; }
+	        }
+	        if (!inside && bestD >= COLLISION_MARGIN) continue;
+	        let nx = inside ? qx - px : px - qx;
+	        let nz = inside ? qz - pz : pz - qz;
+	        let len = Math.hypot(nx, nz);
+	        if (len < 1e-4) {
+	          nx = px - cp.cx;
+	          nz = pz - cp.cz;
+	          len = Math.hypot(nx, nz) || 1;
+	        }
+	        nx /= len;
+	        nz /= len;
+	        px = qx + nx * (COLLISION_MARGIN + 0.04);
+	        pz = qz + nz * (COLLISION_MARGIN + 0.04);
+	        moved = true;
+	      }
+	      if (!moved) break;
+	    }
+	    return pushInsideCampus(px, pz);
+	  }
+
+	  /** 采样曲线取最近 offset（雨停后回到原路线用）。 */
+	  function nearestCurveOffset(walker) {
+	    const pos = walker.group.position;
+	    let best = walker.offset;
+	    let bestD = Infinity;
+	    for (let i = 0; i < 48; i += 1) {
+	      const t = i / 48;
+	      const p = walker.curve.getPoint(t);
+	      const d = Math.hypot(p.x - pos.x, p.z - pos.z);
+	      if (d < bestD) { bestD = d; best = t; }
+	    }
+	    return best;
+	  }
+	  /** 给一个学生分配最近的空避雨站位。 */
+	  function assignShelterSlot(walker) {
+	    const pos = walker.group.position;
+	    let best = null;
+	    let bestD = Infinity;
+	    for (const spot of shelterSpots) {
+	      for (let i = 0; i < spot.slots.length; i += 1) {
+	        if (spot.occupied[i]) continue;
+	        const s = spot.slots[i];
+	        const d = Math.hypot(s[0] - pos.x, s[1] - pos.z);
+	        if (d < bestD) { bestD = d; best = { spot, index: i, slot: s }; }
+	      }
+	    }
+	    if (!best) {
+	      // 全部站位被占：直接去最近的避雨点（可能与他人重叠，数量远小于容量时不会发生）
+	      const spot = shelterSpots.reduce((a, b) => (
+	        Math.hypot(b.p[0] - pos.x, b.p[1] - pos.z) < Math.hypot(a.p[0] - pos.x, a.p[1] - pos.z) ? b : a
+	      ));
+	      return spot.p;
+	    }
+	    best.spot.occupied[best.index] = true;
+	    return best.slot;
+	  }
+
+	  // 给所有行走/跑步学生挂雨伞 + 初始化状态机字段
+	  walkers.forEach((walker, index) => {
+	    const umbrella = new Group();
+	    const canopy = new Mesh(umbrellaCanopyGeo, umbrellaCanopyMat);
+	    canopy.position.y = 2.02;
+	    canopy.castShadow = false;
+	    const shaft = new Mesh(umbrellaShaftGeo, umbrellaShaftMat);
+	    shaft.position.y = 1.25;
+	    umbrella.add(canopy, shaft);
+	    umbrella.visible = false;
+	    walker.group.add(umbrella);
+	    walker.umbrella = umbrella;
+	    walker.state = 'walk';
+	    walker.walkSpeedScale = 1;
+	    walker.hasUmbrella = false;
+	    walker.shelterPos = null;
+	    walker.shelterSpot = null;
+	    walker.face = walker.group.rotation.y;
+	    walker.moving = true;
+	    walker.idlePhase = index * 0.7;
+	  });
+
+	  function resetShelterOccupancy() {
+	    for (const spot of shelterSpots) spot.occupied.fill(false);
+	  }
+
+	  /**
+	   * 天气 → 学生行为（main.js 的 applyWeather 会调用 campus.setWeather(id)）。
+	   * 只接受 weather.js 的 6 个 id；未知值回退 clear。
+	   */
+	  function setStudentWeather(id) {
+	    if (disposed) return;
+	    const valid = id === 'clear' || id === 'snow' || RAINY_WEATHERS.has(id);
+	    weatherId = valid ? id : 'clear';
+	    const rainy = RAINY_WEATHERS.has(weatherId);
+	    const snowy = weatherId === 'snow';
+	    resetShelterOccupancy();
+	    walkers.forEach((walker, index) => {
+	      walker.hasUmbrella = rainy && !walker.run && index % 2 === 0;
+	      walker.umbrella.visible = false;
+	      walker.walkSpeedScale = rainy ? (walker.hasUmbrella ? 1.35 : 1) : snowy ? 0.82 : 1;
+	      if (rainy && (walker.run || !walker.hasUmbrella)) {
+	        // 小跑去最近的空避雨位
+	        walker.shelterPos = assignShelterSlot(walker);
+	        walker.state = 'shelter';
+	      } else if (rainy) {
+	        walker.state = 'walk';
+	      } else if (walker.state === 'shelter' || walker.state === 'shelterIdle') {
+	        walker.offset = nearestCurveOffset(walker);
+	        walker.state = 'walk';
+	      }
 	    });
 	  }
 
@@ -54919,25 +56235,72 @@ void main() {
 	      pos.needsUpdate = true;
 	      if (!reducedMotion) waver.geo.computeVertexNormals();
 	    }
+	    const rainy = RAINY_WEATHERS.has(weatherId);
 	    for (const walker of walkers) {
-	      walker.offset = (walker.offset + delta * walker.speed) % 1;
-	      const p = walker.curve.getPoint(walker.offset);
 	      const gait = Math.sin(t * walker.stride + walker.phase);
 	      const run = Boolean(walker.run);
-	      const bob = Math.abs(Math.cos(t * walker.stride + walker.phase)) * (run ? 0.022 : 0.014);
-	      walker.group.position.set(p.x, 0.055 + bob, p.z);
-	      const tangent = walker.curve.getTangent(walker.offset);
-	      walker.group.rotation.y = Math.atan2(tangent.x, tangent.z);
+	      let bx;
+	      let bz;
+	      let moving = false;
+	      if (walker.state === 'walk') {
+	        walker.offset = (walker.offset + delta * walker.speed * walker.walkSpeedScale) % 1;
+	        const p = walker.curve.getPoint(walker.offset);
+	        bx = p.x;
+	        bz = p.z;
+	        const tangent = walker.curve.getTangent(walker.offset);
+	        walker.face = Math.atan2(tangent.x, tangent.z);
+	        moving = true;
+	      } else if (walker.state === 'shelter') {
+	        const target = walker.shelterPos;
+	        const dx = target[0] - walker.group.position.x;
+	        const dz = target[1] - walker.group.position.z;
+	        const dist = Math.hypot(dx, dz);
+	        if (dist < 0.32) {
+	          walker.state = 'shelterIdle';
+	          bx = target[0];
+	          bz = target[1];
+	          walker.face = Math.atan2(dx, dz);
+	        } else {
+	          const runSpeed = run ? 3.0 : 2.5;
+	          const step = Math.min(dist, delta * runSpeed);
+	          bx = walker.group.position.x + (dx / dist) * step;
+	          bz = walker.group.position.z + (dz / dist) * step;
+	          walker.face = Math.atan2(dx, dz);
+	          moving = true;
+	        }
+	        walker.umbrella.visible = false;
+	      } else {
+	        bx = walker.group.position.x;
+	        bz = walker.group.position.z;
+	      }
+	      // 建筑碰撞：沿最近边法线推回（walk 状态每帧由曲线重算，推回不累积、不抖动）
+	      const [safeX, safeZ] = resolveStudentPosition(bx, bz);
+	      const bob = moving
+	        ? Math.abs(Math.cos(t * walker.stride + walker.phase)) * (run ? 0.022 : 0.014)
+	        : Math.sin(t * 0.9 + walker.idlePhase) * 0.005;
+	      walker.group.position.set(safeX, 0.055 + bob, safeZ);
+	      if (walker.state !== 'shelterIdle') {
+	        const diff = Math.atan2(
+	          Math.sin(walker.face - walker.group.rotation.y),
+	          Math.cos(walker.face - walker.group.rotation.y)
+	        );
+	        walker.group.rotation.y += diff * Math.min(1, delta * 6);
+	      } else {
+	        walker.group.rotation.y = walker.face + Math.sin(t * 0.35 + walker.idlePhase) * 0.06;
+	      }
 	      const rig = walker.group.userData.walk;
 	      if (rig) {
-	        const legSwing = run ? 0.82 : 0.52;
-	        const armSwing = run ? 0.66 : 0.38;
+	        const hurrying = run || walker.state === 'shelter';
+	        const legSwing = moving ? (hurrying ? 0.82 : 0.52) : 0.02;
+	        const armSwing = moving ? (hurrying ? 0.66 : 0.38) : 0.02;
 	        rig.legs[0].rotation.x = gait * legSwing;
 	        rig.legs[1].rotation.x = -gait * legSwing;
 	        rig.arms[0].rotation.x = -gait * armSwing;
 	        rig.arms[1].rotation.x = gait * armSwing;
-	        if (rig.body) rig.body.rotation.x = run ? 0.09 : 0;
+	        if (rig.body) rig.body.rotation.x = moving && hurrying ? 0.09 : 0;
 	      }
+	      // 雨伞：仅「撑着伞继续走」的学生、且在下雨类天气时可见（雪天/晴天/躲雨途中都隐藏）
+	      walker.umbrella.visible = rainy && walker.hasUmbrella && walker.state === 'walk';
 	    }
 	    if (selection.visible) {
 	      selection.rotation.y += delta * 0.07;
@@ -54976,11 +56339,25 @@ void main() {
 	    setTime,
 	    getTime: () => hour,
 	    getNight: () => night,
+	    /** 天气 → 学生行为（打伞/躲雨/恢复）；main.js 的 applyWeather 会调用。 */
+	    setWeather: (id) => setStudentWeather(id),
+	    getWeather: () => weatherId,
+	    /** 供自检/影片读取的学生状态快照（位置、状态、是否撑伞）。 */
+	    studentStates: () => walkers.map((w) => ({
+	      state: w.state,
+	      x: +w.group.position.x.toFixed(2),
+	      z: +w.group.position.z.toFixed(2),
+	      umbrella: !!w.umbrella.visible,
+	      run: !!w.run
+	    })),
 	    tick: animate,
 	    updateBuildingLabels,
 	    setSelection,
 	    hideSelection: () => setSelection(null),
 	    landmarks: landmarkGroups,
+	    /** 室内机位（世界坐标）：mainHallLobby / mainHallCorridor / mainHallClassroom /
+	     *  libraryReading / fengqiHall，每项 { position, target, fov }，供自动化影片使用。 */
+	    interiorCameras: interiors.cameras,
 	    /** 释放本场景 GPU 资源；切换校区 / 重建前调用（幂等）。 */
 	    dispose
 	  };
@@ -55423,28 +56800,8 @@ void main() {
 	    ]
 	  },
 	  {
-	    id: 'dorm',
-	    index: '19',
-	    name: '女生宿舍',
-	    en: 'GIRLS DORMITORY',
-	    kind: '生活区 · 六层板楼',
-	    year: '校园东侧',
-	    anchor: [70, 9.5, 38],
-	    camera: { position: [102, 18, 68], target: [70, 4, 38], fov: 44 },
-	    map: [70, 38],
-	    diagram: 'main',
-	    summary: '3号教学楼东南侧、靠近校园边界的橙白条纹宿舍楼。',
-	    description:
-	      '女生宿舍位于3号教学楼以东偏南、靠近校园东南边界的一处草地（2026-11 按用户指认位置后移/新建），是一栋橙白横条纹的六层板式宿舍楼。2023 年百年校庆 VLOG 影像中，楼前立有红漆牌坊「尚德 睿智 唯实 创新」。三维轮廓为写意推测（非测绘），层高、立面与阳台细部同样不是测绘成果。',
-	    facts: [
-	      ['类型', '六层板式宿舍'],
-	      ['外观', '橙白横条纹 · 红漆牌坊'],
-	      ['位置', '3号教学楼东南侧 · 校园东南边界']
-	    ]
-	  },
-	  {
 	    id: 'stand',
-	    index: '20',
+	    index: '19',
 	    name: '主席台与看台',
 	    en: 'GRANDSTAND',
 	    kind: '操场 · 蓝黄阶梯',
@@ -55465,7 +56822,7 @@ void main() {
 	  },
 	  {
 	    id: 'library',
-	    index: '21',
+	    index: '20',
 	    name: '图书馆',
 	    en: 'LIBRARY',
 	    kind: '文化建筑 · 穹顶',
@@ -55525,8 +56882,8 @@ void main() {
 	    url: 'https://www.bilibili.com/video/BV13z4y1N7EH'
 	  },
 	  {
-	    label: 'OpenStreetMap：女生宿舍建筑轮廓 way 1444498450（ODbL）',
-	    url: 'https://www.openstreetmap.org/way/1444498450'
+	    label: 'OpenStreetMap：校园东侧建筑群轮廓（ODbL）',
+	    url: 'https://www.openstreetmap.org/way/1127981105'
 	  }
 	];
 
@@ -55574,7 +56931,6 @@ void main() {
 	    confucius: 11,
 	    bronze: 13,
 	    library: 34,
-	    dorm: 32,
 	    stand: 42
 	  }
 	};
@@ -56333,7 +57689,7 @@ void main() {
 
 
 	const TAU = Math.PI * 2;
-	const clamp$1 = MathUtils.clamp;
+	const clamp$2 = MathUtils.clamp;
 
 	/* ------------------------------------------------------------------ */
 	/*  Public weather list（顺序 = UI 滑杆顺序，勿改 id）                  */
@@ -57046,14 +58402,14 @@ void main() {
 
 	  function tick(delta) {
 	    if (disposed || !hasScene) return;
-	    const dt = Number.isFinite(delta) ? clamp$1(delta, 0, 0.05) : 0.016;
+	    const dt = Number.isFinite(delta) ? clamp$2(delta, 0, 0.05) : 0.016;
 	    // main.js 会把 delta 钳到 0.055 s；在低帧率设备 / 无 GPU 的截图环境里，
 	    // 若天气过渡只按 dt 推进，2–4 s 的积雪渐入会变成几十秒的慢动作。
 	    // 过渡与闪电计时改用"真实墙钟（封顶 0.25 s）与 dt 的较大值"，粒子运动仍用 dt。
 	    const now = typeof performance !== 'undefined' ? performance.now() : 0;
 	    let wallDt = lastWallTime > 0 ? (now - lastWallTime) / 1000 : dt;
 	    lastWallTime = now;
-	    wallDt = Number.isFinite(wallDt) ? clamp$1(wallDt, 0, 0.25) : dt;
+	    wallDt = Number.isFinite(wallDt) ? clamp$2(wallDt, 0, 0.25) : dt;
 	    const tdt = Math.max(dt, wallDt);
 	    simTime += dt;
 	    uiTime += tdt;
@@ -57257,6 +58613,792 @@ void main() {
 	  return { setWeather, getWeather, setHour, tick, dispose };
 	}
 
+	/**
+	 * 校园巡游影片（自动化运镜 + 录制）
+	 * ---------------------------------------------------------------------------
+	 * 为一个「会动的图志」写一条 60–90 秒的电影式巡游：高空俯冲入校 → 北门 →
+	 * 凤栖堂（外景 → 室内）→ 主教学楼（外景 → 门厅 → 走廊 → 教室）→ 科学馆/
+	 * 艺术楼掠过 → 图书馆（外景 → 阅览室）→ 体育馆/看台 → 运动场 → 升空收尾。
+	 *
+	 * 设计原则
+	 * - 纯运镜层：只读写 camera.position / controls.target / camera.fov 与
+	 *   controls.enabled，不修改场景几何、天气、日照；停止时精确恢复原相机。
+	 * - 每段 4–8 s，position/target/fov 用 easeInOutCubic 插值；到站可留 0.5–2.2 s
+	 *   定格并做极轻微推近（hold 期间的 drift），避免生硬顿挫。
+	 * - 室内机位优先读 campus.interiorCameras（js/interiors.js 提供），缺失时用
+	 *   按 site 中心/角度估算的 fallback（见 FALLBACK_INTERIORS 注释）。
+	 * - 录制：canvas.captureStream(30) + MediaRecorder（vp9 → vp8 → webm 回退）；
+	 *   recordStop() 返回 Promise<Blob>，由页面层决定是否下载。
+	 * - 时间基准用 rAF 墙钟（clamp 到 0.25 s），headless 低帧率下影片不会变慢动作。
+	 *
+	 * 对外 API（main.js 按此接线，勿改名）
+	 * ---------------------------------------------------------------------------
+	 *   import { createFilm, FILM_TITLE } from './film.js';
+	 *   const film = createFilm({ scene, camera, controls, renderer, campus, onStateChange });
+	 *   film.start({ restart });   // 开始/重播；播放中重复调用默认忽略
+	 *   film.stop();               // 退出并恢复原相机；若在录制中，录制保持，由调用方 recordStop()
+	 *   film.isPlaying(); film.getProgress(); film.isRecording();
+	 *   film.recordStart();        // 开始录制，返回 boolean（MediaRecorder 不可用为 false）
+	 *   film.recordStop();         // Promise<Blob|null>
+	 *   film.dispose();            // 停止一切并释放
+	 *   film.segments;             // 只读的段落表（调试/验证用）
+	 *   // 以下为调试/审片辅助（可选，不影响正常播放流程）：
+	 *   film.pause(); film.resume(); film.seek(seconds);
+	 *
+	 * 场景坐标约定：1 单位 ≈ 2 m，x 东、z 南、北 = -z；相机 y 为场景高度。
+	 * 外景机位与 js/data.js 中 LANDMARKS 的 camera 数据保持一致（此处硬编码，
+	 * 避免 film 反向依赖数据层；若 data.js 机位调整，这里同步即可）。
+	 */
+
+	const RECORD_MIME_CANDIDATES = [
+	  'video/webm;codecs=vp9',
+	  'video/webm;codecs=vp8',
+	  'video/webm'
+	];
+
+	const FILM_TITLE = '府城校园图志 · 巡游';
+
+	/* ------------------------------------------------------------------ */
+	/*  外景机位（与 js/data.js LANDMARKS.camera 同值）                     */
+	/* ------------------------------------------------------------------ */
+
+	const EXTERIOR = {
+	  overview: { position: [-150, 260, -230], target: [0, 0, -12], fov: 34 },
+	  gate: { position: [-50.9, 9.3, -91.8], target: [-39, 2.4, -74], fov: 38 },
+	  fengqi: { position: [-34, 8.8, -32.1], target: [-46.2, 2.2, -50.5], fov: 38 },
+	  hall1: { position: [-27, 37, -86], target: [-4, 7, -36], fov: 46.1 },
+	  art: { position: [26, 20, -22], target: [52.8, 7, 7.9], fov: 46 },
+	  library: { position: [2, 7, -56], target: [24, 5, -72], fov: 40 },
+	  gym: { position: [-30, 20, 76], target: [-52, 4, 26], fov: 38 },
+	  stand: { position: [-70, 14, -18], target: [-62, 2, 2], fov: 42 },
+	  field: { position: [-124, 10, -26], target: [-92, 0.8, -11], fov: 48.3 }
+	};
+
+	/* 高空过渡机位：让俯冲/转场有明确的飞行方向感。 */
+	const TRANSIT = {
+	  descent: { position: [-64, 66, -186], target: [-36, 7, -72], fov: 42 },
+	  afterFengqi: { position: [-34, 16, -24], target: [-10, 5, -32], fov: 42 },
+	  standApproach: { position: [-24, 32, 34], target: [-64, 4, 2], fov: 40 },
+	  finale: { position: [-150, 178, 24], target: [-40, 0, -8], fov: 40 }
+	};
+
+	/**
+	 * 室内机位 fallback（仅当 campus.interiorCameras 缺失时使用）。
+	 * 由 site.js 的 center/obb 与建筑模块旋转约定估算：
+	 *   主教学楼 center(-0.37,-30.66) obb 57.24×9.77 angle138.5，前面(+z 局部)朝西北；
+	 *   图书馆    center(24,-72)     obb 19×10     angle138.5，入口朝东南；
+	 *   凤栖堂    center(-46.32,-50.19) obb 13.36×8.58 angle140.25，门朝东南。
+	 * 高度约 1.2–1.3（≈2.5 m 人眼），fov 偏广以容纳室内。数值是写意估计，
+	 * 正式机位以 js/interiors.js 的 interiorCameras 为准。
+	 */
+	const FALLBACK_INTERIORS = {
+	  fengqiHall: { position: [-44.27, 1.25, -47.73], target: [-48.62, 1.05, -52.96], fov: 55 },
+	  mainHallLobby: { position: [-2.62, 1.25, -33.21], target: [-10.86, 1.3, -39.94], fov: 54 },
+	  mainHallCorridor: { position: [-8.66, 1.3, -38.19], target: [7.12, 1.3, -24.03], fov: 56 },
+	  mainHallClassroom: { position: [-4.37, 1.3, -33.71], target: [-7.02, 1.2, -36.71], fov: 52 },
+	  libraryReading: { position: [25.66, 1.25, -70.13], target: [22.01, 1.2, -74.25], fov: 55 }
+	};
+
+	/**
+	 * 过门机位：沿室内机位的「看线」反向退到门外约 5.4 场景单位（≈11 m）处，
+	 * 再略微俯视门洞。这样无论 interiorCameras 怎样调整，镜头都是顺着门轴推进，
+	 * 不会斜穿墙体。
+	 */
+	function approachView(interior) {
+	  const p = interior.position;
+	  const t = interior.target;
+	  const dx = p[0] - t[0];
+	  const dy = p[1] - t[1];
+	  const dz = p[2] - t[2];
+	  const len = Math.hypot(dx, dy, dz) || 1;
+	  const back = 7.0;
+	  return {
+	    position: [p[0] + (dx / len) * back, p[1] + Math.max(0, (dy / len) * back) + 0.35, p[2] + (dz / len) * back],
+	    target: [p[0] + (t[0] - p[0]) * 0.22, p[1] + (t[1] - p[1]) * 0.22, p[2] + (t[2] - p[2]) * 0.22],
+	    fov: Math.min(62, interior.fov + 2)
+	  };
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  工具                                                              */
+	/* ------------------------------------------------------------------ */
+
+	const clamp$1 = (value, min, max) => Math.min(max, Math.max(min, value));
+
+	function easeInOutCubic(t) {
+	  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+	}
+
+	/**
+	 * 穿墙压黑的包络：rise 段升到全黑，fall 段退回 0；两段都为 0 时不影响画面。
+	 * 首尾都回到 0，保证 hold ↔ move 切换时不会突然闪黑。
+	 */
+	function washEnvelope(local, wash) {
+	  const [riseStart, riseEnd] = wash.rise;
+	  const [fallStart, fallEnd] = wash.fall;
+	  if (local <= riseStart) return 0;
+	  if (local < riseEnd) {
+	    return easeInOutCubic((local - riseStart) / Math.max(0.001, riseEnd - riseStart));
+	  }
+	  if (local < fallStart) return 1;
+	  if (local < fallEnd) {
+	    return 1 - easeInOutCubic((local - fallStart) / Math.max(0.001, fallEnd - fallStart));
+	  }
+	  return 0;
+	}
+
+	function toVec3(value, fallback) {
+	  const source = Array.isArray(value) && value.length >= 3 ? value : fallback;
+	  return [Number(source[0]) || 0, Number(source[1]) || 0, Number(source[2]) || 0];
+	}
+
+	function normalizeView(view, fallback) {
+	  const source = view || fallback || {};
+	  const fb = fallback || {};
+	  return {
+	    position: toVec3(source.position, fb.position || [0, 30, 0]),
+	    target: toVec3(source.target, fb.target || [0, 0, 0]),
+	    fov: clamp$1(Number(source.fov) || Number(fb.fov) || 42, 18, 90)
+	  };
+	}
+
+	function lerpArray(a, b, t) {
+	  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+	}
+
+	/**
+	 * 从 campus.interiorCameras 读机位；缺失 / 字段不全时退回 fallback。
+	 * 每次 start() 重新读取，因此 interiors.js 晚于本文件交付也能自动生效。
+	 */
+	function resolveInterior(campus, key) {
+	  const fallback = FALLBACK_INTERIORS[key];
+	  const provided = campus?.interiorCameras?.[key];
+	  if (!provided) return normalizeView(fallback, fallback);
+	  const view = normalizeView(provided, fallback);
+	  // 防止 interiorCameras 只给了 position 时把相机放到地面原点。
+	  if (!Array.isArray(provided.target)) view.target = fallback.target.slice();
+	  return view;
+	}
+
+	function isMediaRecorderSupported() {
+	  return (
+	    typeof window !== 'undefined' &&
+	    typeof window.MediaRecorder !== 'undefined' &&
+	    typeof HTMLCanvasElement !== 'undefined' &&
+	    typeof HTMLCanvasElement.prototype.captureStream === 'function'
+	  );
+	}
+
+	function pickRecordMimeType() {
+	  if (!isMediaRecorderSupported()) return '';
+	  const supported = window.MediaRecorder.isTypeSupported
+	    ? (type) => window.MediaRecorder.isTypeSupported(type)
+	    : () => true;
+	  return RECORD_MIME_CANDIDATES.find((type) => supported(type)) || '';
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  影片脚本                                                          */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * 段落定义：每个 shot 是「到站机位」；duration = 从上一站飞来的时间（秒），
+	 * hold = 到站后定格时间（秒）。首站的 hold 是开场定格。
+	 * 总时长约 85 s（落在 60–90 s 区间），交代：入校 → 北门 → 凤栖堂(内外)
+	 * → 主教学楼(外内) → 图书馆(外内) → 体育馆/看台/运动场 → 升空。
+	 */
+	function buildShotPlan(campus) {
+	  const fengqiIn = resolveInterior(campus, 'fengqiHall');
+	  const lobby = resolveInterior(campus, 'mainHallLobby');
+	  const corridor = resolveInterior(campus, 'mainHallCorridor');
+	  const classroom = resolveInterior(campus, 'mainHallClassroom');
+	  const reading = resolveInterior(campus, 'libraryReading');
+	  const fengqiDoor = approachView(fengqiIn);
+	  const hall1Door = approachView(lobby);
+	  const libraryDoor = approachView(reading);
+
+	  return [
+	    {
+	      id: 'intro',
+	      caption: '府城校园 · 一座校园的记忆',
+	      en: 'FUCHENG CAMPUS · A CAMPUS ATLAS',
+	      view: EXTERIOR.overview,
+	      hold: 1.8,
+	      duration: 0
+	    },
+	    {
+	      id: 'descent',
+	      caption: '从高空进入校园',
+	      en: 'DESCENT INTO THE CAMPUS',
+	      view: TRANSIT.descent,
+	      duration: 4.8
+	    },
+	    {
+	      id: 'gate',
+	      caption: '北门 · 牌楼式校门',
+	      en: 'NORTH GATE',
+	      view: EXTERIOR.gate,
+	      duration: 4.2,
+	      hold: 0.5
+	    },
+	    {
+	      id: 'fengqi-out',
+	      caption: '凤栖堂 · 1934 年建',
+	      en: 'FENGQI HALL',
+	      view: EXTERIOR.fengqi,
+	      duration: 4.2
+	    },
+	    {
+	      id: 'fengqi-door',
+	      caption: '走近凤栖堂',
+	      en: 'APPROACHING FENGQI HALL',
+	      view: fengqiDoor,
+	      duration: 3.2
+	    },
+	    {
+	      id: 'fengqi-in',
+	      interior: true,
+	      caption: '凤栖堂 · 厅堂',
+	      en: 'FENGQI HALL · INTERIOR',
+	      view: fengqiIn,
+	      duration: 3.6,
+	      hold: 1.2
+	    },
+	    {
+	      id: 'fengqi-exit',
+	      caption: '穿过院落',
+	      en: 'THROUGH THE COURTYARD',
+	      view: TRANSIT.afterFengqi,
+	      duration: 3.8
+	    },
+	    {
+	      id: 'hall1-out',
+	      caption: '主教学楼 · 五层长楼',
+	      en: 'MAIN TEACHING BUILDING',
+	      view: EXTERIOR.hall1,
+	      duration: 4.2,
+	      hold: 0.5
+	    },
+	    {
+	      id: 'hall1-door',
+	      caption: '进入教学楼',
+	      en: 'ENTERING THE TEACHING BUILDING',
+	      view: hall1Door,
+	      duration: 2.8
+	    },
+	    {
+	      id: 'hall1-lobby',
+	      interior: true,
+	      caption: '主教学楼 · 门厅',
+	      en: 'MAIN HALL · LOBBY',
+	      view: lobby,
+	      duration: 3.4,
+	      hold: 1.2
+	    },
+	    {
+	      id: 'hall1-corridor',
+	      interior: true,
+	      caption: '主教学楼 · 走廊',
+	      en: 'MAIN HALL · CORRIDOR',
+	      view: corridor,
+	      duration: 3.6,
+	      hold: 0.8
+	    },
+	    {
+	      id: 'hall1-classroom',
+	      interior: true,
+	      cut: true,
+	      caption: '主教学楼 · 教室',
+	      en: 'MAIN HALL · CLASSROOM',
+	      view: classroom,
+	      duration: 2.6,
+	      hold: 0.9
+	    },
+	    {
+	      id: 'library-out',
+	      caption: '图书馆',
+	      en: 'LIBRARY',
+	      view: EXTERIOR.library,
+	      duration: 3.0,
+	      hold: 1.2
+	    },
+	    {
+	      id: 'library-door',
+	      caption: '走进图书馆',
+	      en: 'ENTERING THE LIBRARY',
+	      view: libraryDoor,
+	      duration: 2.2
+	    },
+	    {
+	      id: 'library-in',
+	      interior: true,
+	      caption: '图书馆 · 阅览室',
+	      en: 'LIBRARY · READING ROOM',
+	      view: reading,
+	      duration: 3.4,
+	      hold: 4.0
+	    },
+	    {
+	      id: 'art-pass',
+	      caption: '科学馆与艺术楼',
+	      en: 'SCIENCE HALL & ART BUILDING',
+	      view: EXTERIOR.art,
+	      duration: 3.0
+	    },
+	    {
+	      id: 'to-gym',
+	      caption: '体育馆与球场',
+	      en: 'GYM & COURTS',
+	      view: EXTERIOR.gym,
+	      duration: 3.0,
+	      hold: 0.6
+	    },
+	    {
+	      id: 'stand-approach',
+	      caption: '主席台与看台',
+	      en: 'GRANDSTAND & TRACK',
+	      view: TRANSIT.standApproach,
+	      duration: 2.2
+	    },
+	    {
+	      id: 'stand',
+	      caption: '主席台与看台',
+	      en: 'GRANDSTAND',
+	      view: EXTERIOR.stand,
+	      duration: 2.6,
+	      hold: 1.0
+	    },
+	    {
+	      id: 'field',
+	      caption: '运动场 · 塑胶跑道',
+	      en: 'SPORTS FIELD',
+	      view: EXTERIOR.field,
+	      duration: 3.2,
+	      hold: 0.4
+	    },
+	    {
+	      id: 'finale',
+	      caption: '府城校园 · 百年校本',
+	      en: 'FUCHENG CAMPUS · SINCE 1923',
+	      view: TRANSIT.finale,
+	      duration: 5.8,
+	      hold: 1.9
+	    }
+	  ];
+	}
+
+	/** 把 shot 列表编译为带绝对起止时间的 segments。 */
+	function buildSegments(plan) {
+	  const segments = [];
+	  let t = 0;
+	  if (plan[0].hold) {
+	    segments.push({
+	      type: 'hold', shotIndex: 0, start: 0, end: plan[0].hold, duration: plan[0].hold
+	    });
+	    t = plan[0].hold;
+	  }
+	  for (let i = 1; i < plan.length; i += 1) {
+	    const duration = Math.max(2.5, plan[i].duration || 4);
+	    // 穿墙瞬间（室内 ↔ 室外）用一次「压黑」过渡遮住墙体断面，
+	    // 读起来像电影里的淡出/淡入，而不是穿模。
+	    const fromShot = plan[i - 1];
+	    const toShot = plan[i];
+	    let wash = null;
+	    if (fromShot.interior && !toShot.interior) {
+	      // 出门：起步就压黑，遮住墙体断面后再亮出室外。
+	      wash = { rise: [0, 0.08], fall: [0.1, 0.3] };
+	    } else if (!fromShot.interior && toShot.interior) {
+	      // 进门：先在门外压黑，黑场中穿过墙体/门洞，到站前再亮出室内。
+	      wash = { rise: [0.3, 0.55], fall: [0.9, 1] };
+	    } else if (fromShot.interior && toShot.interior && toShot.cut) {
+	      // 室内换房间（走廊 → 教室）会穿过隔墙：用一个短黑场当作切镜。
+	      wash = { rise: [0.42, 0.52], fall: [0.52, 0.64] };
+	    }
+	    segments.push({ type: 'move', shotIndex: i, start: t, end: t + duration, duration, wash });
+	    t += duration;
+	    if (plan[i].hold) {
+	      segments.push({ type: 'hold', shotIndex: i, start: t, end: t + plan[i].hold, duration: plan[i].hold });
+	      t += plan[i].hold;
+	    }
+	  }
+	  return { segments, total: t };
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  影片控制                                                          */
+	/* ------------------------------------------------------------------ */
+
+	function createFilm({ scene, camera, controls, renderer, campus, onStateChange } = {}) {
+	  let disposed = false;
+	  let playing = false;
+	  let paused = false;
+	  let rafId = 0;
+	  let elapsed = 0;
+	  let lastTimestamp = 0;
+
+	  let plan = [];
+	  let segments = [];
+	  let total = 0;
+
+	  let saved = null;
+	  let currentShotIndex = -1;
+
+	  let recorder = null;
+	  let recordChunks = [];
+	  let recording = false;
+	  let recordMime = '';
+
+	  if (!camera || !controls) {
+	    // 没有相机/控制器时降级为 no-op 对象，main.js 可安全可选链调用。
+	    return {
+	      start: () => false,
+	      stop: () => false,
+	      isPlaying: () => false,
+	      getProgress: () => 0,
+	      isRecording: () => false,
+	      recordStart: () => false,
+	      recordStop: () => Promise.resolve(null),
+	      dispose: () => {},
+	      segments: []
+	    };
+	  }
+
+	  function snapshot(extra = {}) {
+	    const safeTotal = total || 1;
+	    return {
+	      playing,
+	      recording,
+	      progress: clamp$1(elapsed / safeTotal, 0, 1),
+	      time: elapsed,
+	      duration: total,
+	      index: currentShotIndex,
+	      caption: plan[currentShotIndex]?.caption || '',
+	      en: plan[currentShotIndex]?.en || '',
+	      title: FILM_TITLE,
+	      wash: 0,
+	      ...extra
+	    };
+	  }
+
+	  function emit(extra) {
+	    if (typeof onStateChange !== 'function') return;
+	    try {
+	      onStateChange(snapshot(extra));
+	    } catch (error) {
+	      console.warn('Film state listener failed:', error);
+	    }
+	  }
+
+	  function ensurePlan(force = false) {
+	    if (plan.length && !force) return;
+	    plan = buildShotPlan(campus);
+	    const compiled = buildSegments(plan);
+	    segments = compiled.segments;
+	    total = compiled.total;
+	  }
+
+	  function saveCameraState() {
+	    saved = {
+	      position: camera.position.clone(),
+	      target: controls.target.clone(),
+	      fov: camera.fov,
+	      enabled: controls.enabled
+	    };
+	  }
+
+	  function restoreCameraState() {
+	    if (!saved) return;
+	    camera.position.copy(saved.position);
+	    controls.target.copy(saved.target);
+	    camera.fov = saved.fov;
+	    camera.updateProjectionMatrix();
+	    controls.enabled = saved.enabled;
+	    saved = null;
+	    try {
+	      controls.update();
+	    } catch (error) {
+	      console.warn('Film: failed to restore controls:', error);
+	    }
+	  }
+
+	  function applyView(view) {
+	    camera.position.set(view.position[0], view.position[1], view.position[2]);
+	    controls.target.set(view.target[0], view.target[1], view.target[2]);
+	    // main.js 在影片期间跳过 controls.update()（否则 OrbitControls 会回写相机），
+	    // 因此这里必须自己 lookAt，否则相机停留在进入影片前的朝向。
+	    camera.lookAt(view.target[0], view.target[1], view.target[2]);
+	    if (Math.abs(camera.fov - view.fov) > 0.01) {
+	      camera.fov = view.fov;
+	      camera.updateProjectionMatrix();
+	    }
+	  }
+
+	  /** 采样 elapsed 时刻的机位与当前 shot（hold 期间做极轻微推近）。 */
+	  function sample(at) {
+	    const time = clamp$1(at, 0, total);
+	    let segment = segments[segments.length - 1];
+	    for (let i = 0; i < segments.length; i += 1) {
+	      if (time < segments[i].end) {
+	        segment = segments[i];
+	        break;
+	      }
+	    }
+	    const shot = plan[segment.shotIndex] || plan[plan.length - 1];
+	    const view = normalizeView(shot.view, EXTERIOR.overview);
+
+	    if (segment.type === 'move') {
+	      const local = clamp$1((time - segment.start) / Math.max(0.001, segment.end - segment.start), 0, 1);
+	      const captionIndex = local < 0.39 ? Math.max(0, segment.shotIndex - 1) : segment.shotIndex;
+	      const eased = easeInOutCubic(local);
+	      const from = normalizeView(plan[segment.shotIndex - 1].view, view);
+	      const wash = segment.wash ? washEnvelope(local, segment.wash) : 0;
+	      return {
+	        shot,
+	        index: captionIndex,
+	        shotIndex: segment.shotIndex,
+	        position: lerpArray(from.position, view.position, eased),
+	        target: lerpArray(from.target, view.target, eased),
+	        fov: from.fov + (view.fov - from.fov) * eased,
+	        wash
+	      };
+	    }
+
+	    // hold：定格，并沿看线做 1.2% 的缓慢推近，让画面「有呼吸」。
+	    const local = clamp$1((time - segment.start) / Math.max(0.001, segment.end - segment.start), 0, 1);
+	    const drift = easeInOutCubic(local) * 0.012;
+	    return {
+	      shot,
+	      index: segment.shotIndex,
+	      shotIndex: segment.shotIndex,
+	      position: lerpArray(view.position, view.target, drift),
+	      target: view.target.slice(),
+	      fov: view.fov,
+	      wash: 0
+	    };
+	  }
+
+	  function frame(timestamp) {
+	    if (disposed || !playing || paused) return;
+	    const rawDelta = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0;
+	    lastTimestamp = timestamp;
+	    elapsed += clamp$1(rawDelta, 0, 0.25);
+
+	    const sampleNow = sample(elapsed);
+	    applyView(sampleNow);
+	    currentShotIndex = sampleNow.index;
+	    emit({ wash: clamp$1(sampleNow.wash || 0, 0, 1) });
+
+	    if (elapsed >= total) {
+	      finishPlayback();
+	      return;
+	    }
+	    rafId = requestAnimationFrame(frame);
+	  }
+
+	  function finishPlayback() {
+	    playing = false;
+	    if (rafId) cancelAnimationFrame(rafId);
+	    rafId = 0;
+	    currentShotIndex = plan.length - 1;
+	    elapsed = total;
+	    restoreCameraState();
+	    emit({ ended: true, progress: 1 });
+	  }
+
+	  function start(options = {}) {
+	    if (disposed) return false;
+	    const restart = options.restart === true;
+	    if (playing && !restart) return false;
+	    // 每次开播都重新读取 campus.interiorCameras（interiors.js 可能后到）。
+	    ensurePlan(true);
+	    if (!segments.length) return false;
+
+	    if (!playing) {
+	      saveCameraState();
+	    } else if (rafId) {
+	      cancelAnimationFrame(rafId);
+	      rafId = 0;
+	    }
+	    controls.enabled = false;
+	    playing = true;
+	    elapsed = 0;
+	    currentShotIndex = -1;
+	    lastTimestamp = 0;
+
+	    const first = sample(0);
+	    applyView(first);
+	    currentShotIndex = first.index;
+	    emit({ started: true, ended: false });
+
+	    lastTimestamp = performance.now();
+	    rafId = requestAnimationFrame(frame);
+	    return true;
+	  }
+
+	  function stop() {
+	    if (!playing) return false;
+	    playing = false;
+	    if (rafId) cancelAnimationFrame(rafId);
+	    rafId = 0;
+	    restoreCameraState();
+	    emit({ stopped: true });
+	    return true;
+	  }
+
+	  /* ---------------- 录制 ---------------- */
+
+	  function recordStart() {
+	    if (disposed || recording) return false;
+	    if (!renderer || !renderer.domElement || !isMediaRecorderSupported()) return false;
+	    let stream;
+	    try {
+	      stream = renderer.domElement.captureStream(30);
+	    } catch (error) {
+	      console.warn('Film: captureStream failed:', error);
+	      return false;
+	    }
+	    recordMime = pickRecordMimeType();
+	    try {
+	      recorder = recordMime
+	        ? new window.MediaRecorder(stream, { mimeType: recordMime, videoBitsPerSecond: 8_000_000 })
+	        : new window.MediaRecorder(stream);
+	    } catch (error) {
+	      console.warn('Film: MediaRecorder failed:', error);
+	      recorder = null;
+	      return false;
+	    }
+	    recordChunks = [];
+	    recording = true;
+	    recorder.ondataavailable = (event) => {
+	      if (event.data && event.data.size > 0) recordChunks.push(event.data);
+	    };
+	    recorder.onerror = (event) => {
+	      console.warn('Film: recorder error:', event?.error || event);
+	    };
+	    try {
+	      recorder.start(250);
+	    } catch (error) {
+	      console.warn('Film: recorder start failed:', error);
+	      recorder = null;
+	      recording = false;
+	      return false;
+	    }
+	    emit({});
+	    return true;
+	  }
+
+	  function recordStop() {
+	    if (!recording || !recorder) {
+	      recording = false;
+	      return Promise.resolve(null);
+	    }
+	    const active = recorder;
+	    recording = false;
+	    return new Promise((resolve) => {
+	      let settled = false;
+	      const finish = () => {
+	        if (settled) return;
+	        settled = true;
+	        const type = active.mimeType || recordMime || 'video/webm';
+	        const blob = recordChunks.length ? new Blob(recordChunks, { type }) : null;
+	        recordChunks = [];
+	        recorder = null;
+	        emit({});
+	        resolve(blob);
+	      };
+	      active.onstop = finish;
+	      active.ondataavailable = (event) => {
+	        if (event.data && event.data.size > 0) recordChunks.push(event.data);
+	      };
+	      try {
+	        active.stop();
+	      } catch (error) {
+	        console.warn('Film: recorder stop failed:', error);
+	        finish();
+	      }
+	      // 兜底：极端情况下 onstop 不触发
+	      window.setTimeout(finish, 1500);
+	    });
+	  }
+
+	  /** 暂停播放（保持当前机位，不恢复原相机）；用于审片/截图。 */
+	  function pause() {
+	    if (!playing || paused) return false;
+	    paused = true;
+	    if (rafId) cancelAnimationFrame(rafId);
+	    rafId = 0;
+	    emit({ paused: true });
+	    return true;
+	  }
+
+	  /** 继续播放；从暂停时刻的时间码接着走。 */
+	  function resume() {
+	    if (!playing || !paused) return false;
+	    paused = false;
+	    lastTimestamp = performance.now();
+	    rafId = requestAnimationFrame(frame);
+	    emit({ paused: false });
+	    return true;
+	  }
+
+	  /** 跳到指定时间码（秒）并立即把相机放到位；暂停中也可调用。 */
+	  function seek(seconds) {
+	    if (!playing || !plan.length) return false;
+	    paused = true;
+	    if (rafId) cancelAnimationFrame(rafId);
+	    rafId = 0;
+	    elapsed = clamp$1(Number(seconds) || 0, 0, total);
+	    const at = sample(elapsed);
+	    applyView(at);
+	    currentShotIndex = at.index;
+	    emit({ paused: true, wash: at.wash || 0 });
+	    return true;
+	  }
+
+	  function dispose() {
+	    if (disposed) return;
+	    disposed = true;
+	    if (playing) stop();
+	    if (recording) {
+	      recordStop();
+	    }
+	    recording = false;
+	    if (rafId) cancelAnimationFrame(rafId);
+	    rafId = 0;
+	    plan = [];
+	    segments = [];
+	  }
+
+	  return {
+	    start,
+	    stop,
+	    isPlaying: () => playing,
+	    isPaused: () => paused,
+	    pause,
+	    resume,
+	    seek,
+	    getProgress: () => (total ? clamp$1(elapsed / total, 0, 1) : 0),
+	    isRecording: () => recording,
+	    getDuration: () => total,
+	    getTime: () => elapsed,
+	    recordStart,
+	    recordStop,
+	    dispose,
+	    get segments() {
+	      ensurePlan();
+	      return segments.map((segment) => ({
+	        type: segment.type,
+	        shotIndex: segment.shotIndex,
+	        id: plan[segment.shotIndex]?.id,
+	        caption: plan[segment.shotIndex]?.caption,
+	        start: segment.start,
+	        end: segment.end,
+	        duration: segment.duration || segment.end - segment.start
+	      }));
+	    }
+	  };
+	}
+
 	/* ------------------------------------------------------------------ */
 	/*  Elements & state                                                   */
 	/* ------------------------------------------------------------------ */
@@ -57312,6 +59454,20 @@ void main() {
 	const weatherName = $('#weatherName');
 	const weatherEn = $('#weatherEn');
 	const weatherPhase = $('#weatherPhase');
+	const filmButton = $('#filmButton');
+	const filmLayer = $('#filmLayer');
+	const filmTitleEl = $('#filmTitle');
+	const filmCaptionEl = $('#filmCaption');
+	const filmCaptionEnEl = $('#filmCaptionEn');
+	const filmTimeEl = $('#filmTime');
+	const filmDurationEl = $('#filmDuration');
+	const filmMetaTitleEl = $('#filmMetaTitle');
+	const filmProgressBar = $('#filmProgressBar');
+	const filmProgressFill = $('#filmProgressFill');
+	const filmWash = $('#filmWash');
+	const filmRecEl = $('#filmRec');
+	const filmRecordButton = $('#filmRecord');
+	const filmExitButton = $('#filmExit');
 	const phaseLabel = $('#phaseLabel');
 	const clockLabel = $('#clock');
 	const nightButton = $('#nightButton');
@@ -57336,6 +59492,8 @@ void main() {
 	  dayHour: 16.3,
 	  isNight: false,
 	  weatherId: 'clear',
+	  filmActive: false,
+	  filmRecording: false,
 	  tourActive: false,
 	  tourIndex: -1,
 	  tourTimer: null,
@@ -57352,6 +59510,8 @@ void main() {
 	let controls;
 	let campus;
 	let weather;
+	let film;
+	let filmUiCache = { index: -1, seconds: -1, duration: -1};
 	let raycaster;
 	let pointerNdc;
 	let clock;
@@ -57396,7 +59556,6 @@ void main() {
 	  stone: 15,
 	  confucius: 11,
 	  bronze: 13,
-	  dorm: 32,
 	  stand: 42
 	};
 
@@ -57533,6 +59692,8 @@ void main() {
 	    // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
 	    weather = createWeatherLayer();
 	    applyWeather(resolveInitialWeather(), { silent: true });
+	    // 影片控制器：室内机位来自 campus.interiorCameras，切校区后重建。
+	    film = createFilmLayer();
 	    setLoadingState(76, '正在栽植百年榄仁树');
 	    await nextFrame();
 	    await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -57556,7 +59717,10 @@ void main() {
 	      get state() { return state; },
 	      get weather() { return weather; },
 	      get weatherId() { return state.weatherId; },
+	      get film() { return film; },
 	      setWeather: (id) => applyWeather(id),
+	      startFilm: (options = {}) => startFilm(options),
+	      stopFilm: (options = {}) => stopFilm(options),
 	      switchCampus
 	    };
 	    clock = new Clock();
@@ -57673,6 +59837,7 @@ void main() {
 	    loading.hidden = true;
 	  }, 980);
 
+	  maybeAutoStartFilm();
 	  const targetSpot = params.get('spot');
 	  const view = params.get('view');
 	  const delay = reducedMotion || params.get('nointro') ? 0 : 500;
@@ -57800,7 +59965,10 @@ void main() {
 	  window.addEventListener('resize', resize);
 	  // 真正离开页面时释放天气层；bfcache 恢复（persisted）时不销毁。
 	  window.addEventListener('pagehide', (event) => {
-	    if (!event.persisted) disposeWeatherLayer();
+	    if (!event.persisted) {
+	      disposeFilmLayer();
+	      disposeWeatherLayer();
+	    }
 	  });
 	  document.addEventListener('visibilitychange', () => {
 	    if (!document.hidden) clock.getDelta();
@@ -57898,6 +60066,10 @@ void main() {
 	  });
 	  weatherRange.addEventListener('pointerdown', markInteracted);
 
+	  if (filmButton) filmButton.addEventListener('click', () => startFilm());
+	  if (filmRecordButton) filmRecordButton.addEventListener('click', toggleFilmRecording);
+	  if (filmExitButton) filmExitButton.addEventListener('click', () => stopFilm());
+
 	  $('#fullscreenButton').addEventListener('click', toggleFullscreen);
 	  document.addEventListener('fullscreenchange', () => {
 	    const button = $('#fullscreenButton');
@@ -57972,6 +60144,10 @@ void main() {
 	  const tag = document.activeElement?.tagName;
 	  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+	  if (film?.isPlaying?.()) {
+	    if (event.key === 'Escape') stopFilm();
+	    return;
+	  }
 	  if (event.key === 'Escape') {
 	    if (state.tourActive) {
 	      stopTour();
@@ -58018,6 +60194,7 @@ void main() {
 	function openSpot(id, options = {}) {
 	  const spot = LANDMARKS.find((item) => item.id === id);
 	  if (!spot) return;
+	  if (film?.isPlaying?.()) stopFilm({ silent: true });
 	  if (!options.fromTour) stopTour();
 	  markInteracted();
 	  state.activeId = id;
@@ -58124,6 +60301,7 @@ void main() {
 
 	function startTour() {
 	  if (state.tourActive) return;
+	  if (film?.isPlaying?.()) stopFilm({ silent: true });
 	  state.tourActive = true;
 	  state.tourIndex = 0;
 	  app.classList.add('is-touring');
@@ -58273,6 +60451,7 @@ void main() {
 	  setHidden('.light-panel', features.weather !== false);
 	  setHidden('#nightButton', features.weather !== false);
 	  setHidden('#tourButton', features.tour !== false);
+	  setHidden('#filmButton', features.tour !== false);
 	  setHidden('.map-panel', features.minimap !== false);
 	  setHidden('#markers', features.labels !== false);
 	  if (controls) controls.enabled = features.walk !== false;
@@ -58364,6 +60543,7 @@ void main() {
 	    stopTour();
 	    closeSpot({ stop: true });
 	    cancelCameraTween();
+	    disposeFilmLayer();
 	    disposeWeatherLayer();
 	    if (campus) {
 	      campus.dispose?.();
@@ -58390,6 +60570,8 @@ void main() {
 	    // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
 	    weather = createWeatherLayer();
 	    applyWeather(state.weatherId, { silent: true });
+	    // 影片控制器绑定 campus.interiorCameras，重建后重新创建。
+	    film = createFilmLayer();
 	    applyHour(resolveInitialHour(), { silent: true });
 	    resize();
 	    const overview = getOverviewView();
@@ -58617,6 +60799,13 @@ void main() {
 	  } catch (error) {
 	    console.warn('Weather layer failed to switch:', error);
 	  }
+	  // 场景层天气行为（js/campus-accurate.js 的 setWeather：学生打伞/躲雨等）；
+	  // 切校区/未就绪时用可选链保护，晚于本文件交付也不会崩。
+	  try {
+	    campus?.setWeather?.(entry.id);
+	  } catch (error) {
+	    console.warn('Campus weather behaviour failed to switch:', error);
+	  }
 	  const index = Math.max(0, list.indexOf(entry));
 	  const total = list.length;
 	  weatherRange.value = String(index);
@@ -58626,6 +60815,228 @@ void main() {
 	  weatherEn.textContent = entry.en;
 	  weatherPhase.textContent = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
 	  if (!options.silent) markInteracted();
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Film · guided campus tour + WebM recording                         */
+	/*  影片本身在 js/film.js 里编排运镜；这里只做：UI 状态、开关、录制下载、   */
+	/*  URL 参数与「播放时暂停导览/关闭图志/接管相机」的生命周期。              */
+	/* ------------------------------------------------------------------ */
+
+	/** 创建影片控制器；campus 重建后需要重新创建（室内机位随之更新）。 */
+	function createFilmLayer() {
+	  if (!scene || !camera || !controls || !renderer || !campus) return null;
+	  try {
+	    return createFilm({
+	      scene,
+	      camera,
+	      controls,
+	      renderer,
+	      campus,
+	      onStateChange: handleFilmState
+	    });
+	  } catch (error) {
+	    console.warn('Film failed to initialise:', error);
+	    return null;
+	  }
+	}
+
+	function disposeFilmLayer() {
+	  try {
+	    film?.dispose?.();
+	  } catch (error) {
+	    console.warn('Film failed to dispose:', error);
+	  }
+	  film = null;
+	  state.filmActive = false;
+	  state.filmRecording = false;
+	  app.classList.remove('is-filming');
+	  if (filmWash) filmWash.style.opacity = '0';
+	  if (filmLayer) filmLayer.setAttribute('aria-hidden', 'true');
+	}
+
+	/** 影片状态快照 → DOM。只在数值变化时写 DOM，避免每帧重排。 */
+	function handleFilmState(next = {}) {
+	  if (!filmLayer) return;
+	  const wasActive = state.filmActive;
+	  const active = Boolean(next.playing);
+	  state.filmActive = active;
+	  state.filmRecording = Boolean(next.recording);
+	  app.classList.toggle('is-filming', active);
+	  filmLayer.setAttribute('aria-hidden', active ? 'false' : 'true');
+
+	  if (next.title && filmTitleEl && filmTitleEl.textContent !== next.title) {
+	    filmTitleEl.textContent = next.title;
+	  }
+	  if (next.index !== undefined && next.index !== filmUiCache.index) {
+	    filmUiCache.index = next.index;
+	    if (filmCaptionEl) filmCaptionEl.textContent = next.caption || '';
+	    if (filmCaptionEnEl) filmCaptionEnEl.textContent = next.en || '';
+	  }
+	  if (next.duration && Math.abs(next.duration - filmUiCache.duration) > 0.01) {
+	    filmUiCache.duration = next.duration;
+	    if (filmDurationEl) filmDurationEl.textContent = formatFilmClock(next.duration);
+	    if (filmMetaTitleEl) filmMetaTitleEl.textContent = `${FILM_TITLE} · ${formatFilmClock(next.duration)}`;
+	  }
+	  const seconds = Math.max(0, Math.floor(next.time || 0));
+	  if (seconds !== filmUiCache.seconds) {
+	    filmUiCache.seconds = seconds;
+	    if (filmTimeEl) filmTimeEl.textContent = formatFilmClock(seconds);
+	  }
+	  const progress = clamp(Number(next.progress) || 0, 0, 1);
+	  if (filmProgressFill) {
+	    filmProgressFill.style.transform = `scaleX(${progress.toFixed(4)})`;
+	  }
+	  if (filmProgressBar) {
+	    filmProgressBar.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+	  }
+	  if (filmWash) {
+	    const wash = active ? clamp(Number(next.wash) || 0, 0, 1) : 0;
+	    filmWash.style.opacity = wash.toFixed(3);
+	  }
+	  if (filmRecEl) filmRecEl.hidden = !state.filmRecording;
+	  if (filmRecordButton) {
+	    filmRecordButton.textContent = state.filmRecording ? '停止录制并下载' : '录制并下载';
+	    filmRecordButton.setAttribute('aria-pressed', String(state.filmRecording));
+	  }
+	  if (active && !wasActive) markInteracted();
+	  if (next.ended) {
+	    showToast('影片播放完毕 · 可自由漫游');
+	    if (state.filmRecording) {
+	      finishRecording({ autoDownload: params.get('record') === '1' });
+	    }
+	  }
+	}
+
+	/** 秒数 → mm:ss（影片 HUD 的时间码）。 */
+	function formatFilmClock(seconds) {
+	  const safe = Math.max(0, Math.round(seconds));
+	  return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+	}
+
+	function downloadFilmBlob(blob) {
+	  if (!blob || !blob.size) {
+	    showToast('录制失败 · 未获取到视频数据');
+	    return false;
+	  }
+	  try {
+	    const url = URL.createObjectURL(blob);
+	    const link = document.createElement('a');
+	    link.href = url;
+	    link.download = '府城校园图志-巡游.webm';
+	    link.rel = 'noopener';
+	    document.body.appendChild(link);
+	    link.click();
+	    link.remove();
+	    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+	    showToast('影片已开始下载 · 府城校园图志-巡游.webm');
+	    return true;
+	  } catch (error) {
+	    console.warn('Film download failed:', error);
+	    showToast('影片下载失败');
+	    return false;
+	  }
+	}
+
+	/** 停止录制并（可选）下载；返回 Promise<Blob|null>，供调试/自动出片复用。 */
+	function finishRecording({ autoDownload = true } = {}) {
+	  if (!film?.recordStop) return Promise.resolve(null);
+	  return film
+	    .recordStop()
+	    .then((blob) => {
+	      state.filmRecording = false;
+	      if (filmRecEl) filmRecEl.hidden = true;
+	      if (filmRecordButton) {
+	        filmRecordButton.textContent = '录制并下载';
+	        filmRecordButton.setAttribute('aria-pressed', 'false');
+	      }
+	      if (autoDownload) downloadFilmBlob(blob);
+	      return blob;
+	    })
+	    .catch((error) => {
+	      console.warn('Film recording failed to stop:', error);
+	      return null;
+	    });
+	}
+
+	function startFilm(options = {}) {
+	  if (!campus) return false;
+	  if (!film) film = createFilmLayer();
+	  if (!film) {
+	    showToast('影片模块不可用');
+	    return false;
+	  }
+	  stopTour();
+	  if (state.activeId) closeSpot({ stop: false });
+	  cancelCameraTween();
+	  filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
+	  // 移动端：把场景卡片滚到视口内，避免影片在屏幕外播放。
+	  if (isPhoneLayout() && stageEl) {
+	    const top = stageEl.getBoundingClientRect().top + window.scrollY - 66;
+	    if (window.scrollY > top + 20) {
+	      window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
+	    }
+	  }
+	  const started = film.start({ restart: true });
+	  if (!started) return false;
+	  if (options.record) {
+	    const ok = film.recordStart();
+	    if (!ok) showToast('当前浏览器不支持影片录制');
+	    else state.filmRecording = true;
+	  }
+	  return true;
+	}
+
+	function stopFilm(options = {}) {
+	  if (!film?.isPlaying?.()) return false;
+	  const wasRecording = state.filmRecording;
+	  film.stop();
+	  state.filmActive = false;
+	  state.filmRecording = false;
+	  app.classList.remove('is-filming');
+	  if (filmLayer) filmLayer.setAttribute('aria-hidden', 'true');
+	  if (wasRecording) finishRecording({ autoDownload: options.download === true });
+	  if (!options.silent) showToast('已退出影片 · 视角已恢复');
+	  return true;
+	}
+
+	/** 影片 HUD 的「录制并下载 / 停止录制并下载」按钮。 */
+	function toggleFilmRecording() {
+	  if (!film) return;
+	  if (state.filmRecording) {
+	    finishRecording({ autoDownload: true });
+	    return;
+	  }
+	  const ok = film.recordStart();
+	  if (!ok) {
+	    showToast('当前浏览器不支持影片录制');
+	    return;
+	  }
+	  state.filmRecording = true;
+	  if (filmRecEl) filmRecEl.hidden = false;
+	  if (filmRecordButton) {
+	    filmRecordButton.textContent = '停止录制并下载';
+	    filmRecordButton.setAttribute('aria-pressed', 'true');
+	  }
+	  // 从片头重新播放，保证录到完整巡游。
+	  film.start({ restart: true });
+	  showToast('开始录制 · 影片将从头播放');
+	}
+
+	/**
+	 * ?film=1 → 自动放映；?record=1 → 自动放映并录制，结束时自动下载。
+	 * 与 ?hour / ?spot / ?weather / ?campus 兼容（其余参数照旧生效）。
+	 */
+	function maybeAutoStartFilm() {
+	  const wantsRecord = params.get('record') === '1' || params.get('record') === 'true';
+	  const wantsFilm = wantsRecord || params.get('film') === '1' || params.get('film') === 'true';
+	  if (!wantsFilm) return;
+	  const delay = reducedMotion ? 700 : 1400;
+	  window.setTimeout(() => {
+	    if (!campus || film?.isPlaying?.()) return;
+	    if (!film) film = createFilmLayer();
+	    startFilm({ record: wantsRecord });
+	  }, delay);
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -58822,7 +61233,7 @@ void main() {
 	       (b.name === '凤栖堂' && state.activeId === 'fengqi') ||
 	       (b.name === '衍林堂' && state.activeId === 'yanlin') ||
 	       (b.name === '体育馆' && state.activeId === 'gym') ||
-	       (b.name === '女生宿舍' && state.activeId === 'dorm'));
+	       false);
 	    ctx.beginPath();
 	    b.poly.forEach(([x, z], i) => {
 	      if (i === 0) ctx.moveTo(t.px(x), t.py(z));
@@ -59348,12 +61759,15 @@ void main() {
 	  campus.tick(delta);
 	  weather?.tick?.(delta);
 	  campus.updateBuildingLabels(camera);
-	  updateCameraTween(now);
-	  controls.update();
+	  // 影片期间相机由 js/film.js 驱动：跳过补间、OrbitControls 回写与边界钳制。
+	  if (!film?.isPlaying?.()) {
+	    updateCameraTween(now);
+	    controls.update();
 
-	  controls.target.x = clamp(controls.target.x, SITE.bounds.xMin + 5, SITE.bounds.xMax - 5);
-	  controls.target.y = clamp(controls.target.y, 0, 22);
-	  controls.target.z = clamp(controls.target.z, SITE.bounds.zMin + 5, SITE.bounds.zMax - 5);
+	    controls.target.x = clamp(controls.target.x, SITE.bounds.xMin + 5, SITE.bounds.xMax - 5);
+	    controls.target.y = clamp(controls.target.y, 0, 22);
+	    controls.target.z = clamp(controls.target.z, SITE.bounds.zMin + 5, SITE.bounds.zMax - 5);
+	  }
 
 	  updateMarkers();
 

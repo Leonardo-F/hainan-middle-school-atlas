@@ -1423,6 +1423,287 @@ body[data-night='true'] .rail-button .icon-moon {
   background: var(--hairline-soft);
 }
 
+/* Film action · a quieter sibling of the guided tour */
+.dock-button--film svg {
+  color: var(--accent);
+}
+
+.dock-button--film:hover svg,
+.dock-button--film:focus-visible svg {
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Film · letterbox overlay + captions + timeline                    */
+/*  A cinematic layer living inside the stage card: warm-ink bars,     */
+/*  serif subtitles and a hairline progress line.                      */
+/* ------------------------------------------------------------------ */
+
+.film {
+  --film-bar: clamp(30px, 7.5%, 70px);
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.45s var(--ease), visibility 0s linear 0.45s;
+}
+
+.app.is-filming .film {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0s;
+}
+
+.film__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--film-bar);
+  background: #171d1a;
+  transition: transform 0.55s var(--ease);
+}
+
+.film__bar {
+  z-index: 3;
+}
+
+.film__wash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #171d1a;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.film__bar--top {
+  top: 0;
+  transform: translateY(-101%);
+}
+
+.film__bar--bottom {
+  bottom: 0;
+  transform: translateY(101%);
+}
+
+.app.is-filming .film__bar--top,
+.app.is-filming .film__bar--bottom {
+  transform: translateY(0);
+}
+
+.film__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  height: var(--film-bar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 18px;
+  color: #f4ead9;
+}
+
+.film__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.film__title {
+  margin: 0;
+  font-family: var(--cn-serif);
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: #f4ead9;
+  white-space: nowrap;
+}
+
+.film__brand-en {
+  font-size: 5.8px;
+  letter-spacing: 0.16em;
+  color: rgba(244, 234, 217, 0.55);
+  white-space: nowrap;
+}
+
+.film__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.film__rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 6.4px;
+  letter-spacing: 0.14em;
+  color: rgba(244, 234, 217, 0.82);
+}
+
+.film__rec[hidden] {
+  display: none;
+}
+
+.film__rec i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c1503a;
+  box-shadow: 0 0 0 2px rgba(193, 80, 58, 0.24);
+  animation: film-rec 1.4s ease-in-out infinite;
+}
+
+@keyframes film-rec {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.film__btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 25px;
+  padding: 0 11px;
+  border: 1px solid rgba(244, 234, 217, 0.32);
+  border-radius: 3px;
+  background: rgba(244, 234, 217, 0.07);
+  color: #f4ead9;
+  font-family: var(--cn-serif);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+}
+
+.film__btn:hover {
+  background: rgba(244, 234, 217, 0.16);
+  border-color: rgba(244, 234, 217, 0.55);
+}
+
+.film__btn--ghost {
+  background: transparent;
+  color: rgba(244, 234, 217, 0.78);
+}
+
+.film__key {
+  font-size: 5.8px;
+  letter-spacing: 0.12em;
+  opacity: 0.55;
+}
+
+.film__caption-wrap {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(var(--film-bar) + 22px);
+  transform: translateX(-50%);
+  width: min(86%, 620px);
+  text-align: center;
+  color: #f7efe2;
+  transition: opacity 0.4s ease;
+}
+
+.film__caption {
+  margin: 0;
+  font-family: var(--cn-serif);
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 16px rgba(12, 18, 15, 0.62), 0 1px 3px rgba(12, 18, 15, 0.55);
+}
+
+.film__caption-en {
+  margin: 3px 0 0;
+  font-size: 6.4px;
+  letter-spacing: 0.2em;
+  color: rgba(247, 239, 226, 0.72);
+  text-shadow: 0 1px 10px rgba(12, 18, 15, 0.6);
+}
+
+.film__bottom {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--film-bar);
+}
+
+.film__timeline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(244, 234, 217, 0.16);
+  overflow: hidden;
+}
+
+.film__timeline-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #c8aa6e, #e8d3ad);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+.film__meta {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: var(--film-bar);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 6.6px;
+  letter-spacing: 0.14em;
+  color: rgba(244, 234, 217, 0.72);
+}
+
+.film__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.film__meta-sep {
+  opacity: 0.4;
+}
+
+.film__meta-title {
+  margin-left: auto;
+  font-family: var(--cn-serif);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: rgba(244, 234, 217, 0.62);
+}
+
+/* While filming, the atlas chrome steps aside so only the film remains. */
+.app.is-filming .stage-title,
+.app.is-filming .stage-meta,
+.app.is-filming .stage-rail,
+.app.is-filming .light-panel,
+.app.is-filming .command-dock,
+.app.is-filming .map-panel,
+.app.is-filming .stage-foot {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.app.is-filming #scene {
+  pointer-events: none;
+}
+
 /* Light capsule · above dock -------------------------------------- */
 
 .light-panel {
@@ -3016,6 +3297,62 @@ html.show-native-cursor .cursor {
     height: 13px;
   }
 
+  /* Film · compact letterbox on the stage card */
+  .film {
+    --film-bar: clamp(28px, 8%, 46px);
+  }
+
+  .film__top {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .film__title {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .film__brand-en {
+    display: none;
+  }
+
+  .film__btn {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 8px;
+    gap: 4px;
+  }
+
+  .film__rec {
+    font-size: 6px;
+  }
+
+  .film__caption-wrap {
+    bottom: calc(var(--film-bar) + 14px);
+    width: 92%;
+  }
+
+  .film__caption {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+  }
+
+  .film__caption-en {
+    font-size: 5.6px;
+    letter-spacing: 0.14em;
+  }
+
+  .film__meta {
+    left: 12px;
+    right: 12px;
+    font-size: 6px;
+    gap: 5px;
+  }
+
+  .film__meta-title {
+    display: none;
+  }
+
   .light-panel {
     bottom: 60px;
     width: calc(100% - 24px);
@@ -3210,6 +3547,32 @@ html.show-native-cursor .cursor {
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 680px) {
+  .film {
+    --film-bar: clamp(26px, 8.5%, 40px);
+  }
+
+  .film__title {
+    font-size: 11px;
+  }
+
+  .film__key {
+    display: none;
+  }
+
+  .film__btn {
+    height: 21px;
+    padding: 0 7px;
+    font-size: 7.5px;
+  }
+
+  .film__caption {
+    font-size: 12px;
+  }
+
+  .film__caption-wrap {
+    width: 94%;
+  }
+
   .intro {
     padding: 16px 3px 12px;
   }

@@ -441,28 +441,8 @@ export const LANDMARKS = [
     ]
   },
   {
-    id: 'dorm',
-    index: '19',
-    name: '女生宿舍',
-    en: 'GIRLS DORMITORY',
-    kind: '生活区 · 六层板楼',
-    year: '校园东侧',
-    anchor: [70, 9.5, 38],
-    camera: { position: [102, 18, 68], target: [70, 4, 38], fov: 44 },
-    map: [70, 38],
-    diagram: 'main',
-    summary: '3号教学楼东南侧、靠近校园边界的橙白条纹宿舍楼。',
-    description:
-      '女生宿舍位于3号教学楼以东偏南、靠近校园东南边界的一处草地（2026-11 按用户指认位置后移/新建），是一栋橙白横条纹的六层板式宿舍楼。2023 年百年校庆 VLOG 影像中，楼前立有红漆牌坊「尚德 睿智 唯实 创新」。三维轮廓为写意推测（非测绘），层高、立面与阳台细部同样不是测绘成果。',
-    facts: [
-      ['类型', '六层板式宿舍'],
-      ['外观', '橙白横条纹 · 红漆牌坊'],
-      ['位置', '3号教学楼东南侧 · 校园东南边界']
-    ]
-  },
-  {
     id: 'stand',
-    index: '20',
+    index: '19',
     name: '主席台与看台',
     en: 'GRANDSTAND',
     kind: '操场 · 蓝黄阶梯',
@@ -483,7 +463,7 @@ export const LANDMARKS = [
   },
   {
     id: 'library',
-    index: '21',
+    index: '20',
     name: '图书馆',
     en: 'LIBRARY',
     kind: '文化建筑 · 穹顶',
@@ -543,8 +523,8 @@ export const SOURCES = [
     url: 'https://www.bilibili.com/video/BV13z4y1N7EH'
   },
   {
-    label: 'OpenStreetMap：女生宿舍建筑轮廓 way 1444498450（ODbL）',
-    url: 'https://www.openstreetmap.org/way/1444498450'
+    label: 'OpenStreetMap：校园东侧建筑群轮廓（ODbL）',
+    url: 'https://www.openstreetmap.org/way/1127981105'
   }
 ];
 
@@ -592,7 +572,6 @@ const FUCHENG_MOBILE = {
     confucius: 11,
     bronze: 13,
     library: 34,
-    dorm: 32,
     stand: 42
   }
 };

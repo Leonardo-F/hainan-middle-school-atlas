@@ -8,6 +8,7 @@ import {
   resolveCampus
 } from './campuses.js';
 import { WEATHERS, createWeather } from './weather.js';
+import { createFilm, FILM_TITLE } from './film.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -64,6 +65,20 @@ const weatherIcon = $('#weatherIcon');
 const weatherName = $('#weatherName');
 const weatherEn = $('#weatherEn');
 const weatherPhase = $('#weatherPhase');
+const filmButton = $('#filmButton');
+const filmLayer = $('#filmLayer');
+const filmTitleEl = $('#filmTitle');
+const filmCaptionEl = $('#filmCaption');
+const filmCaptionEnEl = $('#filmCaptionEn');
+const filmTimeEl = $('#filmTime');
+const filmDurationEl = $('#filmDuration');
+const filmMetaTitleEl = $('#filmMetaTitle');
+const filmProgressBar = $('#filmProgressBar');
+const filmProgressFill = $('#filmProgressFill');
+const filmWash = $('#filmWash');
+const filmRecEl = $('#filmRec');
+const filmRecordButton = $('#filmRecord');
+const filmExitButton = $('#filmExit');
 const phaseLabel = $('#phaseLabel');
 const clockLabel = $('#clock');
 const nightButton = $('#nightButton');
@@ -88,6 +103,8 @@ const state = {
   dayHour: 16.3,
   isNight: false,
   weatherId: 'clear',
+  filmActive: false,
+  filmRecording: false,
   tourActive: false,
   tourIndex: -1,
   tourTimer: null,
@@ -104,6 +121,8 @@ let renderer;
 let controls;
 let campus;
 let weather;
+let film;
+let filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
 let raycaster;
 let pointerNdc;
 let clock;
@@ -148,7 +167,6 @@ const MOBILE_FRAME_WIDTH = {
   stone: 15,
   confucius: 11,
   bronze: 13,
-  dorm: 32,
   stand: 42
 };
 
@@ -286,6 +304,8 @@ async function boot() {
     // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
     weather = createWeatherLayer();
     applyWeather(resolveInitialWeather(), { silent: true });
+    // 影片控制器：室内机位来自 campus.interiorCameras，切校区后重建。
+    film = createFilmLayer();
     setLoadingState(76, '正在栽植百年榄仁树');
     await nextFrame();
     await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -309,7 +329,10 @@ async function boot() {
       get state() { return state; },
       get weather() { return weather; },
       get weatherId() { return state.weatherId; },
+      get film() { return film; },
       setWeather: (id) => applyWeather(id),
+      startFilm: (options = {}) => startFilm(options),
+      stopFilm: (options = {}) => stopFilm(options),
       switchCampus
     };
     clock = new THREE.Clock();
@@ -426,6 +449,7 @@ function finishBoot() {
     loading.hidden = true;
   }, 980);
 
+  maybeAutoStartFilm();
   const targetSpot = params.get('spot');
   const view = params.get('view');
   const delay = reducedMotion || params.get('nointro') ? 0 : 500;
@@ -553,7 +577,10 @@ function setupEvents() {
   window.addEventListener('resize', resize);
   // 真正离开页面时释放天气层；bfcache 恢复（persisted）时不销毁。
   window.addEventListener('pagehide', (event) => {
-    if (!event.persisted) disposeWeatherLayer();
+    if (!event.persisted) {
+      disposeFilmLayer();
+      disposeWeatherLayer();
+    }
   });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) clock.getDelta();
@@ -651,6 +678,10 @@ function setupEvents() {
   });
   weatherRange.addEventListener('pointerdown', markInteracted);
 
+  if (filmButton) filmButton.addEventListener('click', () => startFilm());
+  if (filmRecordButton) filmRecordButton.addEventListener('click', toggleFilmRecording);
+  if (filmExitButton) filmExitButton.addEventListener('click', () => stopFilm());
+
   $('#fullscreenButton').addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', () => {
     const button = $('#fullscreenButton');
@@ -725,6 +756,10 @@ function handleKeyDown(event) {
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+  if (film?.isPlaying?.()) {
+    if (event.key === 'Escape') stopFilm();
+    return;
+  }
   if (event.key === 'Escape') {
     if (state.tourActive) {
       stopTour();
@@ -771,6 +806,7 @@ function toggleFullscreen() {
 function openSpot(id, options = {}) {
   const spot = LANDMARKS.find((item) => item.id === id);
   if (!spot) return;
+  if (film?.isPlaying?.()) stopFilm({ silent: true });
   if (!options.fromTour) stopTour();
   markInteracted();
   state.activeId = id;
@@ -877,6 +913,7 @@ function stepSpot(direction) {
 
 function startTour() {
   if (state.tourActive) return;
+  if (film?.isPlaying?.()) stopFilm({ silent: true });
   state.tourActive = true;
   state.tourIndex = 0;
   app.classList.add('is-touring');
@@ -1026,6 +1063,7 @@ function applyFeatureFlags() {
   setHidden('.light-panel', features.weather !== false);
   setHidden('#nightButton', features.weather !== false);
   setHidden('#tourButton', features.tour !== false);
+  setHidden('#filmButton', features.tour !== false);
   setHidden('.map-panel', features.minimap !== false);
   setHidden('#markers', features.labels !== false);
   if (controls) controls.enabled = features.walk !== false;
@@ -1117,6 +1155,7 @@ function switchCampus(nextId) {
     stopTour();
     closeSpot({ stop: true });
     cancelCameraTween();
+    disposeFilmLayer();
     disposeWeatherLayer();
     if (campus) {
       campus.dispose?.();
@@ -1143,6 +1182,8 @@ function switchCampus(nextId) {
     // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
     weather = createWeatherLayer();
     applyWeather(state.weatherId, { silent: true });
+    // 影片控制器绑定 campus.interiorCameras，重建后重新创建。
+    film = createFilmLayer();
     applyHour(resolveInitialHour(), { silent: true });
     resize();
     const overview = getOverviewView();
@@ -1370,6 +1411,13 @@ function applyWeather(id, options = {}) {
   } catch (error) {
     console.warn('Weather layer failed to switch:', error);
   }
+  // 场景层天气行为（js/campus-accurate.js 的 setWeather：学生打伞/躲雨等）；
+  // 切校区/未就绪时用可选链保护，晚于本文件交付也不会崩。
+  try {
+    campus?.setWeather?.(entry.id);
+  } catch (error) {
+    console.warn('Campus weather behaviour failed to switch:', error);
+  }
   const index = Math.max(0, list.indexOf(entry));
   const total = list.length;
   weatherRange.value = String(index);
@@ -1379,6 +1427,228 @@ function applyWeather(id, options = {}) {
   weatherEn.textContent = entry.en;
   weatherPhase.textContent = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
   if (!options.silent) markInteracted();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Film · guided campus tour + WebM recording                         */
+/*  影片本身在 js/film.js 里编排运镜；这里只做：UI 状态、开关、录制下载、   */
+/*  URL 参数与「播放时暂停导览/关闭图志/接管相机」的生命周期。              */
+/* ------------------------------------------------------------------ */
+
+/** 创建影片控制器；campus 重建后需要重新创建（室内机位随之更新）。 */
+function createFilmLayer() {
+  if (!scene || !camera || !controls || !renderer || !campus) return null;
+  try {
+    return createFilm({
+      scene,
+      camera,
+      controls,
+      renderer,
+      campus,
+      onStateChange: handleFilmState
+    });
+  } catch (error) {
+    console.warn('Film failed to initialise:', error);
+    return null;
+  }
+}
+
+function disposeFilmLayer() {
+  try {
+    film?.dispose?.();
+  } catch (error) {
+    console.warn('Film failed to dispose:', error);
+  }
+  film = null;
+  state.filmActive = false;
+  state.filmRecording = false;
+  app.classList.remove('is-filming');
+  if (filmWash) filmWash.style.opacity = '0';
+  if (filmLayer) filmLayer.setAttribute('aria-hidden', 'true');
+}
+
+/** 影片状态快照 → DOM。只在数值变化时写 DOM，避免每帧重排。 */
+function handleFilmState(next = {}) {
+  if (!filmLayer) return;
+  const wasActive = state.filmActive;
+  const active = Boolean(next.playing);
+  state.filmActive = active;
+  state.filmRecording = Boolean(next.recording);
+  app.classList.toggle('is-filming', active);
+  filmLayer.setAttribute('aria-hidden', active ? 'false' : 'true');
+
+  if (next.title && filmTitleEl && filmTitleEl.textContent !== next.title) {
+    filmTitleEl.textContent = next.title;
+  }
+  if (next.index !== undefined && next.index !== filmUiCache.index) {
+    filmUiCache.index = next.index;
+    if (filmCaptionEl) filmCaptionEl.textContent = next.caption || '';
+    if (filmCaptionEnEl) filmCaptionEnEl.textContent = next.en || '';
+  }
+  if (next.duration && Math.abs(next.duration - filmUiCache.duration) > 0.01) {
+    filmUiCache.duration = next.duration;
+    if (filmDurationEl) filmDurationEl.textContent = formatFilmClock(next.duration);
+    if (filmMetaTitleEl) filmMetaTitleEl.textContent = `${FILM_TITLE} · ${formatFilmClock(next.duration)}`;
+  }
+  const seconds = Math.max(0, Math.floor(next.time || 0));
+  if (seconds !== filmUiCache.seconds) {
+    filmUiCache.seconds = seconds;
+    if (filmTimeEl) filmTimeEl.textContent = formatFilmClock(seconds);
+  }
+  const progress = clamp(Number(next.progress) || 0, 0, 1);
+  if (filmProgressFill) {
+    filmProgressFill.style.transform = `scaleX(${progress.toFixed(4)})`;
+  }
+  if (filmProgressBar) {
+    filmProgressBar.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+  }
+  if (filmWash) {
+    const wash = active ? clamp(Number(next.wash) || 0, 0, 1) : 0;
+    filmWash.style.opacity = wash.toFixed(3);
+  }
+  if (filmRecEl) filmRecEl.hidden = !state.filmRecording;
+  if (filmRecordButton) {
+    filmRecordButton.textContent = state.filmRecording ? '停止录制并下载' : '录制并下载';
+    filmRecordButton.setAttribute('aria-pressed', String(state.filmRecording));
+  }
+  if (active && !wasActive) markInteracted();
+  if (next.ended) {
+    showToast('影片播放完毕 · 可自由漫游');
+    if (state.filmRecording) {
+      finishRecording({ autoDownload: params.get('record') === '1' });
+    }
+  }
+}
+
+/** 秒数 → mm:ss（影片 HUD 的时间码）。 */
+function formatFilmClock(seconds) {
+  const safe = Math.max(0, Math.round(seconds));
+  return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+}
+
+function downloadFilmBlob(blob) {
+  if (!blob || !blob.size) {
+    showToast('录制失败 · 未获取到视频数据');
+    return false;
+  }
+  try {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '府城校园图志-巡游.webm';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showToast('影片已开始下载 · 府城校园图志-巡游.webm');
+    return true;
+  } catch (error) {
+    console.warn('Film download failed:', error);
+    showToast('影片下载失败');
+    return false;
+  }
+}
+
+/** 停止录制并（可选）下载；返回 Promise<Blob|null>，供调试/自动出片复用。 */
+function finishRecording({ autoDownload = true } = {}) {
+  if (!film?.recordStop) return Promise.resolve(null);
+  return film
+    .recordStop()
+    .then((blob) => {
+      state.filmRecording = false;
+      if (filmRecEl) filmRecEl.hidden = true;
+      if (filmRecordButton) {
+        filmRecordButton.textContent = '录制并下载';
+        filmRecordButton.setAttribute('aria-pressed', 'false');
+      }
+      if (autoDownload) downloadFilmBlob(blob);
+      return blob;
+    })
+    .catch((error) => {
+      console.warn('Film recording failed to stop:', error);
+      return null;
+    });
+}
+
+function startFilm(options = {}) {
+  if (!campus) return false;
+  if (!film) film = createFilmLayer();
+  if (!film) {
+    showToast('影片模块不可用');
+    return false;
+  }
+  stopTour();
+  if (state.activeId) closeSpot({ stop: false });
+  cancelCameraTween();
+  filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
+  // 移动端：把场景卡片滚到视口内，避免影片在屏幕外播放。
+  if (isPhoneLayout() && stageEl) {
+    const top = stageEl.getBoundingClientRect().top + window.scrollY - 66;
+    if (window.scrollY > top + 20) {
+      window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+  }
+  const started = film.start({ restart: true });
+  if (!started) return false;
+  if (options.record) {
+    const ok = film.recordStart();
+    if (!ok) showToast('当前浏览器不支持影片录制');
+    else state.filmRecording = true;
+  }
+  return true;
+}
+
+function stopFilm(options = {}) {
+  if (!film?.isPlaying?.()) return false;
+  const wasRecording = state.filmRecording;
+  film.stop();
+  state.filmActive = false;
+  state.filmRecording = false;
+  app.classList.remove('is-filming');
+  if (filmLayer) filmLayer.setAttribute('aria-hidden', 'true');
+  if (wasRecording) finishRecording({ autoDownload: options.download === true });
+  if (!options.silent) showToast('已退出影片 · 视角已恢复');
+  return true;
+}
+
+/** 影片 HUD 的「录制并下载 / 停止录制并下载」按钮。 */
+function toggleFilmRecording() {
+  if (!film) return;
+  if (state.filmRecording) {
+    finishRecording({ autoDownload: true });
+    return;
+  }
+  const ok = film.recordStart();
+  if (!ok) {
+    showToast('当前浏览器不支持影片录制');
+    return;
+  }
+  state.filmRecording = true;
+  if (filmRecEl) filmRecEl.hidden = false;
+  if (filmRecordButton) {
+    filmRecordButton.textContent = '停止录制并下载';
+    filmRecordButton.setAttribute('aria-pressed', 'true');
+  }
+  // 从片头重新播放，保证录到完整巡游。
+  film.start({ restart: true });
+  showToast('开始录制 · 影片将从头播放');
+}
+
+/**
+ * ?film=1 → 自动放映；?record=1 → 自动放映并录制，结束时自动下载。
+ * 与 ?hour / ?spot / ?weather / ?campus 兼容（其余参数照旧生效）。
+ */
+function maybeAutoStartFilm() {
+  const wantsRecord = params.get('record') === '1' || params.get('record') === 'true';
+  const wantsFilm = wantsRecord || params.get('film') === '1' || params.get('film') === 'true';
+  if (!wantsFilm) return;
+  const delay = reducedMotion ? 700 : 1400;
+  window.setTimeout(() => {
+    if (!campus || film?.isPlaying?.()) return;
+    if (!film) film = createFilmLayer();
+    startFilm({ record: wantsRecord });
+  }, delay);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1575,7 +1845,7 @@ function drawMap() {
        (b.name === '凤栖堂' && state.activeId === 'fengqi') ||
        (b.name === '衍林堂' && state.activeId === 'yanlin') ||
        (b.name === '体育馆' && state.activeId === 'gym') ||
-       (b.name === '女生宿舍' && state.activeId === 'dorm'));
+       false);
     ctx.beginPath();
     b.poly.forEach(([x, z], i) => {
       if (i === 0) ctx.moveTo(t.px(x), t.py(z));
@@ -2112,12 +2382,15 @@ function renderFrame(now) {
   campus.tick(delta);
   weather?.tick?.(delta);
   campus.updateBuildingLabels(camera);
-  updateCameraTween(now);
-  controls.update();
+  // 影片期间相机由 js/film.js 驱动：跳过补间、OrbitControls 回写与边界钳制。
+  if (!film?.isPlaying?.()) {
+    updateCameraTween(now);
+    controls.update();
 
-  controls.target.x = clamp(controls.target.x, SITE.bounds.xMin + 5, SITE.bounds.xMax - 5);
-  controls.target.y = clamp(controls.target.y, 0, 22);
-  controls.target.z = clamp(controls.target.z, SITE.bounds.zMin + 5, SITE.bounds.zMax - 5);
+    controls.target.x = clamp(controls.target.x, SITE.bounds.xMin + 5, SITE.bounds.xMax - 5);
+    controls.target.y = clamp(controls.target.y, 0, 22);
+    controls.target.z = clamp(controls.target.z, SITE.bounds.zMin + 5, SITE.bounds.zMax - 5);
+  }
 
   updateMarkers();
 

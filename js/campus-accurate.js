@@ -15,6 +15,7 @@ import { build as buildTeachingLandmark } from './landmarks/teaching.js';
 import { build as buildFengqiLandmark } from './landmarks/fengqi.js';
 import { build as buildYanlinLandmark } from './landmarks/yanlin.js';
 import { build as buildLibraryLandmark } from './landmarks/library.js';
+import { buildInteriors } from './interiors.js';
 
 const TAU = Math.PI * 2;
 const FLOOR = 1.8;            // one storey, scene units (≈3.6 m)
@@ -1719,6 +1720,17 @@ export function buildCampus(scene, renderer, options = {}) {
     buildHall(b);
   }
 
+  /* ---------------------------- interiors (task-10) ----------------- */
+  /**
+   * 室内场景：主教学楼首层 / 图书馆首层阅览室 / 凤栖堂内部厅堂。
+   * 独立模块 js/interiors.js 用与外壳相同的中心点 + rotation.y 建局部坐标房间，
+   * 机位以世界坐标返回（interiorCameras），供自动化影片进入建筑内部使用。
+   * 室内几何全部位于实体外壳体积内：外壳单面材质，从内部看被剔除、从外部看不可见，
+   * 因此不影响现有外景；灯光为 2~3 盏低强度暖点光，dispose 时随 world.traverse 释放。
+   */
+  const interiors = buildInteriors({ M, tex, reducedMotion });
+  world.add(interiors.group);
+
   /* ---------------------------- OSM corridors (需求 4/5) ------------- */
   /**
    * 连廊：site.js 的三块未命名 OSM 多边形就是连廊本体（Lead 转发的卫星/平面叠图结论）：
@@ -2342,12 +2354,12 @@ export function buildCampus(scene, renderer, options = {}) {
     { name: 'hall3', pts: [[18, 40], [32, 42], [36, 38], [20, 30], [16, 34]] },
     { name: 'science', pts: [[30, -17], [45, -2], [42, 5], [30, 10], [22, -10]] },
     { name: 'gym', pts: [[-40, 18], [-36, 20], [-32, 27], [-32, 37], [-36, 43], [-40, 45]] },
-    { name: 'yanlin', pts: [[-8, -70], [-2, -68], [4, -66], [10, -67], [12, -70], [10, -76], [2, -80], [-6, -78]] },
+    { name: 'yanlin', pts: [[-8, -70], [-2, -68], [4, -66], [10, -67], [12, -70], [10, -76], [-2, -85], [-6, -78]] },
     { name: 'fengqi', pts: [[-43, -40], [-38, -40], [-34, -43], [-32, -47], [-34, -52]] },
     // 艺术楼放大并南移后，艺术楼/曲水流觞两条路线改为绕新体量外圈
     { name: 'art', pts: [[30, 10], [36, 15], [42, 19], [48, 21], [54, 20], [59, 15], [63, 8], [65, 4], [65, 0], [62, -3], [58, -5], [52, -8], [46, -4], [42, -3], [35, 2], [31, 5], [30, 7]] },
     { name: 'stream', pts: [[56.46, -11.34], [60.2, -11.92], [64.47, -9.08], [66.76, -4.5], [65.74, -0.86], [62.0, -0.28], [57.73, -3.12], [55.44, -7.7]] },
-    { name: 'southgate', pts: [[48, 81], [55, 77], [63, 82], [63, 89], [55, 92], [49, 87]] },
+    { name: 'southgate', pts: [[48, 81], [55, 77], [60, 80], [52, 86], [49, 87]] },
     { name: 'tree', pts: [[-12, -44], [-7, -43], [-2, -46], [-3, -50], [-9, -51], [-13, -48]] },
     { name: 'hand', pts: [[16, -4], [23, -2], [27, -7], [24, -13], [17, -12], [14, -8]] },
     { name: 'east', pts: [[66, -15], [74, -8], [77, 2], [69, 6], [62, -2]] },
@@ -2463,6 +2475,248 @@ export function buildCampus(scene, renderer, options = {}) {
       stride: rand(10.0, 13.0),
       phase: rand(0, TAU),
       run: true
+    });
+  }
+
+  /* ---------------------------- student weather behaviour (task-12) -- */
+  /**
+   * 学生天气行为 + 建筑碰撞避让（用户反馈：雨天学生要打伞或躲雨；学生不应穿进建筑）。
+   *
+   * 避雨点（世界场景坐标，均为校园内、且在全部 site.buildings 外扩 0.85 单位之外，
+   * 由 /tmp 脚本逐点校验过；≈ 各建筑门廊/檐廊/雨棚下方）：
+   *   主教学楼前门廊 (-5.41,-36.35)、办公楼西连廊下 (-3.37,-14.59)、
+   *   办公楼东连廊下 (13.55,-33.22)、科学馆入口 (21.73,-11.38)、
+   *   凤栖堂檐廊 (-42.36,-45.42)、衍林堂檐廊 (3.33,-76.32)、
+   *   图书馆门廊 (31.02,-64.06)、体育馆雨棚 (-56.33,34.58)、主席台顶棚 (-47.20,-7.60)。
+   * 每个点再沿切线展开 3 个站位，避免多人叠在一起。
+   *
+   * 状态机：'walk' 沿原 CatmullRom 路线走 → 遇雨：一半学生（编号偶数）撑伞继续走
+   * （1.35× 速度），其余 + 全部跑道跑步学生进入 'shelter' 小跑去最近空位避雨点，
+   * 到达后转 'shelterIdle' 站立；雨停/转雪 → 回到 'walk'（offset 取最近曲线点，
+   * 避免瞬移跳变）；雪天不打伞、不躲雨，速度 0.82×。
+   *
+   * 碰撞：所有学生每帧最终位置做一次「建筑多边形外扩 0.85 推回 + 校园红线内推回」，
+   * 沿最近边法线推出（walk 状态每帧由曲线重算，因此推回不会累积、不会抖动）。
+   */
+  const RAINY_WEATHERS = new Set(['light-rain', 'heavy-rain', 'thunder', 'typhoon']);
+  const COLLISION_MARGIN = 0.85;
+  let weatherId = 'clear';
+
+  // ---- 避雨点与站位 ----
+  const shelterSpots = [
+    { name: '主教学楼前门廊', p: [-5.41, -36.35], tangent: [0.663, 0.749] },
+    { name: '办公楼西连廊下', p: [-3.37, -14.59], tangent: [0.752, -0.659] },
+    { name: '办公楼东连廊下', p: [13.55, -33.22], tangent: [0.749, -0.663] },
+    { name: '科学馆入口', p: [21.73, -11.38], tangent: [0.663, 0.749] },
+    { name: '凤栖堂檐廊', p: [-42.36, -45.42], tangent: [-0.640, -0.769] },
+    { name: '衍林堂檐廊', p: [3.33, -76.32], tangent: [-0.636, -0.772] },
+    { name: '图书馆门廊', p: [31.02, -64.06], tangent: [-0.663, -0.749] },
+    { name: '体育馆雨棚', p: [-56.33, 34.58], tangent: [0.785, -0.619] },
+    { name: '主席台顶棚', p: [-47.2, -7.6], tangent: [0.663, 0.749] }
+  ];
+  const SHELTER_SLOT_OFFSETS = [-0.55, 0, 0.55];
+  shelterSpots.forEach((spot) => {
+    spot.slots = SHELTER_SLOT_OFFSETS.map((offset) => [
+      spot.p[0] + spot.tangent[0] * offset,
+      spot.p[1] + spot.tangent[1] * offset
+    ]);
+    spot.occupied = new Array(spot.slots.length).fill(false);
+  });
+
+  // ---- 雨伞（共享几何/材质，仅雨天可见）----
+  const umbrellaCanopyGeo = new THREE.ConeGeometry(1.02, 0.42, 8, 1, false);
+  const umbrellaShaftGeo = new THREE.CylinderGeometry(0.028, 0.028, 1.5, 5);
+  const umbrellaCanopyMat = new THREE.MeshStandardMaterial({
+    color: 0x2f3b49, roughness: 0.82, flatShading: true
+  });
+  const umbrellaShaftMat = new THREE.MeshStandardMaterial({
+    color: 0x6b6660, roughness: 0.8
+  });
+
+  // ---- 建筑碰撞预计算（含 bbox 加速）----
+  const collisionPolys = site.buildings.map((b) => {
+    const poly = b.poly.slice(0, -1);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    let cx = 0;
+    let cz = 0;
+    for (const [x, z] of poly) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minZ = Math.min(minZ, z);
+      maxZ = Math.max(maxZ, z);
+      cx += x / poly.length;
+      cz += z / poly.length;
+    }
+    return {
+      poly,
+      cx,
+      cz,
+      minX: minX - COLLISION_MARGIN - 0.2,
+      maxX: maxX + COLLISION_MARGIN + 0.2,
+      minZ: minZ - COLLISION_MARGIN - 0.2,
+      maxZ: maxZ + COLLISION_MARGIN + 0.2
+    };
+  });
+  // 校园红线外推回用（每帧只对越界者做一次）
+  function pushInsideCampus(x, z) {
+    if (pointInPoly(x, z, site.campusOutline)) return [x, z];
+    let bestD = Infinity;
+    let qx = x;
+    let qz = z;
+    const outline = site.campusOutline;
+    for (let i = 0; i < outline.length; i += 1) {
+      const [x1, z1] = outline[i];
+      const [x2, z2] = outline[(i + 1) % outline.length];
+      const dx = x2 - x1;
+      const dz = z2 - z1;
+      const l2 = dx * dx + dz * dz || 1e-9;
+      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / l2));
+      const px = x1 + t * dx;
+      const pz = z1 + t * dz;
+      const d = Math.hypot(x - px, z - pz);
+      if (d < bestD) { bestD = d; qx = px; qz = pz; }
+    }
+    const c = centroid(site.campusOutline);
+    let nx = c[0] - qx;
+    let nz = c[1] - qz;
+    const len = Math.hypot(nx, nz) || 1;
+    return [qx + (nx / len) * 0.35, qz + (nz / len) * 0.35];
+  }
+  /** 沿最近边法线把 (x,z) 推出所有建筑多边形（外扩 COLLISION_MARGIN）。 */
+  function resolveStudentPosition(x, z) {
+    let px = x;
+    let pz = z;
+    for (let pass = 0; pass < 3; pass += 1) {
+      let moved = false;
+      for (const cp of collisionPolys) {
+        if (px < cp.minX || px > cp.maxX || pz < cp.minZ || pz > cp.maxZ) continue;
+        const inside = pointInPoly(px, pz, cp.poly);
+        let bestD = Infinity;
+        let qx = px;
+        let qz = pz;
+        for (let i = 0; i < cp.poly.length; i += 1) {
+          const [x1, z1] = cp.poly[i];
+          const [x2, z2] = cp.poly[(i + 1) % cp.poly.length];
+          const dx = x2 - x1;
+          const dz = z2 - z1;
+          const l2 = dx * dx + dz * dz || 1e-9;
+          const t = Math.max(0, Math.min(1, ((px - x1) * dx + (pz - z1) * dz) / l2));
+          const ex = x1 + t * dx;
+          const ez = z1 + t * dz;
+          const d = Math.hypot(px - ex, pz - ez);
+          if (d < bestD) { bestD = d; qx = ex; qz = ez; }
+        }
+        if (!inside && bestD >= COLLISION_MARGIN) continue;
+        let nx = inside ? qx - px : px - qx;
+        let nz = inside ? qz - pz : pz - qz;
+        let len = Math.hypot(nx, nz);
+        if (len < 1e-4) {
+          nx = px - cp.cx;
+          nz = pz - cp.cz;
+          len = Math.hypot(nx, nz) || 1;
+        }
+        nx /= len;
+        nz /= len;
+        px = qx + nx * (COLLISION_MARGIN + 0.04);
+        pz = qz + nz * (COLLISION_MARGIN + 0.04);
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    return pushInsideCampus(px, pz);
+  }
+
+  /** 采样曲线取最近 offset（雨停后回到原路线用）。 */
+  function nearestCurveOffset(walker) {
+    const pos = walker.group.position;
+    let best = walker.offset;
+    let bestD = Infinity;
+    for (let i = 0; i < 48; i += 1) {
+      const t = i / 48;
+      const p = walker.curve.getPoint(t);
+      const d = Math.hypot(p.x - pos.x, p.z - pos.z);
+      if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
+  }
+  /** 给一个学生分配最近的空避雨站位。 */
+  function assignShelterSlot(walker) {
+    const pos = walker.group.position;
+    let best = null;
+    let bestD = Infinity;
+    for (const spot of shelterSpots) {
+      for (let i = 0; i < spot.slots.length; i += 1) {
+        if (spot.occupied[i]) continue;
+        const s = spot.slots[i];
+        const d = Math.hypot(s[0] - pos.x, s[1] - pos.z);
+        if (d < bestD) { bestD = d; best = { spot, index: i, slot: s }; }
+      }
+    }
+    if (!best) {
+      // 全部站位被占：直接去最近的避雨点（可能与他人重叠，数量远小于容量时不会发生）
+      const spot = shelterSpots.reduce((a, b) => (
+        Math.hypot(b.p[0] - pos.x, b.p[1] - pos.z) < Math.hypot(a.p[0] - pos.x, a.p[1] - pos.z) ? b : a
+      ));
+      return spot.p;
+    }
+    best.spot.occupied[best.index] = true;
+    return best.slot;
+  }
+
+  // 给所有行走/跑步学生挂雨伞 + 初始化状态机字段
+  walkers.forEach((walker, index) => {
+    const umbrella = new THREE.Group();
+    const canopy = new THREE.Mesh(umbrellaCanopyGeo, umbrellaCanopyMat);
+    canopy.position.y = 2.02;
+    canopy.castShadow = false;
+    const shaft = new THREE.Mesh(umbrellaShaftGeo, umbrellaShaftMat);
+    shaft.position.y = 1.25;
+    umbrella.add(canopy, shaft);
+    umbrella.visible = false;
+    walker.group.add(umbrella);
+    walker.umbrella = umbrella;
+    walker.state = 'walk';
+    walker.walkSpeedScale = 1;
+    walker.hasUmbrella = false;
+    walker.shelterPos = null;
+    walker.shelterSpot = null;
+    walker.face = walker.group.rotation.y;
+    walker.moving = true;
+    walker.idlePhase = index * 0.7;
+  });
+
+  function resetShelterOccupancy() {
+    for (const spot of shelterSpots) spot.occupied.fill(false);
+  }
+
+  /**
+   * 天气 → 学生行为（main.js 的 applyWeather 会调用 campus.setWeather(id)）。
+   * 只接受 weather.js 的 6 个 id；未知值回退 clear。
+   */
+  function setStudentWeather(id) {
+    if (disposed) return;
+    const valid = id === 'clear' || id === 'snow' || RAINY_WEATHERS.has(id);
+    weatherId = valid ? id : 'clear';
+    const rainy = RAINY_WEATHERS.has(weatherId);
+    const snowy = weatherId === 'snow';
+    resetShelterOccupancy();
+    walkers.forEach((walker, index) => {
+      walker.hasUmbrella = rainy && !walker.run && index % 2 === 0;
+      walker.umbrella.visible = false;
+      walker.walkSpeedScale = rainy ? (walker.hasUmbrella ? 1.35 : 1) : snowy ? 0.82 : 1;
+      if (rainy && (walker.run || !walker.hasUmbrella)) {
+        // 小跑去最近的空避雨位
+        walker.shelterPos = assignShelterSlot(walker);
+        walker.state = 'shelter';
+      } else if (rainy) {
+        walker.state = 'walk';
+      } else if (walker.state === 'shelter' || walker.state === 'shelterIdle') {
+        walker.offset = nearestCurveOffset(walker);
+        walker.state = 'walk';
+      }
     });
   }
 
@@ -2603,25 +2857,72 @@ export function buildCampus(scene, renderer, options = {}) {
       pos.needsUpdate = true;
       if (!reducedMotion) waver.geo.computeVertexNormals();
     }
+    const rainy = RAINY_WEATHERS.has(weatherId);
     for (const walker of walkers) {
-      walker.offset = (walker.offset + delta * walker.speed) % 1;
-      const p = walker.curve.getPoint(walker.offset);
       const gait = Math.sin(t * walker.stride + walker.phase);
       const run = Boolean(walker.run);
-      const bob = Math.abs(Math.cos(t * walker.stride + walker.phase)) * (run ? 0.022 : 0.014);
-      walker.group.position.set(p.x, 0.055 + bob, p.z);
-      const tangent = walker.curve.getTangent(walker.offset);
-      walker.group.rotation.y = Math.atan2(tangent.x, tangent.z);
+      let bx;
+      let bz;
+      let moving = false;
+      if (walker.state === 'walk') {
+        walker.offset = (walker.offset + delta * walker.speed * walker.walkSpeedScale) % 1;
+        const p = walker.curve.getPoint(walker.offset);
+        bx = p.x;
+        bz = p.z;
+        const tangent = walker.curve.getTangent(walker.offset);
+        walker.face = Math.atan2(tangent.x, tangent.z);
+        moving = true;
+      } else if (walker.state === 'shelter') {
+        const target = walker.shelterPos;
+        const dx = target[0] - walker.group.position.x;
+        const dz = target[1] - walker.group.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.32) {
+          walker.state = 'shelterIdle';
+          bx = target[0];
+          bz = target[1];
+          walker.face = Math.atan2(dx, dz);
+        } else {
+          const runSpeed = run ? 3.0 : 2.5;
+          const step = Math.min(dist, delta * runSpeed);
+          bx = walker.group.position.x + (dx / dist) * step;
+          bz = walker.group.position.z + (dz / dist) * step;
+          walker.face = Math.atan2(dx, dz);
+          moving = true;
+        }
+        walker.umbrella.visible = false;
+      } else {
+        bx = walker.group.position.x;
+        bz = walker.group.position.z;
+      }
+      // 建筑碰撞：沿最近边法线推回（walk 状态每帧由曲线重算，推回不累积、不抖动）
+      const [safeX, safeZ] = resolveStudentPosition(bx, bz);
+      const bob = moving
+        ? Math.abs(Math.cos(t * walker.stride + walker.phase)) * (run ? 0.022 : 0.014)
+        : Math.sin(t * 0.9 + walker.idlePhase) * 0.005;
+      walker.group.position.set(safeX, 0.055 + bob, safeZ);
+      if (walker.state !== 'shelterIdle') {
+        const diff = Math.atan2(
+          Math.sin(walker.face - walker.group.rotation.y),
+          Math.cos(walker.face - walker.group.rotation.y)
+        );
+        walker.group.rotation.y += diff * Math.min(1, delta * 6);
+      } else {
+        walker.group.rotation.y = walker.face + Math.sin(t * 0.35 + walker.idlePhase) * 0.06;
+      }
       const rig = walker.group.userData.walk;
       if (rig) {
-        const legSwing = run ? 0.82 : 0.52;
-        const armSwing = run ? 0.66 : 0.38;
+        const hurrying = run || walker.state === 'shelter';
+        const legSwing = moving ? (hurrying ? 0.82 : 0.52) : 0.02;
+        const armSwing = moving ? (hurrying ? 0.66 : 0.38) : 0.02;
         rig.legs[0].rotation.x = gait * legSwing;
         rig.legs[1].rotation.x = -gait * legSwing;
         rig.arms[0].rotation.x = -gait * armSwing;
         rig.arms[1].rotation.x = gait * armSwing;
-        if (rig.body) rig.body.rotation.x = run ? 0.09 : 0;
+        if (rig.body) rig.body.rotation.x = moving && hurrying ? 0.09 : 0;
       }
+      // 雨伞：仅「撑着伞继续走」的学生、且在下雨类天气时可见（雪天/晴天/躲雨途中都隐藏）
+      walker.umbrella.visible = rainy && walker.hasUmbrella && walker.state === 'walk';
     }
     if (selection.visible) {
       selection.rotation.y += delta * 0.07;
@@ -2660,11 +2961,25 @@ export function buildCampus(scene, renderer, options = {}) {
     setTime,
     getTime: () => hour,
     getNight: () => night,
+    /** 天气 → 学生行为（打伞/躲雨/恢复）；main.js 的 applyWeather 会调用。 */
+    setWeather: (id) => setStudentWeather(id),
+    getWeather: () => weatherId,
+    /** 供自检/影片读取的学生状态快照（位置、状态、是否撑伞）。 */
+    studentStates: () => walkers.map((w) => ({
+      state: w.state,
+      x: +w.group.position.x.toFixed(2),
+      z: +w.group.position.z.toFixed(2),
+      umbrella: !!w.umbrella.visible,
+      run: !!w.run
+    })),
     tick: animate,
     updateBuildingLabels,
     setSelection,
     hideSelection: () => setSelection(null),
     landmarks: landmarkGroups,
+    /** 室内机位（世界坐标）：mainHallLobby / mainHallCorridor / mainHallClassroom /
+     *  libraryReading / fengqiHall，每项 { position, target, fov }，供自动化影片使用。 */
+    interiorCameras: interiors.cameras,
     /** 释放本场景 GPU 资源；切换校区 / 重建前调用（幂等）。 */
     dispose
   };
