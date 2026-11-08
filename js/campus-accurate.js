@@ -1,23 +1,28 @@
 import * as THREE from 'three';
 import { makeTextures } from './textures.js';
-import { SITE } from './site.js';
+import { SITE as SITE_FALLBACK } from './site.js';
 import {
   buildMaterials, createHipRoof, createPalm, createCanopyTree, addHedge,
   addTreeContactShadow, createStudent, createLampPost, createGoal, createBench,
   createStatue, addPath, ribbonGeometry, markSpot, placeBox, box, plane,
   flatShapeMesh, roundedRectShape, mulberry32
 } from './campus.js';
+// TODO(multi-campus): 以下四栋重点建筑模型是府城校区专属（js/landmarks/*，米制，front = +z）。
+// 未来其他校区应通过 buildCampus 的 options.landmarkBuilders（landmark id → build(ctx)）
+// 或 campus.scene 配置注入自己的模型，而不是在本文件里硬编码新校区内容。
+import { build as buildGateLandmark } from './landmarks/gate.js';
+import { build as buildTeachingLandmark } from './landmarks/teaching.js';
+import { build as buildFengqiLandmark } from './landmarks/fengqi.js';
+import { build as buildYanlinLandmark } from './landmarks/yanlin.js';
 
 const TAU = Math.PI * 2;
 const FLOOR = 1.8;            // one storey, scene units (≈3.6 m)
 const UP = new THREE.Vector3(0, 1, 0);
-const rng = mulberry32(20261019);
+// 随机数用于植被 / 人物 / 飘落物等细节；buildCampus 开头会重置种子，
+// 保证重复 build / 切换校区时得到同一套布局（确定性）。
+let rng = mulberry32(20261019);
 const rand = (a, b) => a + (b - a) * rng();
 const deg = THREE.MathUtils.degToRad;
-const SITE_GROUND_BOUNDS = {
-  xMin: SITE.bounds.xMin, xMax: SITE.bounds.xMax,
-  zMin: SITE.bounds.zMin, zMax: SITE.bounds.zMax
-};
 
 /* ------------------------------------------------------------------ */
 /*  Geometry helpers                                                   */
@@ -149,8 +154,8 @@ function clipSegment(a, b, bounds) {
   ];
 }
 
-function addGroundStrip(parent, a, b, width, material, y) {
-  const clipped = clipSegment(a, b, SITE_GROUND_BOUNDS);
+function addGroundStrip(parent, a, b, width, material, y, bounds) {
+  const clipped = clipSegment(a, b, bounds);
   if (!clipped) return;
   const [[x0, z0], [x1, z1]] = clipped;
   const length = Math.hypot(x1 - x0, z1 - z0);
@@ -163,11 +168,126 @@ function addGroundStrip(parent, a, b, width, material, y) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Resource disposal helpers（校区切换时释放 GPU 资源）                 */
+/* ------------------------------------------------------------------ */
+
+/** 当前存活的场景根节点；dispose 时用于识别跨场景共享的 geometry / material / texture，
+ *  例如 js/landmarks/parts.js 的模块级共享 geometry，避免误释放另一个校区仍在使用的资源。 */
+const liveSceneRoots = new Set();
+
+/** 收集材质引用的全部贴图（含 ShaderMaterial uniforms）。 */
+function collectMaterialTextures(material, textures) {
+  if (!material) return;
+  for (const value of Object.values(material)) {
+    if (value && value.isTexture) textures.add(value);
+  }
+  if (material.uniforms) {
+    for (const uniform of Object.values(material.uniforms)) {
+      const value = uniform && uniform.value;
+      if (value && value.isTexture) textures.add(value);
+    }
+  }
+}
+
+/** 收集 makeTextures() 返回对象里的贴图（含嵌套包装），兜底未挂到材质上的贴图。 */
+function collectTexturesFromBundle(bundle, textures, depth = 0) {
+  if (!bundle || depth > 2) return;
+  if (bundle.isTexture) {
+    textures.add(bundle);
+    return;
+  }
+  if (typeof bundle !== 'object' || Array.isArray(bundle)) return;
+  for (const value of Object.values(bundle)) {
+    collectTexturesFromBundle(value, textures, depth + 1);
+  }
+}
+
+/**
+ * 释放一个场景子树占用的 geometry / material / texture，并释放灯光 shadow map。
+ * 只释放本场景创建的资源，不销毁外部共享的 renderer。
+ * @returns {{ geometries: number, materials: number, textures: number }} 释放计数（便于自检）
+ */
+function disposeSceneResources(root, extraTextures) {
+  // 统计其他存活场景仍在使用的资源：这些是跨场景共享资源（如 parts.js 的模块级
+  // geometry），不能释放，否则会影响另一个校区 / 下一次 build。
+  const sharedGeometries = new Set();
+  const sharedMaterials = new Set();
+  const sharedTextures = new Set();
+  for (const liveRoot of liveSceneRoots) {
+    liveRoot.traverse((object) => {
+      if (object.geometry) sharedGeometries.add(object.geometry);
+      const materialList = Array.isArray(object.material)
+        ? object.material
+        : object.material
+          ? [object.material]
+          : [];
+      for (const material of materialList) {
+        if (!material) continue;
+        sharedMaterials.add(material);
+        collectMaterialTextures(material, sharedTextures);
+      }
+    });
+  }
+
+  const geometries = new Set();
+  const materials = new Set();
+  const textures = new Set();
+  if (extraTextures) collectTexturesFromBundle(extraTextures, textures);
+  root.traverse((object) => {
+    if (object.geometry) geometries.add(object.geometry);
+    const materialList = Array.isArray(object.material)
+      ? object.material
+      : object.material
+        ? [object.material]
+        : [];
+    for (const material of materialList) {
+      if (!material) continue;
+      materials.add(material);
+      collectMaterialTextures(material, textures);
+    }
+    // DirectionalLight 等通过 Light.dispose() 释放其 shadow map 贴图（灯光为本场景私有）。
+    if (object.isLight && typeof object.dispose === 'function') object.dispose();
+  });
+
+  const released = { geometries: 0, materials: 0, textures: 0 };
+  for (const material of materials) {
+    if (sharedMaterials.has(material)) continue;
+    material.dispose();
+    released.materials += 1;
+  }
+  for (const geometry of geometries) {
+    if (sharedGeometries.has(geometry)) continue;
+    geometry.dispose();
+    released.geometries += 1;
+  }
+  for (const texture of textures) {
+    if (sharedTextures.has(texture)) continue;
+    texture.dispose();
+    released.textures += 1;
+  }
+  return released;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main                                                               */
 /* ------------------------------------------------------------------ */
 
 export function buildCampus(scene, renderer, options = {}) {
   const reducedMotion = Boolean(options.reducedMotion);
+
+  /* ------------------------- campus contract ----------------------- */
+  // 多校区契约：options.site 提供空间数据，options.campus / options.landmarks /
+  // options.theme 提供校区元信息 / 叙事地标 / 主题色。
+  // 不传 site 时回退府城 js/site.js，保证旧的零参数调用行为完全不变。
+  const site = options.site || SITE_FALLBACK;
+  const campusMeta = options.campus || null;
+  // TODO(multi-campus): options.landmarks / options.theme 已纳入调用契约但暂未参与
+  // 场景构建（府城视觉不变）。未来其他校区应通过 options.landmarkBuilders 或
+  // campus.scene 配置注入自己的重点建筑模型与主题材质，而不是改本文件。
+  // 每次 build 重置随机种子，保证重复 build / dispose 后的布局确定性。
+  rng = mulberry32(20261019);
+
+  let disposed = false;
   const tex = makeTextures(renderer);
   const M = buildMaterials(tex, renderer);
   const pickables = [];
@@ -178,8 +298,12 @@ export function buildCampus(scene, renderer, options = {}) {
   const windows = M.facadeMaterials;
   const signs = M.signMaterials;
   const world = new THREE.Group();
-  world.name = '海南中学府城校区';
+  // 默认保持旧名称；传入 campus 元信息时按「学校 + 校区」拼接（府城即「海南中学府城校区」）。
+  world.name = campusMeta
+    ? `${campusMeta.school ?? '海南中学'}${campusMeta.name ?? ''}`.trim() || '海南中学府城校区'
+    : '海南中学府城校区';
   scene.add(world);
+  liveSceneRoots.add(world);
 
   // new, muted materials
   M.terracottaRoof = new THREE.MeshStandardMaterial({
@@ -437,6 +561,7 @@ export function buildCampus(scene, renderer, options = {}) {
   }
 
   function updateBuildingLabels(camera) {
+    if (disposed) return;
     for (const l of buildingLabels) {
       const dist = camera.position.distanceTo(l.pos);
       const h = THREE.MathUtils.clamp(dist * (l.unknown ? 0.019 : 0.023), 0.8, 14) * l.scale;
@@ -631,7 +756,7 @@ export function buildCampus(scene, renderer, options = {}) {
     return pond;
   }
 
-  const bounds = SITE.bounds;
+  const bounds = site.bounds;
 
   /* ---------------------------- sky & lights ------------------------ */
   const skyUniforms = {
@@ -696,7 +821,7 @@ export function buildCampus(scene, renderer, options = {}) {
   // Follow the campus outline instead of a large rectangular plinth: this
   // removes the empty beige apron in front of the gate.
   const plinthShape = new THREE.Shape();
-  SITE.campusOutline.forEach(([x, z], i) => {
+  site.campusOutline.forEach(([x, z], i) => {
     if (i === 0) plinthShape.moveTo(x, z);
     else plinthShape.lineTo(x, z);
   });
@@ -715,12 +840,24 @@ export function buildCampus(scene, renderer, options = {}) {
   plinth.receiveShadow = false;
   world.add(plinth);
 
+  // 校园底板之外的大地面：近景机位（校门/凤栖堂/衍林堂正面）不会看到
+  // 底板边缘外的空白背景，远景边缘再由 setTime 里的雾色淡出。不参与阴影。
+  const outerGround = new THREE.Mesh(
+    new THREE.CircleGeometry(1150, 64),
+    new THREE.MeshStandardMaterial({ color: 0xd9d0bc, roughness: 1 })
+  );
+  outerGround.rotation.x = -Math.PI / 2;
+  outerGround.position.y = -0.74;
+  outerGround.receiveShadow = false;
+  outerGround.castShadow = false;
+  world.add(outerGround);
+
   // campus lawn footprint from OSM boundary
   const lawnMap = tex.grass.clone();
   lawnMap.repeat.set(26, 20);
   lawnMap.needsUpdate = true;
   const lawnMat = new THREE.MeshStandardMaterial({ map: lawnMap, color: 0xffffff, roughness: 1 });
-  const campusGround = flatPolygon(SITE.campusOutline, lawnMat, 0.04);
+  const campusGround = flatPolygon(site.campusOutline, lawnMat, 0.04);
   world.add(campusGround);
 
   // The urban road ribbons in front of the gates are intentionally omitted.
@@ -738,7 +875,7 @@ export function buildCampus(scene, renderer, options = {}) {
   /* ---------------------------- boundary wall ----------------------- */
   const wallMat = M.plasterPale;
   const copingMat = M.roofEdge;
-  const outline = SITE.campusOutline;
+  const outline = site.campusOutline;
   for (let i = 0; i < outline.length; i += 1) {
     if (i >= 13 && i <= 16) continue; // north gate cuts the short wall bend
     if (i === 1 || i === 2) continue; // south gate is rebuilt flush below
@@ -761,7 +898,7 @@ export function buildCampus(scene, renderer, options = {}) {
   // The main gate sits on the north-west wall where the main-building axis
   // meets the boundary. The short wall bend is replaced by the gate itself
   // and two short stitched wall returns.
-  const ngWall = SITE.northGate;
+  const ngWall = site.northGate;
   const gateU = [Math.cos(deg(ngWall.angle)), -Math.sin(deg(ngWall.angle))];
   const gateHalf = 7.1;
   const gateSideA = [ngWall.p[0] + gateU[0] * gateHalf, ngWall.p[1] + gateU[1] * gateHalf];
@@ -785,7 +922,7 @@ export function buildCampus(scene, renderer, options = {}) {
   // South gate follows the main gate's rule: centre on the boundary and
   // rebuild the two wall edges back to the gate base, so nothing crosses
   // outside the campus.
-  const sgWall = SITE.southGate;
+  const sgWall = site.southGate;
   const sGateU = [Math.cos(deg(sgWall.angle)), -Math.sin(deg(sgWall.angle))];
   const sGateHalf = 5.5;
   const sGateSideA = [sgWall.p[0] + sGateU[0] * sGateHalf, sgWall.p[1] + sGateU[1] * sGateHalf];
@@ -799,22 +936,22 @@ export function buildCampus(scene, renderer, options = {}) {
   const trackGroup = new THREE.Group();
   trackGroup.name = 'sports-field';
   const trackMat = new THREE.MeshStandardMaterial({ map: tex.track, color: 0xffffff, roughness: 0.97 });
-  const trackPlane = new THREE.Mesh(new THREE.PlaneGeometry(SITE.track.size[1], SITE.track.size[0]), trackMat);
+  const trackPlane = new THREE.Mesh(new THREE.PlaneGeometry(site.track.size[1], site.track.size[0]), trackMat);
   trackPlane.rotation.x = -Math.PI / 2;
   trackPlane.position.y = 0.075;
   trackPlane.receiveShadow = true;
   trackPlane.name = 'track-plane';
-  trackGroup.position.set(SITE.track.center[0], 0, SITE.track.center[1]);
-  trackGroup.rotation.y = deg(-SITE.track.angle);
+  trackGroup.position.set(site.track.center[0], 0, site.track.center[1]);
+  trackGroup.rotation.y = deg(-site.track.angle);
   trackGroup.add(trackPlane);
   const goalA = createGoal(M, 1);
   goalA.scale.setScalar(0.5);
-  goalA.position.set(-SITE.track.size[1] * 0.34, 0.08, 0);
+  goalA.position.set(-site.track.size[1] * 0.34, 0.08, 0);
   goalA.rotation.y = Math.PI / 2;
   trackGroup.add(goalA);
   const goalB = createGoal(M, -1);
   goalB.scale.setScalar(0.5);
-  goalB.position.set(SITE.track.size[1] * 0.34, 0.08, 0);
+  goalB.position.set(site.track.size[1] * 0.34, 0.08, 0);
   goalB.rotation.y = -Math.PI / 2;
   trackGroup.add(goalB);
   trackGroup.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
@@ -823,7 +960,7 @@ export function buildCampus(scene, renderer, options = {}) {
 
   // court pads
   const courtGroup = new THREE.Group();
-  for (const court of SITE.courts) {
+  for (const court of site.courts) {
     const [w, d] = court.size;
     const mat = court.kind === 'volleyball' ? M.courtGreen : M.courtBlue;
     const pad = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
@@ -852,50 +989,11 @@ export function buildCampus(scene, renderer, options = {}) {
   const landmarkGroups = {};
 
   /* ---------------------------- north gate -------------------------- */
-  const gate = new THREE.Group();
-  const ng = SITE.northGate;
+  // 主校门：独立模块 js/landmarks/gate.js（局部米制，front = +z）。
+  const gate = buildGateLandmark({ M, tex, reducedMotion });
+  const ng = site.northGate;
   gate.position.set(ng.p[0], 0.04, ng.p[1]);
   gate.rotation.y = deg(ng.angle);
-  const gateBase = placeBox(gate, 14.2, 0.22, 3.6, M.stone, 0, 0, 0);
-  for (const x of [-5.55, -2.25, 2.25, 5.55]) {
-    const h = Math.abs(x) < 3 ? 4.05 : 3.55;
-    placeBox(gate, 0.72, 0.32, 0.8, M.stoneLight, x, 0.22, 0);
-    placeBox(gate, 0.4, h - 0.52, 0.44, M.plaster, x, 0.52, 0);
-    placeBox(gate, 0.8, 0.12, 0.8, M.gold, x, 0.54, 0);
-    placeBox(gate, 0.58, 0.22, 0.58, M.gold, x, 0.52 + h - 0.65, 0);
-    if (x < 0) placeBox(gate, 0.3, 0.08, 0.3, M.redWood, x, 1.7, 0.23);
-  }
-  // lintels
-  for (const side of [-1, 1]) {
-    placeBox(gate, 3.6, 0.22, 0.34, M.darkWood, side * 3.9, 3.15, 0);
-    placeBox(gate, 3.6, 0.1, 0.42, M.gold, side * 3.9, 3.37, 0);
-  }
-  placeBox(gate, 5.6, 0.22, 0.34, M.darkWood, 0, 3.58, 0);
-  placeBox(gate, 5.4, 0.11, 0.4, M.gold, 0, 3.8, 0);
-  const plaqueMat = M.signMaterial(tex.gatePlaque, true);
-  const gatePlaque = plane(3.2, 0.72, plaqueMat);
-  gatePlaque.position.set(0, 3.65, 0.43);
-  gate.add(gatePlaque);
-  placeBox(gate, 3.4, 0.9, 0.18, M.darkWood, 0, 3.2, 0.3);
-  const centralRoof = createHipRoof({ w: 6.4, d: 3.2, h: 0.95, upturn: 0.18, materials: M, detail: false });
-  centralRoof.position.y = 4.05;
-  gate.add(centralRoof);
-  for (const side of [-1, 1]) {
-    const sideRoof = createHipRoof({ w: 4.8, d: 2.8, h: 0.7, upturn: 0.16, materials: M, detail: false });
-    sideRoof.position.set(side * 4.25, 3.6, 0);
-    gate.add(sideRoof);
-    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.3, 6), M.lampWarm);
-    lamp.position.set(side * 2.55, 2.8, 0.45);
-    gate.add(lamp);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: tex.glow, color: 0xffbc75, transparent: true, opacity: 0, depthWrite: false,
-      blending: THREE.AdditiveBlending
-    }));
-    glow.position.set(side * 2.55, 2.8, 0.45);
-    glow.scale.set(3, 3, 1);
-    gate.add(glow);
-    lampSprites.push(glow.material);
-  }
   gate.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   world.add(gate);
   markSpot(gate, 'gate', pickables);
@@ -903,7 +1001,7 @@ export function buildCampus(scene, renderer, options = {}) {
 
   /* ---------------------------- south gate -------------------------- */
   const southGate = new THREE.Group();
-  const sg = SITE.southGate;
+  const sg = site.southGate;
   southGate.position.set(sg.p[0], 0.04, sg.p[1]);
   southGate.rotation.y = deg(sg.angle);
   placeBox(southGate, 11, 0.2, 3, M.stone, 0, 0, 0);
@@ -1019,6 +1117,32 @@ export function buildCampus(scene, renderer, options = {}) {
     group.updateMatrixWorld(true);
     const waterLabel = group.localToWorld(new THREE.Vector3(-23.5, 2.2, -22));
 
+    return group;
+  }
+
+  /* ---------------------------- landmark hall builder ---------------- */
+  // 1 号教学楼与衍林堂改由独立模块构建（局部米制，正面 +z），
+  // 这里只负责按 OSM 中心点/长边角放样、注册拾取与地标。
+  function buildLandmarkHall(b, kind) {
+    const [cx, cz] = b.center;
+    const length = Math.max(b.obb[0], b.obb[1]);
+    const depth = Math.min(b.obb[0], b.obb[1]);
+    const longAngle = b.obb[2];
+    const ctx = { M, tex, reducedMotion, building: b, length, depth };
+    const group = kind === 'teaching'
+      ? buildTeachingLandmark(ctx)
+      : buildYanlinLandmark(ctx);
+    group.position.set(cx, 0.06, cz);
+    group.rotation.y = deg(kind === 'teaching' ? -longAngle : 180 - longAngle);
+    group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    world.add(group);
+    if (kind === 'teaching') {
+      markSpot(group, 'hall1', pickables);
+      landmarkGroups.hall1 = group;
+    } else {
+      markSpot(group, 'yanlin', pickables);
+      landmarkGroups.yanlin = group;
+    }
     return group;
   }
 
@@ -1181,7 +1305,7 @@ export function buildCampus(scene, renderer, options = {}) {
   // teaching-hall volumes. Their functions are already represented by the
   // detailed verandas, so suppress them to keep every building physically separate.
   const suppressedUnknownBlocks = new Set(['1165596684', '1165596685', '1165596686']);
-  for (const b of SITE.buildings) {
+  for (const b of site.buildings) {
     if (b.kind !== 'generic') continue;
     if (suppressedUnknownBlocks.has(b.id)) continue;
     const h = Math.max(2.8, b.floors * FLOOR * 0.92);
@@ -1224,69 +1348,23 @@ export function buildCampus(scene, renderer, options = {}) {
       unit.castShadow = true;
     }
   }
-  for (const b of SITE.buildings) {
+  for (const b of site.buildings) {
     if (b.kind !== 'named' || b.name === '凤栖堂') continue;
     if (b.name === '科学馆') { buildScienceArt(b); continue; }
     if (b.name === '第3教学楼') { buildThird(b); continue; }
-    if (b.name === '1号教学楼' || b.name === '2号教学楼' ||
-        b.name === '体育馆' || b.name === '衍林堂') {
+    if (b.name === '1号教学楼') { buildLandmarkHall(b, 'teaching'); continue; }
+    if (b.name === '衍林堂') { buildLandmarkHall(b, 'yanlin'); continue; }
+    if (b.name === '2号教学楼' || b.name === '体育馆') {
       buildHall(b);
     }
   }
 
   /* ---------------------------- Fengqi Hall ------------------------- */
-  const fg = new THREE.Group();
-  const fb = SITE.buildings.find((b) => b.name === '凤栖堂');
-  const fcx = fb ? fb.center[0] : -46.3;
-  const fcz = fb ? fb.center[1] : -50.2;
-  fg.position.set(fcx, 0.06, fcz);
+  // 凤栖堂：独立模块 js/landmarks/fengqi.js（局部米制，front = +z）。
+  const fb = site.buildings.find((b) => b.name === '凤栖堂');
+  const fg = buildFengqiLandmark({ M, tex, reducedMotion });
+  fg.position.set(fb ? fb.center[0] : -46.3, 0.06, fb ? fb.center[1] : -50.2);
   fg.rotation.y = deg(180 - (fb ? fb.obb[2] : 140));
-  // courtyard apron
-  const court = new THREE.Mesh(new THREE.PlaneGeometry(14, 9), M.darkPaving);
-  court.rotation.x = -Math.PI / 2;
-  court.position.set(0, 0.02, 5.6);
-  court.receiveShadow = true;
-  fg.add(court);
-  // The Fengqi forecourt is grey stone, not red brick.
-  const courtBorder = new THREE.Mesh(new THREE.BoxGeometry(14.4, 0.12, 0.28), M.stoneLight);
-  courtBorder.position.set(0, 0.08, 1.05);
-  fg.add(courtBorder);
-  placeBox(fg, 13.4, 0.3, 8.6, M.stoneLight, 0, 0.03, 0);
-  placeBox(fg, 11.2, 2.1, 4.8, M.plasterPale, 0, 0.32, -1.1);
-  // veranda columns
-  for (const x of [-4.95, -3.0, -1.0, 1.0, 3.0, 4.95]) {
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.15, 9), M.redWood);
-    col.position.set(x, 1.32, 1.55);
-    col.castShadow = true;
-    fg.add(col);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.12, 0.1, 8), M.gold);
-    cap.position.set(x, 2.4, 1.55);
-    fg.add(cap);
-  }
-  placeBox(fg, 11.0, 0.16, 5.0, M.darkWood, 0, 2.32, -0.6);
-  placeBox(fg, 11.4, 0.1, 5.2, M.gold, 0, 2.42, -0.6);
-  // lattice doors / railings
-  for (const x of [-3.3, 0, 3.3]) {
-    const door = plane(1.34, 1.55, M.lattice);
-    door.position.set(x, 1.18, 1.12);
-    fg.add(door);
-  }
-  for (const [x, z, rot] of [[-4.2, 1.5, 0], [4.2, 1.5, 0], [-5.45, 0, Math.PI / 2], [5.45, 0, Math.PI / 2]]) {
-    const panel = plane(1.6, 0.42, M.balustrade);
-    panel.position.set(x, 0.84, z);
-    panel.rotation.y = rot;
-    fg.add(panel);
-  }
-  const fPlaque = plane(2.1, 0.44, M.signMaterial(tex.fengqiPlaque, true));
-  fPlaque.position.set(0, 2.18, 1.58);
-  fg.add(fPlaque);
-  const fRoof = createHipRoof({ w: 13.6, d: 8.9, h: 1.55, upturn: 0.33, materials: M, detail: true });
-  fRoof.position.y = 2.5;
-  fg.add(fRoof);
-  // Confucius (夫子) in front of the hall
-  const fBase = placeBox(fg, 2.4, 0.28, 2.0, M.darkStone, 0, 0.06, 5.4);
-  fBase.castShadow = true;
-  addFigure(fg, { x: 0, y: 0.34, z: 5.4, h: 1.5, robe: true, confucius: true, ry: 0 });
   fg.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   world.add(fg);
   markSpot(fg, 'fengqi', pickables);
@@ -1327,8 +1405,8 @@ export function buildCampus(scene, renderer, options = {}) {
   addHandSculpture(21, -8, -0.55);
 
   /* ---------------------------- trees ------------------------------- */
-  const buildingPolys = SITE.buildings.map((b) => b.poly);
-  const blockers = [...buildingPolys, SITE.campusOutline];
+  const buildingPolys = site.buildings.map((b) => b.poly);
+  const blockers = [...buildingPolys, site.campusOutline];
   const distanceToPolyline = (x, z, points) => {
     let best = Infinity;
     for (let i = 0; i < points.length - 1; i += 1) {
@@ -1344,20 +1422,20 @@ export function buildCampus(scene, renderer, options = {}) {
   };
   const avenueOffset = 5.6;
   const isFree = (x, z, pad = 2.2) => {
-    for (const b of SITE.buildings) {
+    for (const b of site.buildings) {
       if (pointInPoly(x, z, b.poly) || footprintDistance(x, z, b.poly) < pad) return false;
     }
-    if (Math.hypot(x - SITE.track.center[0], z - SITE.track.center[1]) < 48) return false;
-    for (const c of SITE.courts) {
+    if (Math.hypot(x - site.track.center[0], z - site.track.center[1]) < 48) return false;
+    for (const c of site.courts) {
       if (Math.abs(x - c.center[0]) < c.size[0] / 2 + 2 && Math.abs(z - c.center[1]) < c.size[1] / 2 + 2) return false;
     }
-    if (!pointInPoly(x, z, SITE.campusOutline)) return false;
+    if (!pointInPoly(x, z, site.campusOutline)) return false;
     for (const [zx, zz, rr] of detailZones) if (Math.hypot(x - zx, z - zz) < rr) return false;
     // Keep the gate approach clear for the formal avenue.
     if (distanceToPolyline(x, z, mainApproach) < 7.2) return false;
     if (distanceToPolyline(x, z, newMainRoad) < 5.4) return false;
     // stay away from the perimeter
-    return footprintDistance(x, z, SITE.campusOutline) > 2.2;
+    return footprintDistance(x, z, site.campusOutline) > 2.2;
   };
 
   // tree lines and courtyard clusters
@@ -1366,10 +1444,10 @@ export function buildCampus(scene, renderer, options = {}) {
     if (isFree(x, z, 2.0)) treePositions.push({ x, z, kind, scale });
   };
   // key honorary tree
-  treePositions.push({ x: SITE.heroTree[0], z: SITE.heroTree[1], kind: 'hero', scale: 1 });
+  treePositions.push({ x: site.heroTree[0], z: site.heroTree[1], kind: 'hero', scale: 1 });
   for (let i = 0; i < 520 && treePositions.length < 72; i += 1) {
-    const x = rand(SITE.bounds.xMin + 8, SITE.bounds.xMax - 8);
-    const z = rand(SITE.bounds.zMin + 8, SITE.bounds.zMax - 8);
+    const x = rand(site.bounds.xMin + 8, site.bounds.xMax - 8);
+    const z = rand(site.bounds.zMin + 8, site.bounds.zMax - 8);
     if (!isFree(x, z, 2.3)) continue;
     const kind = rng() > 0.62 ? 'palm' : rng() > 0.22 ? 'broad' : 'blossom';
     pushTree(x, z, kind, rand(0.75, 1.15));
@@ -1383,10 +1461,10 @@ export function buildCampus(scene, renderer, options = {}) {
     [12, 75, 'broad'], [-12, 58, 'blossom'], [-26, 45, 'broad'], [-47, 2, 'palm']
   ]) pushTree(x, z, kind, rand(0.9, 1.15));
   // a soft inner tree line along the campus boundary, broken at the gates
-  const c0 = centroid(SITE.campusOutline);
-  for (let i = 0; i < SITE.campusOutline.length; i += 2) {
-    const a = SITE.campusOutline[i];
-    const b = SITE.campusOutline[(i + 1) % SITE.campusOutline.length];
+  const c0 = centroid(site.campusOutline);
+  for (let i = 0; i < site.campusOutline.length; i += 2) {
+    const a = site.campusOutline[i];
+    const b = site.campusOutline[(i + 1) % site.campusOutline.length];
     for (const f of [0.25, 0.7]) {
       const x = a[0] + (b[0] - a[0]) * f;
       const z = a[1] + (b[1] - a[1]) * f;
@@ -1404,13 +1482,13 @@ export function buildCampus(scene, renderer, options = {}) {
   // Formal avenue behind the main gate: matched shade trees on both sides of
   // the axial walk. Other trees are kept out of this corridor by isFree().
   const isAvenueFree = (x, z) => {
-    if (!pointInPoly(x, z, SITE.campusOutline)) return false;
-    if (footprintDistance(x, z, SITE.campusOutline) < 3.0) return false;
-    for (const b of SITE.buildings) {
+    if (!pointInPoly(x, z, site.campusOutline)) return false;
+    if (footprintDistance(x, z, site.campusOutline) < 3.0) return false;
+    for (const b of site.buildings) {
       if (pointInPoly(x, z, b.poly) || footprintDistance(x, z, b.poly) < 2.2) return false;
     }
-    if (Math.hypot(x - SITE.track.center[0], z - SITE.track.center[1]) < 48) return false;
-    for (const c of SITE.courts) {
+    if (Math.hypot(x - site.track.center[0], z - site.track.center[1]) < 48) return false;
+    for (const c of site.courts) {
       if (Math.abs(x - c.center[0]) < c.size[0] / 2 + 2 && Math.abs(z - c.center[1]) < c.size[1] / 2 + 2) return false;
     }
     for (const [zx, zz, rr] of detailZones) if (Math.hypot(x - zx, z - zz) < rr) return false;
@@ -1609,7 +1687,7 @@ export function buildCampus(scene, renderer, options = {}) {
   });
 
   // Students running on the red oval rather than walking across the pitch.
-  const trackAngle = deg(SITE.track.angle);
+  const trackAngle = deg(site.track.angle);
   const trackLong = [Math.cos(trackAngle), Math.sin(trackAngle)];
   const trackShort = [-Math.sin(trackAngle), Math.cos(trackAngle)];
   const makeRunnerCurve = (rl, rs) => {
@@ -1619,9 +1697,9 @@ export function buildCampus(scene, renderer, options = {}) {
       const u = Math.cos(a) * rl;
       const v = Math.sin(a) * rs;
       pts.push(new THREE.Vector3(
-        SITE.track.center[0] + u * trackLong[0] + v * trackShort[0],
+        site.track.center[0] + u * trackLong[0] + v * trackShort[0],
         0,
-        SITE.track.center[1] + u * trackLong[1] + v * trackShort[1]
+        site.track.center[1] + u * trackLong[1] + v * trackShort[1]
       ));
     }
     return new THREE.CatmullRomCurve3(pts, true);
@@ -1658,9 +1736,9 @@ export function buildCampus(scene, renderer, options = {}) {
     const u = Math.cos(a) * rl;
     const v = Math.sin(a) * rs;
     return new THREE.Vector3(
-      SITE.track.center[0] + u * trackLong[0] + v * trackShort[0],
+      site.track.center[0] + u * trackLong[0] + v * trackShort[0],
       0,
-      SITE.track.center[1] + u * trackLong[1] + v * trackShort[1]
+      site.track.center[1] + u * trackLong[1] + v * trackShort[1]
     );
   };
   const nearArcPts = [];
@@ -1712,6 +1790,7 @@ export function buildCampus(scene, renderer, options = {}) {
   };
   let selectedId = null;
   function setSelection(id) {
+    if (disposed) return;
     const s = selectionSizes[id];
     if (!s) {
       selection.visible = false;
@@ -1743,6 +1822,7 @@ export function buildCampus(scene, renderer, options = {}) {
   let night = 0;
   const sunDir = new THREE.Vector3();
   function setTime(nextHour) {
+    if (disposed) return;
     hour = THREE.MathUtils.clamp(nextHour, 6, 20.8);
     const t = THREE.MathUtils.clamp((hour - 6) / 13, 0, 1);
     const phi = t * Math.PI;
@@ -1785,6 +1865,7 @@ export function buildCampus(scene, renderer, options = {}) {
   /* ---------------------------- animation --------------------------- */
   let elapsed = 0;
   function animate(delta) {
+    if (disposed) return;
     elapsed += delta;
     const t = reducedMotion ? 0 : elapsed;
     for (const sway of swayers) {
@@ -1827,6 +1908,29 @@ export function buildCampus(scene, renderer, options = {}) {
     }
   }
 
+  /* ---------------------------- disposal --------------------------- */
+  /**
+   * 释放本场景创建的 GPU 资源（geometry / material / texture / shadow map）并从
+   * scene 移除场景根节点。切换校区 / 重建前调用；重复调用安全（幂等）。
+   * 只释放本构建创建的资源，不销毁外部共享的 renderer；释放后本 API 不再可用。
+   * @returns {{ geometries: number, materials: number, textures: number } | undefined}
+   */
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    liveSceneRoots.delete(world);
+    const released = disposeSceneResources(world, tex);
+    scene.remove(world);
+    scene.fog = null;
+    pickables.length = 0;
+    swayers.length = 0;
+    pointLights.length = 0;
+    for (const id of Object.keys(landmarkGroups)) delete landmarkGroups[id];
+    renderer?.renderLists?.dispose?.();
+    if (renderer) renderer.shadowMap.needsUpdate = true;
+    return released;
+  }
+
   /* ---------------------------- API --------------------------------- */
   return {
     campus: world,
@@ -1839,6 +1943,8 @@ export function buildCampus(scene, renderer, options = {}) {
     updateBuildingLabels,
     setSelection,
     hideSelection: () => setSelection(null),
-    landmarks: landmarkGroups
+    landmarks: landmarkGroups,
+    /** 释放本场景 GPU 资源；切换校区 / 重建前调用（幂等）。 */
+    dispose
   };
 }

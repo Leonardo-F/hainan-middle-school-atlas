@@ -943,6 +943,15 @@ export function makeTextures(renderer) {
       accent: '#a74732',
       ratio: 4.5
     }),
+    // 2013 年照片中的门额为传统右读「海南中學」，按字序绘制后从右向左阅读。
+    gatePlaqueTraditional: plaqueTexture('學中南海', renderer, {
+      sub: '',
+      background: '#e6dfc6',
+      ink: '#234b39',
+      border: '#8b9a80',
+      accent: '#a74732',
+      ratio: 4.6
+    }),
     fengqiPlaque: plaqueTexture('凤栖堂', renderer, {
       background: '#4b2f22',
       ink: '#dcc189',

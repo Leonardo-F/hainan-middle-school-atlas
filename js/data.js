@@ -1,22 +1,73 @@
 /**
  * 海南中学 · 府城校区（高中部）
- * 地景索引与叙事文本。
+ * 地景索引与叙事文本 —— 府城校区的「内容层」数据。
+ *
+ * 数据分层（多校区扩展约定）：
+ *   1. 本文件 = 某个校区的叙事与元信息（校区身份、地标、导览顺序、文献来源、取景与主题）。
+ *      不 import 任何空间数据或 Three.js，保持可在 Node 中直接 import 做校验。
+ *   2. js/site.js = 同一校区的空间数据（OSM 轮廓、建筑、道路、运动场；1 场景单位 ≈ 2 米，北 = -z）。
+ *   3. js/campuses.js = 校区注册表：把内容层 + 空间层 + 场景声明组装成 campus 条目，
+ *      并负责 ?campus=<id> 解析、默认回退与 validateCampus 校验。
+ *   4. js/campus-accurate.js = 当前唯一的场景构建器（仍硬编码府城校区内容，解耦步骤见 docs/campuses.md）。
  *
  * 空间骨架参考 OpenStreetMap 建筑轮廓、运动场与出入口数据（ODbL），
  * 在本地场景坐标中重建；部分建筑体量与细部为写意简化，不是测绘成果。
+ *
+ * 兼容性：main.js 目前仍直接 import { CAMPUS, LANDMARKS, TOUR_ORDER, SOURCES }，
+ * 这些旧导出保持不变；新增的 FUCHENG_CAMPUS 是「campus 条目」数据（缺 site / scene，
+ * 由 js/campuses.js 注入），CAMPUS_META 是校区身份字段的单一来源。
  */
 
-export const CAMPUS = {
-  name: '海南中学',
-  campus: '府城校区',
-  en: 'HAINAN MIDDLE SCHOOL',
-  enCampus: 'FUCHENG CAMPUS',
+/* ------------------------------------------------------------------ */
+/*  校区身份（campus identity）                                        */
+/*  所有「校区级」元信息的单一来源；新增校区时复制本结构即可。          */
+/* ------------------------------------------------------------------ */
+
+export const CAMPUS_META = {
+  /** URL slug：?campus=fucheng。小写字母 / 数字 / 连字符，全局唯一。 */
+  id: 'fucheng',
+  /** active = 已上线可渲染；planned = 仅有元数据（明确未上线）。 */
+  status: 'active',
+  /** 校区切换器中的排序（府城 = 1，未来新校区依次递增）。 */
+  order: 1,
+  /** 学校名（跨校区共享）。 */
+  school: '海南中学',
+  /** 校区名（同一学校下的区分名）。 */
+  name: '府城校区',
+  /** 大字标题 / 小地图标注用的短名。 */
+  shortName: '府城',
+  schoolEn: 'HAINAN MIDDLE SCHOOL',
+  en: 'FUCHENG CAMPUS',
+  shortEn: 'FUCHENG',
   address: '海口市琼山区府城街道大路街 187 号',
   founded: '1923',
+  /** 地理定位；与 js/site.js 的 SITE.center（[lng, lat]）保持一致。 */
+  location: {
+    city: '海口',
+    district: '琼山',
+    lng: 110.342611,
+    lat: 19.9978342
+  },
+  summary: '海南中学高中部所在校区；1923 年建校，凤栖堂、衍林堂与教学组团沿北门主轴展开。'
+};
+
+/* ------------------------------------------------------------------ */
+/*  旧版兼容导出（main.js 仍在直接使用）                               */
+/* ------------------------------------------------------------------ */
+
+export const CAMPUS = {
+  name: CAMPUS_META.school,
+  campus: CAMPUS_META.name,
+  en: CAMPUS_META.schoolEn,
+  enCampus: CAMPUS_META.en,
+  address: CAMPUS_META.address,
+  founded: CAMPUS_META.founded,
   overview: {
-    position: [-165, 140, -255],
-    target: [0, 0, -4],
-    fov: 38
+    // 场景卡片（设计画幅 1151×842 ≈ 1.371）中的概览取景：校园占宽约 88%、
+    // 垂直居中，顶部留白给场景标题，底部不被控制条压住。
+    position: [-150, 260, -230],
+    target: [0, 0, -12],
+    fov: 34
   },
   top: {
     position: [0, 390, 45],
@@ -34,7 +85,7 @@ export const LANDMARKS = [
     kind: '西北门 · 牌楼',
     year: '1988 / 按原貌扩建',
     anchor: [-39.3, 5.6, -74.31],
-    camera: { position: [-51, 8, -92], target: [-39, 2.7, -74], fov: 34 },
+    camera: { position: [-50.9, 9.3, -91.8], target: [-39, 2.4, -74], fov: 38 },
     map: [-39.3, -74.31],
     diagram: 'gate',
     summary: '四柱三间，绿瓦飞檐。',
@@ -54,7 +105,7 @@ export const LANDMARKS = [
     kind: '省级文保 · 1934',
     year: '1934',
     anchor: [-46.3, 5.25, -50.2],
-    camera: { position: [-33, 7.2, -31], target: [-46.2, 2.3, -50.5], fov: 34 },
+    camera: { position: [-34, 8.8, -32.1], target: [-46.2, 2.2, -50.5], fov: 38 },
     map: [-46.3, -50.2],
     diagram: 'fengqi',
     summary: '红柱白墙，绿琉璃瓦，夫子像静立庭前。',
@@ -74,7 +125,7 @@ export const LANDMARKS = [
     kind: '纪念 · 公共集会',
     year: '北门内侧',
     anchor: [-0.3, 7.3, -80.7],
-    camera: { position: [22, 10, -56], target: [0, 2.0, -81], fov: 38 },
+    camera: { position: [14.3, 7.6, -65], target: [0, 2.2, -81], fov: 43.8 },
     map: [-0.3, -80.7],
     diagram: 'yanlin',
     summary: '以首任校长钟衍林为名。',
@@ -94,7 +145,7 @@ export const LANDMARKS = [
     kind: '教学组团 · 连廊',
     year: '校园东侧',
     anchor: [-0.4, 8.1, -30.7],
-    camera: { position: [-25, 34, -82], target: [-4, 1, -36], fov: 40 },
+    camera: { position: [-27, 37, -86], target: [-4, 7, -36], fov: 46.1 },
     map: [-0.4, -30.7],
     diagram: 'main',
     summary: '楼前太湖石与百年大叶榄仁，楼后是「学园」。',
@@ -114,7 +165,7 @@ export const LANDMARKS = [
     kind: '科学馆 · 艺术楼在后',
     year: '教学组团',
     anchor: [27, 8.7, -5.4],
-    camera: { position: [-12, 28, -62], target: [27, 4, -2], fov: 38 },
+    camera: { position: [-12, 28, -62], target: [27, 4, -2], fov: 43.8 },
     map: [27, -5.4],
     diagram: 'main',
     summary: '科学馆在后，艺术楼相连。',
@@ -134,7 +185,7 @@ export const LANDMARKS = [
     kind: '体育 · 大跨度屋盖',
     year: '校园西南',
     anchor: [-49.3, 7.4, 29.1],
-    camera: { position: [-26, 17, 56], target: [-50, 3.1, 29], fov: 36 },
+    camera: { position: [-26, 17, 56], target: [-50, 3.1, 29], fov: 41.6 },
     map: [-49.3, 29.1],
     diagram: 'gym',
     summary: '运动场边的室内体育空间。',
@@ -154,7 +205,7 @@ export const LANDMARKS = [
     kind: '奔跑 · 校园西侧',
     year: '校园西侧',
     anchor: [-84.4, 1.2, -12.2],
-    camera: { position: [-124, 10, -26], target: [-92, 0.8, -11], fov: 42 },
+    camera: { position: [-124, 10, -26], target: [-92, 0.8, -11], fov: 48.3 },
     map: [-84.4, -12.2],
     diagram: 'field',
     summary: '一圈红土色，收住校园的呼吸。',
@@ -174,7 +225,7 @@ export const LANDMARKS = [
     kind: '古树 · 石桌石凳',
     year: '逾百年',
     anchor: [-1.41, 7.2, -48.44],
-    camera: { position: [12, 8, -62], target: [-2, 2.2, -47], fov: 37 },
+    camera: { position: [12, 8, -62], target: [-2, 2.2, -47], fov: 42.7 },
     map: [-1.41, -48.44],
     diagram: 'tree',
     summary: '巨大树冠下，石桌石凳围成一处阴凉。',
@@ -194,7 +245,7 @@ export const LANDMARKS = [
     kind: '教学组团 · 连廊',
     year: '校园中部',
     anchor: [11.3, 7.0, -15.5],
-    camera: { position: [33, 10, 4], target: [9, 2.2, -16], fov: 36 },
+    camera: { position: [33, 10, 4], target: [9, 2.2, -16], fov: 41.6 },
     map: [11.3, -15.5],
     diagram: 'main',
     summary: '与1号主楼平行展开的第二栋长教学楼。',
@@ -214,7 +265,7 @@ export const LANDMARKS = [
     kind: '教学组团 · H形平面',
     year: '校园南侧',
     anchor: [29.4, 9.5, 31.4],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 44 },
+    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
     map: [29.4, 31.4],
     diagram: 'main',
     summary: '教学组团南端的 H 形体量。',
@@ -234,7 +285,7 @@ export const LANDMARKS = [
     kind: '艺术教育 · 2015',
     year: '2015',
     anchor: [49.1, 12.7, 4.5],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 44 },
+    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
     map: [49.1, 4.5],
     diagram: 'main',
     summary: '六层白色饰带与红瓦坡顶。',
@@ -254,7 +305,7 @@ export const LANDMARKS = [
     kind: '水庭 · 艺术楼侧',
     year: '艺术楼旁',
     anchor: [59.2, 2.6, -4.5],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 44 },
+    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
     map: [59.2, -4.5],
     diagram: 'water',
     summary: '蜿蜒曲水，石桥与立石题名。',
@@ -274,7 +325,7 @@ export const LANDMARKS = [
     kind: '校园雕塑 · 花坛',
     year: '教学庭院',
     anchor: [21, 3.2, -8],
-    camera: { position: [21, 24, -28], target: [21, 0.8, -8], fov: 40 },
+    camera: { position: [21, 24, -28], target: [21, 0.8, -8], fov: 46.1 },
     map: [21, -8],
     diagram: 'sculpture',
     summary: '一双巨手捧起读书的学生。',
@@ -294,7 +345,7 @@ export const LANDMARKS = [
     kind: '校园文化景观',
     year: '2015 校园景观',
     anchor: [7.1, 2.6, -22.2],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 44 },
+    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
     map: [7.1, -22.2],
     diagram: 'garden',
     summary: '1号主楼与后侧建筑之间的「学」字庭院。',
@@ -314,7 +365,7 @@ export const LANDMARKS = [
     kind: '南入口 · 日常通行',
     year: '校园南侧',
     anchor: [57.13, 4.5, 84.34],
-    camera: { position: [71, 7, 99], target: [57, 2.6, 84], fov: 34 },
+    camera: { position: [71, 7, 99], target: [57, 2.6, 84], fov: 39.3 },
     map: [57.13, 84.34],
     diagram: 'gate',
     summary: '南侧的城市界面，也是日常出入的一侧。',
@@ -333,9 +384,9 @@ export const LANDMARKS = [
     en: 'TIGER-DRAGON STONE',
     kind: '太湖石 · 2012',
     year: '2012',
-    anchor: [-9.7, 2.8, -41.2],
-    camera: { position: [-16, 3.2, -48], target: [-10, 1.0, -41], fov: 40 },
-    map: [-9.7, -41.2],
+    anchor: [-4.5, 1.9, -35.3],
+    camera: { position: [-10, 4, -41.5], target: [-4.5, 1.6, -35.3], fov: 42 },
+    map: [-4.5, -35.3],
     diagram: 'stone',
     summary: '九十三吨太湖石，虎踞龙盘，捷报频传。',
     description:
@@ -354,7 +405,7 @@ export const LANDMARKS = [
     kind: '凤栖堂前 · 雕像',
     year: '凤栖堂前',
     anchor: [-42.9, 2.5, -46.0],
-    camera: { position: [-35, 2.8, -47], target: [-43, 1.1, -46], fov: 40 },
+    camera: { position: [-35, 2.8, -47], target: [-43, 1.1, -46], fov: 46.1 },
     map: [-42.9, -46.0],
     diagram: 'statue',
     summary: '凤栖堂前，双手交叠、长须垂胸的夫子像。',
@@ -374,7 +425,7 @@ export const LANDMARKS = [
     kind: '衍林堂前 · 群像',
     year: '衍林堂前',
     anchor: [5.2, 2.4, -74.1],
-    camera: { position: [12, 2.8, -72], target: [5, 1.1, -74], fov: 40 },
+    camera: { position: [12, 2.8, -72], target: [5, 1.1, -74], fov: 46.1 },
     map: [5.2, -74.1],
     diagram: 'statue',
     summary: '钟衍林校长与学生们的一组铜像。',
@@ -416,3 +467,99 @@ export const SOURCES = [
     url: 'http://www.cbs.com.cn/case/202004241761.html'
   }
 ];
+
+/* ------------------------------------------------------------------ */
+/*  校区条目数据（campus entry）                                       */
+/*  这是 js/campuses.js 组装 campus 条目的内容层；site（js/site.js 的  */
+/*  SITE）与 scene（场景构建器声明）由注册表注入，因此本文件不依赖     */
+/*  空间数据模块，可在 Node 中直接 import。                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 手机端取景覆盖（布局/取景参数，供 main.js 的 getOverviewView /
+ * getTopView / getSpotView 使用；未提供时回退桌面取景）。
+ * frameWidth 是 main.js 中 MOBILE_FRAME_WIDTH 表的等价数据：
+ * 竖屏下希望地标在画面里占多少世界宽度（场景单位）。
+ */
+const FUCHENG_MOBILE = {
+  overview: {
+    position: [-230, 215, -390],
+    target: [0, 0, -4],
+    fov: 52
+  },
+  top: {
+    position: [0, 720, 55],
+    target: [0, 0, 0],
+    fov: 52
+  },
+  frameWidth: {
+    gate: 21,
+    fengqi: 21,
+    yanlin: 21,
+    hall1: 65,
+    science: 65,
+    gym: 44,
+    field: 115,
+    tree: 23,
+    hall2: 56,
+    hall3: 52,
+    art: 30,
+    stream: 38,
+    hand: 16,
+    study: 16,
+    southgate: 18,
+    stone: 15,
+    confucius: 11,
+    bronze: 13
+  }
+};
+
+/**
+ * 页面 / 小地图主题色。前 8 个键与 css/style.css 的 CSS 变量同名同值，
+ * 供「切换校区时重写主题」或「按校区生成小地图」使用；
+ * map 子对象保存当前 main.js drawMap() 里硬编码的小地图专用色。
+ */
+const FUCHENG_THEME = {
+  paper: '#f2e9da',
+  paperDeep: '#e7dcc9',
+  ink: '#18261f',
+  muted: '#677067',
+  accent: '#b34c31',
+  accentSoft: '#c98c68',
+  gold: '#bd9b5a',
+  forest: '#244a3b',
+  map: {
+    campus: '#738d65',
+    track: '#9d5a43',
+    court: '#64838a',
+    courtAlt: '#769064',
+    historic: '#9d5b43'
+  }
+};
+
+export const FUCHENG_CAMPUS = {
+  ...CAMPUS_META,
+  /** 桌面端取景（沿用旧 CAMPUS 的同一个对象，避免两份相机参数漂移）。 */
+  overview: CAMPUS.overview,
+  top: CAMPUS.top,
+  mobile: FUCHENG_MOBILE,
+  theme: FUCHENG_THEME,
+  /** 能力位：main.js 据此决定是否启用漫游 / 日照 / 导览 / 小地图 / 标注。 */
+  features: {
+    walk: true,
+    weather: true,
+    tour: true,
+    minimap: true,
+    labels: true
+  },
+  landmarks: LANDMARKS,
+  tourOrder: TOUR_ORDER,
+  sources: SOURCES,
+  /** 数据与素材署名（active 校区必须保留 ODbL 署名）。 */
+  license: {
+    id: 'ODbL-1.0',
+    attribution: '© OpenStreetMap contributors',
+    url: 'https://www.openstreetmap.org/copyright',
+    notice: '建筑轮廓、运动场与出入口来自 OpenStreetMap（ODbL 1.0）；高度、立面、植被与部分公共空间为艺术化推演，不是测绘成果。'
+  }
+};

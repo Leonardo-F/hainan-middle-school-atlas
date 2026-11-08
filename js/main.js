@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { buildCampus } from './campus-accurate.js';
-import { SITE } from './site.js';
-import { CAMPUS, LANDMARKS, TOUR_ORDER, SOURCES } from './data.js';
+import {
+  CAMPUS_LIST,
+  buildCampusSearch,
+  parseCampusParam,
+  resolveCampus
+} from './campuses.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -14,6 +18,21 @@ const clamp = THREE.MathUtils.clamp;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(window.location.search);
+
+/* ------------------------------------------------------------------ */
+/*  Multi-campus registry & routing                                    */
+/*  数据层：js/campuses.js（注册表 / URL 契约）；场景层：js/campus-accurate.js */
+/*  ?campus=<id> 解析见 parseCampusParam；未知 / planned 回退默认校区，      */
+/*  规范化与回退提示在 finishBoot() 里处理。                                */
+/* ------------------------------------------------------------------ */
+
+const route = parseCampusParam(window.location.search);
+let ACTIVE_CAMPUS = route.campus;
+let SITE = ACTIVE_CAMPUS.site;
+let LANDMARKS = ACTIVE_CAMPUS.landmarks;
+let TOUR_ORDER = ACTIVE_CAMPUS.tourOrder;
+let SOURCES = ACTIVE_CAMPUS.sources;
+let desktopOverview = buildDesktopOverview(ACTIVE_CAMPUS);
 
 const app = $('#app');
 const loading = $('#loading');
@@ -47,8 +66,16 @@ const cursorEl = $('#cursor');
 const minimap = $('#minimap');
 const aboutDialog = $('#aboutDialog');
 const interactionHint = $('#interactionHint');
+const stageEl = $('.stage');
+const narrativeEl = $('#narrativeScroll');
+const sceneTitleEl = $('#sceneTitle');
+const sceneEnEl = $('#sceneEn');
+const sceneKindEl = $('#sceneKind');
+const introSpotCount = $('#introSpotCount');
 
 const state = {
+  campusId: ACTIVE_CAMPUS.id,
+  switching: false,
   activeId: null,
   hour: 16.3,
   dayHour: 16.3,
@@ -59,7 +86,8 @@ const state = {
   toastTimer: null,
   mapTick: 0,
   hoveredSpot: null,
-  modalOpen: false
+  modalOpen: false,
+  revealTimer: null
 };
 
 let scene;
@@ -83,11 +111,14 @@ let cursorTarget = { x: 0, y: 0 };
 let cursorPos = { x: 0, y: 0 };
 let hasCustomCursor = false;
 
-const desktopOverview = {
-  position: CAMPUS.overview.position,
-  target: CAMPUS.overview.target,
-  fov: CAMPUS.overview.fov
-};
+/** 当前 active 校区的桌面端总览取景；相机数据以 js/data.js 定稿值为准。 */
+function buildDesktopOverview(campusEntry) {
+  return {
+    position: campusEntry.overview.position,
+    target: campusEntry.overview.target,
+    fov: campusEntry.overview.fov
+  };
+}
 
 const MOBILE_FRAME_WIDTH = {
   gate: 21,
@@ -114,28 +145,91 @@ function isPhoneLayout() {
   return window.innerWidth <= 900;
 }
 
+/* The canvas now lives inside the bounded scene card, so every framing
+   decision is based on the card's aspect ratio rather than the window's. */
+let viewW = 0;
+let viewH = 0;
+const BASE_VIEW_ASPECT = 1.6;
+
+function measureViewport() {
+  const w = canvas ? canvas.clientWidth : 0;
+  const h = canvas ? canvas.clientHeight : 0;
+  viewW = w > 0 ? w : window.innerWidth;
+  viewH = h > 0 ? h : window.innerHeight;
+}
+
+function viewAspect() {
+  if (!viewW || !viewH) measureViewport();
+  return viewW / Math.max(1, viewH);
+}
+
+/**
+ * Camera framing contract with js/data.js:
+ * data.js camera values are authoritative at the scene-card aspect used for
+ * desktop review (1600×1000 → 1151×842 ≈ 1.37). Other aspect ratios adapt by
+ * preserving the horizontal composition, so the same data reads correctly on
+ * 1280×800 cards, wide tablets and phones.
+ */
+const DESIGN_ASPECT = 1151 / 840;
+
+function designFov(baseFov, aspect = viewAspect()) {
+  const a = clamp(aspect, 0.75, 2.6);
+  const fov = THREE.MathUtils.radToDeg(
+    2 * Math.atan((Math.tan(THREE.MathUtils.degToRad(baseFov / 2)) * DESIGN_ASPECT) / a)
+  );
+  return clamp(fov, 18, 72);
+}
+
 function getOverviewView() {
-  if (!isPhoneLayout()) return desktopOverview;
+  const aspect = viewAspect();
+  if (isPhoneLayout() && aspect < 1.15) {
+    // Portrait scene card: a higher, closer aerial fills the tall card; the FOV
+    // keeps the 90%-width composition tuned at the 390×844 card aspect (0.834).
+    const fov = THREE.MathUtils.radToDeg(
+      2 * Math.atan((Math.tan(THREE.MathUtils.degToRad(40.5) / 2) * 0.834) / aspect)
+    );
+    return {
+      position: [-140, 350, -320],
+      target: [0, 0, -14],
+      fov: clamp(fov, 20, 52)
+    };
+  }
   return {
-    position: [-230, 215, -390],
-    target: [0, 0, -4],
-    fov: 52
+    position: desktopOverview.position,
+    target: desktopOverview.target,
+    fov: designFov(desktopOverview.fov, aspect)
   };
 }
 
 function getTopView() {
-  if (!isPhoneLayout()) return CAMPUS.top;
+  const aspect = viewAspect();
+  if (isPhoneLayout() && aspect < 1.15) {
+    const fov = THREE.MathUtils.radToDeg(
+      2 * Math.atan((Math.tan(THREE.MathUtils.degToRad(27) / 2) * 0.834) / aspect)
+    );
+    return {
+      position: [0, 720, 55],
+      target: [0, 0, 0],
+      fov: clamp(fov, 20, 52)
+    };
+  }
   return {
-    position: [0, 720, 55],
-    target: [0, 0, 0],
-    fov: 52
+    position: ACTIVE_CAMPUS.top.position,
+    target: ACTIVE_CAMPUS.top.target,
+    fov: designFov(ACTIVE_CAMPUS.top.fov, aspect)
   };
 }
 
-/** Fit a landmark to the narrow portrait screen while keeping context. */
+/** Fit a landmark to the scene card, widening the frame when it is tall/narrow. */
 function getSpotView(spot) {
-  if (!isPhoneLayout()) return spot.camera;
-  const aspect = Math.max(0.34, window.innerWidth / window.innerHeight);
+  const aspect = viewAspect();
+  if (aspect >= 1.15) {
+    return {
+      position: spot.camera.position,
+      target: spot.camera.target,
+      fov: designFov(spot.camera.fov, aspect)
+    };
+  }
   const fov = 52;
   const target = new THREE.Vector3(...spot.camera.target);
   const offset = new THREE.Vector3(...spot.camera.position).sub(target);
@@ -170,7 +264,13 @@ async function boot() {
     await wait(reducedMotion || params.get('nointro') ? 10 : 150);
     setLoadingState(43, '正在立起坡屋面');
     await nextFrame();
-    campus = buildCampus(scene, renderer, { reducedMotion });
+    campus = buildCampus(scene, renderer, {
+      campus: ACTIVE_CAMPUS,
+      site: SITE,
+      landmarks: LANDMARKS,
+      theme: ACTIVE_CAMPUS.theme,
+      reducedMotion
+    });
     setLoadingState(76, '正在栽植百年榄仁树');
     await nextFrame();
     await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -184,6 +284,14 @@ async function boot() {
     resize();
     applyHour(resolveInitialHour(), { silent: true });
     window.__campusReady = true;
+    window.__campusDebug = {
+      get campus() { return ACTIVE_CAMPUS; },
+      get sceneApi() { return campus; },
+      get camera() { return camera; },
+      get controls() { return controls; },
+      get state() { return state; },
+      switchCampus
+    };
     clock = new THREE.Clock();
     lastFrame = performance.now();
     renderer.shadowMap.needsUpdate = true;
@@ -202,6 +310,7 @@ async function boot() {
 }
 
 function setupRenderer() {
+  measureViewport();
   renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
@@ -209,7 +318,7 @@ function setupRenderer() {
     powerPreference: 'high-performance',
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setSize(viewW, viewH, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.22;
@@ -227,7 +336,7 @@ function setupSceneGraph() {
   const initialPosition = new THREE.Vector3(-280, 235, -420);
   const initialView = getOverviewView();
   const target = new THREE.Vector3(...initialView.target);
-  camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.2, 3200);
+  camera = new THREE.PerspectiveCamera(38, viewW / Math.max(1, viewH), 0.2, 3200);
   camera.position.copy(initialPosition);
 
   controls = new OrbitControls(camera, canvas);
@@ -289,6 +398,7 @@ function resolveInitialHour() {
 }
 
 function finishBoot() {
+  announceCampusFallback(route);
   app.classList.remove('is-loading');
   app.classList.add('is-ready');
   loading.classList.add('is-leaving');
@@ -349,7 +459,6 @@ function setupUI() {
       stopTour();
       openSpot(spot.id, { source: 'index' });
     });
-    button.style.transitionDelay = `${0.66 + i * 0.035}s`;
     li.appendChild(button);
     indexList.appendChild(li);
 
@@ -389,6 +498,7 @@ function setupUI() {
 
   const countEl = $('.index__count');
   if (countEl) countEl.textContent = `${String(LANDMARKS.length).padStart(2, '0')} SPOTS`;
+  if (introSpotCount) introSpotCount.textContent = `${LANDMARKS.length} 处地景`;
 
   const sources = $('#sourceList');
   if (sources) {
@@ -405,6 +515,10 @@ function setupUI() {
     });
   }
 
+  syncCampusViews();
+  renderCampusSwitcher();
+  applyCampusBranding();
+  applyFeatureFlags();
 }
 
 /* ------------------------------------------------------------------ */
@@ -508,6 +622,8 @@ function setupEvents() {
     const button = $('#fullscreenButton');
     button.setAttribute('aria-label', document.fullscreenElement ? '退出全屏' : '全屏');
     button.classList.toggle('is-active', Boolean(document.fullscreenElement));
+    window.setTimeout(resize, 80);
+    window.requestAnimationFrame(resize);
   });
 
   $('#closeAbout').addEventListener('click', closeAbout);
@@ -540,6 +656,17 @@ function setupEvents() {
     }
   });
 
+  // 校区切换器：委托到 #campusSwitcher（planned 校区按钮为 disabled，点击不会触发）
+  const switcher = $('#campusSwitcher');
+  if (switcher) {
+    switcher.addEventListener('click', (event) => {
+      const button = event.target.closest ? event.target.closest('[data-campus]') : null;
+      if (!button || button.disabled) return;
+      const id = button.dataset.campus;
+      if (!id || id === ACTIVE_CAMPUS.id) return;
+      switchCampus(id);
+    });
+  }
 }
 
 function markInteracted() {
@@ -595,8 +722,9 @@ function handleKeyDown(event) {
 }
 
 function toggleFullscreen() {
+  const target = stageEl || document.documentElement;
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen?.().catch(() => {});
+    target.requestFullscreen?.().catch(() => {});
   } else {
     document.exitFullscreen?.().catch(() => {});
   }
@@ -627,10 +755,10 @@ function openSpot(id, options = {}) {
 
   app.classList.add('is-panel-open');
   infoCard.setAttribute('aria-hidden', 'false');
-  if (indexNav) indexNav.inert = true;
-  if (markerLayer) markerLayer.inert = true;
+  updateSceneHeading(spot);
   updateActiveUI(id);
   campus.setSelection(id);
+  queueRevealSpot({ fromTour: Boolean(options.fromTour) });
 
   if (options.fly !== false) {
     const duration =
@@ -644,10 +772,52 @@ function closeSpot({ stop = true } = {}) {
   state.activeId = null;
   app.classList.remove('is-panel-open');
   infoCard.setAttribute('aria-hidden', 'true');
-  if (indexNav) indexNav.inert = false;
-  if (markerLayer) markerLayer.inert = false;
+  updateSceneHeading(null);
   updateActiveUI(null);
   campus.hideSelection();
+  window.clearTimeout(state.revealTimer);
+  if (isPhoneLayout()) {
+    if (stageEl) {
+      const stageTop = stageEl.getBoundingClientRect().top + window.scrollY - 68;
+      if (window.scrollY > stageTop + 24) {
+        window.scrollTo({ top: Math.max(0, stageTop), behavior: reducedMotion ? 'auto' : 'smooth' });
+      }
+    }
+  } else if (narrativeEl) {
+    narrativeEl.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+}
+
+function updateSceneHeading(spot) {
+  const campusShort = ACTIVE_CAMPUS.shortName || ACTIVE_CAMPUS.name || '校园';
+  const campusEn = ACTIVE_CAMPUS.en || 'CAMPUS ATLAS';
+  if (sceneTitleEl) sceneTitleEl.textContent = spot ? spot.name : `${campusShort}校园`;
+  if (sceneEnEl) sceneEnEl.textContent = spot ? spot.en : campusEn;
+  if (sceneKindEl) sceneKindEl.textContent = spot ? spot.kind : '自由探索';
+}
+
+/**
+ * The info card lives in the narrative column. Reveal it without covering the
+ * scene: on desktop only scroll the column when the card does not fit; on
+ * phones scroll the single-column page to the card.
+ */
+function queueRevealSpot({ fromTour = false } = {}) {
+  window.clearTimeout(state.revealTimer);
+  state.revealTimer = window.setTimeout(() => {
+    if (!state.activeId) return;
+    if (isPhoneLayout()) {
+      if (fromTour) return;
+      infoCard.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+      return;
+    }
+    if (!narrativeEl) return;
+    const containerRect = narrativeEl.getBoundingClientRect();
+    const cardRect = infoCard.getBoundingClientRect();
+    if (cardRect.bottom - containerRect.bottom > 8) {
+      const top = narrativeEl.scrollTop + cardRect.top - containerRect.top - 2;
+      narrativeEl.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+  }, reducedMotion ? 0 : 240);
 }
 
 function updateActiveUI(id) {
@@ -680,7 +850,7 @@ function startTour() {
   tourLabel.textContent = '暂停导览';
   openSpot(TOUR_ORDER[0], { fromTour: true, duration: reducedMotion ? 0 : 2200 });
   scheduleTourStep();
-  showToast('自动导览 · 08 处校园地景');
+  showToast(`自动导览 · ${String(TOUR_ORDER.length).padStart(2, '0')} 处校园地景`);
 }
 
 function scheduleTourStep() {
@@ -709,6 +879,209 @@ function stopTour(showMessage = false) {
   tourButton.setAttribute('aria-pressed', 'false');
   tourLabel.textContent = '自动导览';
   if (showMessage) showToast('导览已暂停');
+}
+
+/* ------------------------------------------------------------------ */
+/*  Multi-campus UI, branding & switching                              */
+/* ------------------------------------------------------------------ */
+
+function syncCampusViews() {
+  desktopOverview = buildDesktopOverview(ACTIVE_CAMPUS);
+  document.documentElement.dataset.campus = ACTIVE_CAMPUS.id;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[character]));
+}
+
+function campusYearRange(campusEntry) {
+  return campusEntry.founded ? `${campusEntry.founded}—2026` : '—';
+}
+
+/** 品牌文案数据化：按当前 campus 元信息写回 index.html 的 data-campus-slot 节点。 */
+function applyCampusBranding() {
+  const campusEntry = ACTIVE_CAMPUS;
+  const shortName = campusEntry.shortName || campusEntry.name || '校园';
+  const school = campusEntry.school || '';
+  const city = campusEntry.location?.city || '';
+  const cityShort = city ? `${city} · ${shortName}` : shortName;
+  const cityEn = city === '海口' ? 'HAIKOU' : city;
+  const yearRange = campusYearRange(campusEntry);
+  const slots = {
+    fullName: [school, campusEntry.name].filter(Boolean).join(' · '),
+    loadingYears: `三维校园图志 / ${yearRange}`,
+    schoolEnShortEn: [campusEntry.schoolEn || school, campusEntry.shortEn].filter(Boolean).join(' · '),
+    loadingTitle: `${escapeHtml(shortName)}<span>校园图志</span>`,
+    brandName: `${shortName}校园图志`,
+    brandSub: `${school} · ${campusEntry.name} / A CAMPUS ATLAS`,
+    introEyebrow: [campusEntry.shortEn, cityEn].filter(Boolean).join(', ') + ` · ${shortName}`,
+    shortName,
+    introLead: `把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访${campusEntry.name}的日常。`,
+    yearRange,
+    cityShortName: cityShort,
+    canvasLabel: `${school}${campusEntry.name}交互三维模型。可拖动旋转、滚轮缩放，点击建筑查看图志。`,
+    aboutLead: `这不是一张测绘地图，而是一份以建筑为线索的校园阅读。拖动、靠近、点击，在体量与光影之间，重访${campusEntry.name}的日常。`,
+    fullEn: [campusEntry.schoolEn, campusEntry.en].filter(Boolean).join(' · ')
+  };
+  document.querySelectorAll('[data-campus-slot]').forEach((element) => {
+    const slot = element.dataset.campusSlot;
+    const value = slots[slot];
+    if (value === undefined) return;
+    if (slot === 'loadingTitle') element.innerHTML = value;
+    else if (slot === 'canvasLabel') element.setAttribute('aria-label', value);
+    else element.textContent = value;
+  });
+  const metaDescription = document.querySelector('meta[name="description"]');
+  if (metaDescription) {
+    metaDescription.setAttribute(
+      'content',
+      `${school}${campusEntry.name}交互三维校园图志。${campusEntry.summary || ''}`
+    );
+  }
+  document.title = `${shortName}校园图志 · ${school}三维校园`;
+}
+
+/** 能力位：features 全为 true 的府城校区不产生任何视觉变化。 */
+function applyFeatureFlags() {
+  const features = ACTIVE_CAMPUS.features || {};
+  const setHidden = (selector, visible) => {
+    const element = document.querySelector(selector);
+    if (element) element.hidden = !visible;
+  };
+  setHidden('.light-panel', features.weather !== false);
+  setHidden('#nightButton', features.weather !== false);
+  setHidden('#tourButton', features.tour !== false);
+  setHidden('.map-panel', features.minimap !== false);
+  setHidden('#markers', features.labels !== false);
+  if (controls) controls.enabled = features.walk !== false;
+}
+
+/** 按注册表渲染校区切换器：保留 #campusSwitcher / [data-campus] DOM 契约。 */
+function renderCampusSwitcher() {
+  const nav = $('#campusSwitcher');
+  if (!nav) return;
+  const tabs = $('.campus-switcher__tabs', nav);
+  if (!tabs) return;
+  tabs.innerHTML = '';
+  for (const campusEntry of CAMPUS_LIST) {
+    const isActive = campusEntry.id === ACTIVE_CAMPUS.id;
+    const isPlanned = campusEntry.status !== 'active';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `campus-tab${isActive ? ' is-active' : ''}${isPlanned ? ' is-planned' : ''}`;
+    button.dataset.campus = campusEntry.id;
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', String(isActive));
+    if (isActive) button.setAttribute('aria-current', 'true');
+    if (isPlanned) {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      button.title = `${campusEntry.name}（未上线）`;
+    }
+    const name = document.createElement('span');
+    name.className = 'campus-tab__name';
+    name.textContent = isPlanned ? `${campusEntry.name}（未上线）` : campusEntry.name;
+    const en = document.createElement('span');
+    en.className = 'campus-tab__en mono';
+    en.textContent = campusEntry.shortEn || campusEntry.en || '';
+    button.append(name, en);
+    tabs.appendChild(button);
+  }
+}
+
+/** 生成本地 URL（pathname + 规范查询串 + hash），供 history.replaceState 使用。 */
+function canonicalCampusUrl(campusId) {
+  const search = buildCampusSearch(campusId, window.location.search);
+  const query = new URLSearchParams(search);
+  const spot = query.get('spot');
+  if (spot && !LANDMARKS.some((item) => item.id === spot)) query.delete('spot');
+  const suffix = query.toString();
+  return `${window.location.pathname}${suffix ? `?${suffix}` : ''}${window.location.hash}`;
+}
+
+/** 未知 / planned 校区的回退提示 + URL 规范化（?campus= 契约）。 */
+function announceCampusFallback(resolvedRoute) {
+  if (resolvedRoute.fallback && resolvedRoute.param) {
+    const requested = resolvedRoute.requestedId
+      ? CAMPUS_LIST.find((campusEntry) => campusEntry.id === resolvedRoute.requestedId)
+      : null;
+    showToast(
+      resolvedRoute.reason === 'planned'
+        ? `${requested?.name ?? resolvedRoute.param}尚未上线，先为你展示${ACTIVE_CAMPUS.name}`
+        : `未知校区「${resolvedRoute.param}」，已回到${ACTIVE_CAMPUS.name}`
+    );
+  }
+  const canonical = canonicalCampusUrl(ACTIVE_CAMPUS.id);
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (canonical !== current) history.replaceState(null, '', canonical);
+}
+
+/**
+ * 切换校区（当前只有府城一个 active 校区，此路径用于未来扩展）。
+ * 流程：停止导览/关闭图志 → dispose 旧场景 → 切换数据绑定 → 重建 UI/品牌 →
+ * 构建新场景 → 重置相机与日照 → 规范化 URL → toast。
+ */
+function switchCampus(nextId) {
+  if (state.switching) return;
+  const resolved = resolveCampus(nextId);
+  if (resolved.fallback) {
+    const requested = CAMPUS_LIST.find((campusEntry) => campusEntry.id === resolved.requestedId);
+    showToast(
+      resolved.reason === 'planned'
+        ? `${requested?.name ?? resolved.requestedId}尚未上线`
+        : `未知校区「${nextId}」`
+    );
+    return;
+  }
+  const next = resolved.campus;
+  if (next.id === ACTIVE_CAMPUS.id) return;
+  state.switching = true;
+  try {
+    stopTour();
+    closeSpot({ stop: true });
+    cancelCameraTween();
+    if (campus) {
+      campus.dispose?.();
+      campus = null;
+    }
+    ACTIVE_CAMPUS = next;
+    SITE = next.site;
+    LANDMARKS = next.landmarks;
+    TOUR_ORDER = next.tourOrder;
+    SOURCES = next.sources;
+    state.campusId = next.id;
+    state.activeId = null;
+    state.tourIndex = -1;
+    syncCampusViews();
+    setupUI();
+    updateSceneHeading(null);
+    campus = buildCampus(scene, renderer, {
+      campus: ACTIVE_CAMPUS,
+      site: SITE,
+      landmarks: LANDMARKS,
+      theme: ACTIVE_CAMPUS.theme,
+      reducedMotion
+    });
+    applyHour(resolveInitialHour(), { silent: true });
+    resize();
+    const overview = getOverviewView();
+    camera.position.fromArray(overview.position);
+    controls.target.fromArray(overview.target);
+    camera.fov = overview.fov;
+    camera.updateProjectionMatrix();
+    controls.update();
+    renderer.shadowMap.needsUpdate = true;
+    history.replaceState(null, '', canonicalCampusUrl(next.id));
+    showToast(`已切换至${next.fullName ?? next.name}`);
+  } finally {
+    state.switching = false;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -848,9 +1221,9 @@ function toggleNight() {
 /* ------------------------------------------------------------------ */
 
 function updateMarkers() {
-  if (!campus || !markerEntries.length) return;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  if (!campus || !markerEntries.length || !viewW || !viewH) return;
+  const width = viewW;
+  const height = viewH;
   const cameraDir = camera.getWorldDirection(new THREE.Vector3());
   const visible = [];
 
@@ -884,17 +1257,21 @@ function updateMarkers() {
     return b.priority - a.priority;
   });
   const occupied = [];
+  const pad = 5;
   for (const entry of visible) {
-    const labelW = entry.el.classList.contains('is-left') ? 82 : 96;
-    const labelH = 21;
-    const x = entry.screen.x + (entry.el.classList.contains('is-left') ? -labelW - 20 : 20);
+    const nameEl = entry.el.querySelector('.marker__name');
+    const nameLen = nameEl ? nameEl.textContent.trim().length : 4;
+    const labelW = Math.round(26 + nameLen * 12);
+    const labelH = 23;
+    const isLeft = entry.el.classList.contains('is-left');
+    const x = entry.screen.x + (isLeft ? -labelW - 20 : 20);
     const y = entry.screen.y - labelH / 2;
     const overlaps = occupied.some(
       (box) =>
-        x < box.x + box.w &&
-        x + labelW > box.x &&
-        y < box.y + box.h &&
-        y + labelH > box.y
+        x - pad < box.x + box.w &&
+        x + labelW + pad > box.x &&
+        y - pad < box.y + box.h &&
+        y + labelH + pad > box.y
     );
     if (overlaps && entry.id !== state.activeId) {
       entry.el.classList.add('is-label-hidden');
@@ -1542,8 +1919,9 @@ function setLoadingState(percent, label) {
 
 function resize() {
   if (!renderer || !camera) return;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  measureViewport();
+  const width = viewW;
+  const height = viewH;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setSize(width, height, false);
   if (renderer) renderer.shadowMap.needsUpdate = true;
@@ -1560,19 +1938,11 @@ function renderFrame(now) {
   updateCameraTween(now);
   controls.update();
 
-  controls.target.x = clamp(controls.target.x, -145, 145);
+  controls.target.x = clamp(controls.target.x, SITE.bounds.xMin + 5, SITE.bounds.xMax - 5);
   controls.target.y = clamp(controls.target.y, 0, 22);
-  controls.target.z = clamp(controls.target.z, -115, 115);
+  controls.target.z = clamp(controls.target.z, SITE.bounds.zMin + 5, SITE.bounds.zMax - 5);
 
   updateMarkers();
-
-  const lensTarget = isPhoneLayout() && state.activeId ? -0.3 : 0;
-  state.lensShift = (state.lensShift || 0) + (lensTarget - (state.lensShift || 0)) * Math.min(1, delta * 5.5);
-  if (Math.abs(state.lensShift) < 0.0004) state.lensShift = 0;
-  if (state.lensShift !== 0 || camera.projectionMatrix.elements[9] !== 0) {
-    camera.projectionMatrix.elements[9] = state.lensShift;
-    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
-  }
 
   if (renderer) renderer.render(scene, camera);
 

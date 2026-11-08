@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>重点建筑模型预览 · 府城校园图志</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #dbe3d6; }
+    canvas { display: block; }
+    #hud {
+      position: fixed; left: 18px; top: 16px; z-index: 5; pointer-events: none;
+      font: 12px/1.7 "PingFang SC", "Songti SC", serif; color: #2b3c31;
+      background: rgba(250, 251, 244, 0.82); border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 6px; padding: 10px 14px; backdrop-filter: blur(6px);
+      max-width: 340px;
+    }
+    #hud b { font-size: 14px; letter-spacing: 1px; }
+    #hud small { color: #6d7d6d; display: block; }
+    #hud .keys { color: #8a9887; font-size: 10px; margin-top: 4px; }
+    #hud .status { color: #a3553b; font-size: 11px; }
+    #photoHint {
+      position: fixed; right: 16px; bottom: 16px; z-index: 5; pointer-events: none;
+      font: 10px/1.6 "DM Mono", monospace; color: #5f705f; text-align: right;
+      background: rgba(250,251,244,0.7); padding: 8px 10px; border-radius: 4px;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../vendor/three.module.js",
+        "three/addons/": "../vendor/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <b id="modelName">模型预览</b>
+    <small id="modelMeta">加载中…</small>
+    <div class="keys">拖动旋转 · 滚轮缩放 · ?view=front|persp|aerial|side · ?model=gate|teaching|fengqi|yanlin</div>
+    <div class="status" id="status"></div>
+  </div>
+  <div id="photoHint">模型局部坐标：+z 正面 / 单位米（场景内 ×0.5）</div>
+  <script type="module" src="./preview-scene.js"></script>
+</body>
+</html>

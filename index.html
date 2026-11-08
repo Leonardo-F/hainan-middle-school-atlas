@@ -14,23 +14,12 @@
 </head>
 <body data-night="false">
   <div id="app" class="app is-loading">
-    <canvas id="scene" aria-label="海南中学府城校区交互三维模型。可拖动旋转、滚轮缩放，点击建筑查看图志。"></canvas>
-    <div class="atmosphere" aria-hidden="true"></div>
-    <div class="grain" aria-hidden="true"></div>
-    <div class="edge-wash" aria-hidden="true"></div>
-    <div class="frame" aria-hidden="true">
-      <i class="frame__corner frame__corner--tl"></i>
-      <i class="frame__corner frame__corner--tr"></i>
-      <i class="frame__corner frame__corner--bl"></i>
-      <i class="frame__corner frame__corner--br"></i>
-    </div>
-
     <div class="loading" id="loading">
       <div class="loading__grid" aria-hidden="true"></div>
       <div class="loading__frame">
         <div class="loading__top mono">
-          <span>海南中学 · 府城校区</span>
-          <span>三维校园图志 / 1923—2026</span>
+          <span data-campus-slot="fullName">海南中学 · 府城校区</span>
+          <span data-campus-slot="loadingYears">三维校园图志 / 1923—2026</span>
         </div>
 
         <div class="loading__art" aria-hidden="true">
@@ -75,8 +64,8 @@
         </div>
 
         <div class="loading__copy">
-          <p class="loading__kicker mono">HAINAN MIDDLE SCHOOL · FUCHENG</p>
-          <h1>府城<span>校园图志</span></h1>
+          <p class="loading__kicker mono" data-campus-slot="schoolEnShortEn">HAINAN MIDDLE SCHOOL · FUCHENG</p>
+          <h1 data-campus-slot="loadingTitle">府城<span>校园图志</span></h1>
           <p class="loading__sub">把一座校园，读成一张可以行走的图。</p>
         </div>
 
@@ -94,164 +83,246 @@
       </div>
     </div>
 
-    <header class="masthead">
-      <div class="masthead__eyebrow">
-        <span class="masthead__rule" aria-hidden="true"></span>
-        <span>海南中学 · 府城校区</span>
-        <span class="masthead__index mono">NO. 01 / CAMPUS ATLAS</span>
+    <!-- ── 顶部品牌栏：品牌 / 校区切换 / 图志说明 ───────────────── -->
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 44 38" fill="none">
+            <g stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 33h38"/>
+              <path d="M8 33V19M16 33V21M28 33V21M36 33V19"/>
+              <path d="M4 19c6.8-1 11.4-5.4 14.6-7.2C21.6 10.4 25 9.8 27.4 9.8h2.4c3 0 5.8.7 8.4 2.2 3.8 2.2 7.8 5.1 12.8 6.1"/>
+              <path d="M5.6 22.6c6.7-1 11.2-5.2 14.3-6.9 3-1.4 6.3-2 8.6-2h2.2c2.8 0 5.5.7 8 2.1 3.7 2.1 7.6 4.9 12.4 5.9"/>
+              <path d="M15.2 12.2c2.8-1.4 5.7-2 8.2-2h3.4c2.5 0 5.4.7 8.2 2.1"/>
+              <path d="M22 33v-4.6h5V33"/>
+            </g>
+          </svg>
+        </span>
+        <span class="brand__text">
+          <span class="brand__name" data-campus-slot="brandName">府城校园图志</span>
+          <span class="brand__sub mono" data-campus-slot="brandSub">海南中学 · 府城校区 / A CAMPUS ATLAS</span>
+        </span>
       </div>
-      <div class="masthead__title-row">
-        <h1 class="masthead__title">府城</h1>
-        <span class="seal" aria-hidden="true">海中</span>
-      </div>
-      <div class="masthead__sub-row">
-        <p class="masthead__subtitle">校园图志</p>
-        <span class="masthead__rule masthead__rule--long" aria-hidden="true"></span>
-        <p class="masthead__en mono">A CAMPUS ATLAS</p>
-      </div>
-      <div class="masthead__meta mono">
-        <span>1923—2026</span>
-        <span>交互三维 · 写意复原</span>
-      </div>
-    </header>
 
-    <div class="topbar">
-      <div class="climate mono" aria-live="polite">
-        <span class="climate__dot" aria-hidden="true"></span>
-        <span id="phaseLabel">斜阳</span>
-        <span class="climate__sep" aria-hidden="true"></span>
-        <span id="clock">16:18</span>
-        <span class="climate__sep" aria-hidden="true"></span>
-        <span>海口 · 府城</span>
-      </div>
-      <div class="topbar__actions">
+      <span class="brand__divider" aria-hidden="true"></span>
+
+      <!-- 多校区切换位：当前仅府城校区可用；未来由 js/campuses.js 接入，
+           保持 #campusSwitcher / [data-campus] 契约，新增 2–4 个校区即可横向扩展。 -->
+      <nav class="campus-switcher" id="campusSwitcher" aria-label="校区切换">
+        <p class="campus-switcher__label mono">CAMPUS <span>校区</span></p>
+        <div class="campus-switcher__tabs" role="tablist" aria-label="选择校区">
+          <button class="campus-tab is-active" type="button" role="tab" aria-selected="true" aria-current="true" data-campus="fucheng">
+            <span class="campus-tab__name">府城校区</span>
+            <span class="campus-tab__en mono">FUCHENG</span>
+          </button>
+          <button class="campus-tab is-planned" type="button" role="tab" aria-selected="false" data-campus="planned" aria-disabled="true" disabled>
+            <span class="campus-tab__name">更多校区</span>
+            <span class="campus-tab__en mono">EXPANDING</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="site-header__actions">
+        <span class="site-header__edition mono">交互建筑图志 <b>NO. 01</b></span>
         <button class="text-button" type="button" data-action="about" aria-label="图志说明">
           <span>图志说明</span>
           <svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.4"/><path d="M8 7v4M8 4.8v.2"/></svg>
         </button>
-        <button class="icon-button" id="nightButton" type="button" data-action="night" aria-label="切换昼夜" aria-pressed="false">
-          <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="4.1"/><path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/>
-          </svg>
-          <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M20.2 15.3A8.6 8.6 0 0 1 8.7 3.8a8.6 8.6 0 1 0 11.5 11.5Z"/>
-          </svg>
-        </button>
-        <button class="icon-button" id="fullscreenButton" type="button" aria-label="全屏">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"/></svg>
-        </button>
       </div>
+    </header>
+
+    <div class="workspace">
+      <!-- ── 左栏叙事：标题 / 导语 / 地景索引 / 当前图志 ─────────── -->
+      <aside class="narrative" aria-label="图志叙事与地景索引">
+        <div class="narrative__scroll" id="narrativeScroll">
+          <section class="intro">
+            <p class="intro__eyebrow mono"><span class="intro__rule" aria-hidden="true"></span><span data-campus-slot="introEyebrow">FUCHENG, HAIKOU · 府城</span></p>
+            <div class="intro__title-row">
+              <h1 class="intro__title">
+                <span class="intro__title-cn" data-campus-slot="shortName">府城</span>
+                <span class="intro__title-sub">校园图志</span>
+              </h1>
+              <span class="seal" aria-hidden="true">海中</span>
+            </div>
+            <p class="intro__lead" data-campus-slot="introLead">把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访府城校区的日常。</p>
+            <p class="intro__note"><i aria-hidden="true"></i>交互三维 · 写意复原 <span class="mono">NOT TO SCALE</span></p>
+            <p class="intro__meta mono">
+              <span data-campus-slot="yearRange">1923—2026</span>
+              <span id="introSpotCount">18 处地景</span>
+              <span data-campus-slot="cityShortName">海口 · 府城</span>
+            </p>
+          </section>
+
+          <nav class="index" id="index" aria-label="校园地标索引">
+            <div class="index__head">
+              <span class="index__label">地景索引</span>
+              <span class="index__count mono">18 SPOTS</span>
+            </div>
+            <ol class="index__list" id="indexList"></ol>
+            <p class="index__hint mono">SELECT A PLACE / 点击进入图志</p>
+          </nav>
+
+          <div class="narrative__prompt" aria-hidden="true">
+            <p class="narrative__prompt-kicker mono">CURRENT PLATE / 当前图志</p>
+            <p class="narrative__prompt-title">选择一处地景，读它的图与志。</p>
+            <p class="narrative__prompt-text">从索引、场景中的编号，或校园总平面进入。每份图志含立面示意、沿革与观察要点。</p>
+            <ul class="narrative__prompt-keys mono">
+              <li><span>01—18</span>地景索引</li>
+              <li><span class="key-dot" aria-hidden="true"></span>场景编号</li>
+              <li><span class="key-plan" aria-hidden="true"></span>总平面定位</li>
+            </ul>
+          </div>
+
+          <article class="info-card" id="infoCard" aria-hidden="true" aria-labelledby="infoTitle" aria-live="polite">
+            <div class="info-card__top">
+              <span class="info-card__number mono" id="infoNumber">02</span>
+              <span class="info-card__kind mono" id="infoKind">省级文保 · 1934</span>
+              <button class="info-card__quick-next" id="quickNextSpot" type="button" aria-label="查看下一处">
+                <span>下一处</span>
+                <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7.5 4.5L14 10l-6.5 5.5"/></svg>
+              </button>
+              <button class="info-card__close" id="closeInfo" type="button" aria-label="关闭图志">
+                <svg aria-hidden="true" viewBox="0 0 18 18"><path d="M4 4l10 10M14 4L4 14"/></svg>
+              </button>
+            </div>
+            <div class="info-card__heading">
+              <h2 id="infoTitle">凤栖堂</h2>
+              <p class="mono" id="infoEn">FENGQI HALL</p>
+            </div>
+            <div class="info-card__drawing" id="infoDrawing" aria-hidden="true"></div>
+            <p class="info-card__summary" id="infoSummary"></p>
+            <p class="info-card__description" id="infoDescription"></p>
+            <dl class="info-card__facts" id="infoFacts"></dl>
+            <div class="info-card__pager">
+              <button type="button" id="prevSpot" aria-label="查看上一处">
+                <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M12.5 4.5L6 10l6.5 5.5"/></svg>
+                <span>上一处</span>
+              </button>
+              <span class="info-card__pager-line" aria-hidden="true"></span>
+              <button type="button" id="nextSpot" aria-label="查看下一处">
+                <span>下一处</span>
+                <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7.5 4.5L14 10l-6.5 5.5"/></svg>
+              </button>
+            </div>
+          </article>
+        </div>
+      </aside>
+
+      <!-- ── 右栏：有边界的场景卡片，叠加控件分层到四角 ─────────── -->
+      <section class="stage" aria-label="三维校园场景">
+        <div class="stage__viewport" id="stageViewport">
+          <canvas id="scene" data-campus-slot="canvasLabel" aria-label="海南中学府城校区交互三维模型。可拖动旋转、滚轮缩放，点击建筑查看图志。"></canvas>
+          <div class="atmosphere" aria-hidden="true"></div>
+          <div class="grain" aria-hidden="true"></div>
+          <div class="markers" id="markers" aria-label="三维地标"></div>
+        </div>
+
+        <div class="stage-title">
+          <span class="stage-title__line" aria-hidden="true"></span>
+          <div class="stage-title__text">
+            <p class="stage-title__cn" id="sceneTitle">府城校园</p>
+            <p class="stage-title__en mono"><span id="sceneEn">FUCHENG CAMPUS</span> <i aria-hidden="true">/</i> <span id="sceneKind">自由探索</span></p>
+          </div>
+        </div>
+
+        <div class="stage-meta" aria-live="polite">
+          <span class="climate mono">
+            <span class="climate__dot" aria-hidden="true"></span>
+            <span id="phaseLabel">斜阳</span>
+            <span class="climate__sep" aria-hidden="true"></span>
+            <span id="clock">16:18</span>
+            <span class="climate__sep climate__sep--city" aria-hidden="true"></span>
+            <span class="climate__city" data-campus-slot="cityShortName">海口 · 府城</span>
+          </span>
+          <span class="stage-meta__north mono">N <i aria-hidden="true"></i></span>
+        </div>
+
+        <div class="stage-rail" role="toolbar" aria-label="场景工具">
+          <button class="rail-button" id="nightButton" type="button" data-action="night" aria-label="切换昼夜" aria-pressed="false">
+            <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4.1"/><path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/>
+            </svg>
+            <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M20.2 15.3A8.6 8.6 0 0 1 8.7 3.8a8.6 8.6 0 1 0 11.5 11.5Z"/>
+            </svg>
+          </button>
+          <span class="rail-sep" aria-hidden="true"></span>
+          <button class="rail-button" id="fullscreenButton" type="button" aria-label="全屏">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"/></svg>
+          </button>
+        </div>
+
+        <section class="light-panel" aria-label="日照时刻控制">
+          <div class="light-panel__head mono">
+            <span>日照研究 / LIGHT</span>
+            <span id="lightPhase">GOLDEN HOUR</span>
+          </div>
+          <div class="light-panel__body">
+            <div class="light-panel__readout">
+              <span id="timeReadout">16:18</span>
+              <span class="light-panel__state" id="lightState">斜阳暖照</span>
+            </div>
+            <div class="light-panel__range">
+              <span class="mono">06</span>
+              <input id="timeRange" type="range" min="6" max="20.8" step="0.05" value="16.3" aria-label="调整校园日照时刻">
+              <span class="mono">21</span>
+            </div>
+          </div>
+          <div class="light-panel__ticks mono" aria-hidden="true">
+            <span>晨</span><span>午</span><span>暮</span><span>夜</span>
+          </div>
+        </section>
+
+        <div class="command-dock" id="commandDock" role="toolbar" aria-label="场景控制">
+          <button class="dock-button dock-button--primary" id="tourButton" type="button" aria-pressed="false">
+            <svg class="icon-play" aria-hidden="true" viewBox="0 0 20 20"><path d="M6.5 4.3l9 5.7-9 5.7z"/></svg>
+            <svg class="icon-pause" aria-hidden="true" viewBox="0 0 20 20"><path d="M6 4.5v11M14 4.5v11"/></svg>
+            <span class="dock-button__label" data-tour-label>自动导览</span>
+          </button>
+          <span class="dock-sep" aria-hidden="true"></span>
+          <button class="dock-button" type="button" data-action="overview" title="回到校园全景">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.2 10l6.8-6 6.8 6M5.2 8.7v7.3h9.6V8.7"/></svg>
+            <span>总览</span>
+          </button>
+          <button class="dock-button" type="button" data-action="top" title="俯瞰校园">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 3.2l7 4.1v5.4l-7 4.1-7-4.1V7.3zM3.2 7.4L10 11.5l6.8-4.1M10 11.5v5.3"/></svg>
+            <span>俯瞰</span>
+          </button>
+          <button class="dock-button" type="button" data-action="reset" title="复位视角">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
+            <span>复位</span>
+          </button>
+        </div>
+
+        <aside class="map-panel" aria-label="校园总平面示意">
+          <div class="map-panel__head">
+            <span>校园总平面</span>
+            <span class="mono">SITE PLAN</span>
+          </div>
+          <div class="map-panel__canvas-wrap">
+            <canvas id="minimap" aria-label="校园平面示意图，可点击地标定位"></canvas>
+            <span class="map-panel__north mono" aria-hidden="true">N<i></i></span>
+          </div>
+          <div class="map-panel__foot mono">
+            <span><i class="map-panel__dot" aria-hidden="true"></i>当前视角</span>
+            <span>写意 / 非测绘</span>
+          </div>
+        </aside>
+
+        <div class="stage-foot">
+          <p class="interaction-hint mono" id="interactionHint">拖动旋转 · 滚轮缩放 · 点击建筑</p>
+          <p class="stage-foot__coords mono">N 19°59′ / E 110°20′ · 写意复原 / NOT TO SCALE</p>
+        </div>
+      </section>
     </div>
 
-    <div class="edge-note mono" aria-hidden="true">
-      <span>N 19°59′ / E 110°20′</span>
-      <i></i>
-      <span>FUCHENG · HAIKOU</span>
-    </div>
+    <!-- ── 页脚 ─────────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <span class="site-footer__lead">一座校园，一段关于海中的记忆。</span>
+      <span class="site-footer__meta mono">大路街 187 号 · 海口府城 <i>/</i> 建筑轮廓 © OpenStreetMap contributors · ODbL 1.0 <i>/</i> THREE.JS · WEBGL</span>
+    </footer>
 
-    <nav class="index" id="index" aria-label="校园地标索引">
-      <div class="index__head">
-        <span class="index__label">地景索引</span>
-        <span class="index__count mono">08 SPOTS</span>
-      </div>
-      <ol class="index__list" id="indexList"></ol>
-      <p class="index__hint mono">SELECT A PLACE / 点击建筑进入</p>
-    </nav>
-
-    <article class="info-card" id="infoCard" aria-hidden="true" aria-labelledby="infoTitle" aria-live="polite">
-      <div class="info-card__top">
-        <span class="info-card__number mono" id="infoNumber">02</span>
-        <span class="info-card__kind mono" id="infoKind">省级文保 · 1934</span>
-        <button class="info-card__quick-next" id="quickNextSpot" type="button" aria-label="查看下一处">
-          <span>下一处</span>
-          <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7.5 4.5L14 10l-6.5 5.5"/></svg>
-        </button>
-        <button class="info-card__close" id="closeInfo" type="button" aria-label="关闭图志">
-          <svg aria-hidden="true" viewBox="0 0 18 18"><path d="M4 4l10 10M14 4L4 14"/></svg>
-        </button>
-      </div>
-      <div class="info-card__heading">
-        <h2 id="infoTitle">凤栖堂</h2>
-        <p class="mono" id="infoEn">FENGQI HALL</p>
-      </div>
-      <div class="info-card__drawing" id="infoDrawing" aria-hidden="true"></div>
-      <p class="info-card__summary" id="infoSummary"></p>
-      <p class="info-card__description" id="infoDescription"></p>
-      <dl class="info-card__facts" id="infoFacts"></dl>
-      <div class="info-card__pager">
-        <button type="button" id="prevSpot" aria-label="查看上一处">
-          <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M12.5 4.5L6 10l6.5 5.5"/></svg>
-          <span>上一处</span>
-        </button>
-        <span class="info-card__pager-line" aria-hidden="true"></span>
-        <button type="button" id="nextSpot" aria-label="查看下一处">
-          <span>下一处</span>
-          <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7.5 4.5L14 10l-6.5 5.5"/></svg>
-        </button>
-      </div>
-    </article>
-
-    <aside class="map-panel" aria-label="校园总平面示意">
-      <div class="map-panel__head">
-        <span>校园总平面</span>
-        <span class="mono">SITE PLAN</span>
-      </div>
-      <div class="map-panel__canvas-wrap">
-        <canvas id="minimap" aria-label="校园平面示意图，可点击地标定位"></canvas>
-        <span class="map-panel__north mono" aria-hidden="true">N<i></i></span>
-      </div>
-      <div class="map-panel__foot mono">
-        <span><i class="map-panel__dot" aria-hidden="true"></i>当前视角</span>
-        <span>写意 / NOT TO SCALE</span>
-      </div>
-    </aside>
-
-    <div class="command-dock" id="commandDock" role="toolbar" aria-label="场景控制">
-      <button class="dock-button dock-button--primary" id="tourButton" type="button" aria-pressed="false">
-        <svg class="icon-play" aria-hidden="true" viewBox="0 0 20 20"><path d="M6.5 4.3l9 5.7-9 5.7z"/></svg>
-        <svg class="icon-pause" aria-hidden="true" viewBox="0 0 20 20"><path d="M6 4.5v11M14 4.5v11"/></svg>
-        <span class="dock-button__label" data-tour-label>自动导览</span>
-      </button>
-      <span class="dock-sep" aria-hidden="true"></span>
-      <button class="dock-button" type="button" data-action="overview" title="回到校园全景">
-        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.2 10l6.8-6 6.8 6M5.2 8.7v7.3h9.6V8.7"/></svg>
-        <span>总览</span>
-      </button>
-      <button class="dock-button" type="button" data-action="top" title="俯瞰校园">
-        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 3.2l7 4.1v5.4l-7 4.1-7-4.1V7.3zM3.2 7.4L10 11.5l6.8-4.1M10 11.5v5.3"/></svg>
-        <span>俯瞰</span>
-      </button>
-      <button class="dock-button" type="button" data-action="reset" title="复位视角">
-        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
-        <span>复位</span>
-      </button>
-    </div>
-
-    <section class="light-panel" aria-label="日照时刻控制">
-      <div class="light-panel__head mono">
-        <span>日照研究 / LIGHT</span>
-        <span id="lightPhase">GOLDEN HOUR</span>
-      </div>
-      <div class="light-panel__readout">
-        <span id="timeReadout">16:18</span>
-        <span class="light-panel__state" id="lightState">斜阳暖照</span>
-      </div>
-      <div class="light-panel__range">
-        <span class="mono">06</span>
-        <input id="timeRange" type="range" min="6" max="20.8" step="0.05" value="16.3" aria-label="调整校园日照时刻">
-        <span class="mono">21</span>
-      </div>
-      <div class="light-panel__ticks mono" aria-hidden="true">
-        <span>晨</span><span>午</span><span>暮</span><span>夜</span>
-      </div>
-    </section>
-
-    <p class="interaction-hint mono" id="interactionHint">拖动旋转 · 滚轮缩放 · 点击建筑</p>
-    <p class="place-note mono" aria-hidden="true">大路街 187 号 / 写意复原 · 非测绘</p>
-
-    <div class="markers" id="markers" aria-label="三维地标"></div>
     <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
-
     <div class="cursor" id="cursor" aria-hidden="true"><i></i></div>
 
     <dialog class="about-dialog" id="aboutDialog" aria-labelledby="aboutTitle">
@@ -261,7 +332,7 @@
         </button>
         <p class="about-dialog__eyebrow mono">ABOUT THE ATLAS / 图志说明</p>
         <h2 id="aboutTitle">把校园，读成一张立体图。</h2>
-        <p class="about-dialog__lead">这不是一张测绘地图，而是一份以建筑为线索的校园阅读。拖动、靠近、点击，在体量与光影之间，重访府城校区的日常。</p>
+        <p class="about-dialog__lead" data-campus-slot="aboutLead">这不是一张测绘地图，而是一份以建筑为线索的校园阅读。拖动、靠近、点击，在体量与光影之间，重访府城校区的日常。</p>
         <div class="about-dialog__cols">
           <section>
             <h3 class="mono">操 作</h3>
@@ -278,7 +349,7 @@
         </section>
         <p class="about-dialog__disclaimer">本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。</p>
         <div class="about-dialog__footer mono">
-          <span>HAINAN MIDDLE SCHOOL · FUCHENG CAMPUS</span>
+          <span data-campus-slot="fullEn">HAINAN MIDDLE SCHOOL · FUCHENG CAMPUS</span>
           <span>THREE.JS / WEBGL / 2026</span>
         </div>
       </div>
