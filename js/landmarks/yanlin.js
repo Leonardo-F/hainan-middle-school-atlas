@@ -54,6 +54,21 @@ const BACK_WIN_X = [-8.4, -4.2, 0, 4.2, 8.4];
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
+/* 「春风化雨」群像定位（米，模块局部坐标；集成后整组 ×0.5 到场景单位）：
+ *   - 基座 8.0 m 宽 × 2.4 m 深，中心 x = 0，与衍林堂正门、门洞与正面台阶同一中轴；
+ *   - z = 10.9：距主体前墙 BODY_FRONT = 3.4 约 7.5 m，落在“7–8 m”区间中部。
+ *     依据：用户 2026-11 反馈「春风化雨和夫子像，离建筑门口要远一些，大致 7 或 8 米」，
+ *     仍属目测/写意（此前宣传片帧 /tmp/research/media/evid-衍林堂-春风化雨群像.jpg、
+ *     /tmp/research/media/raw/x-62.jpg 与航拍 /tmp/research/media/evid-衍林堂-俯视群像.jpg
+ *     只证实了“5 人铜像群居中轴、台阶外广场、面朝庭院”，未给出精确米数）。
+ *     基座 z ≈ 9.70–12.10：完全在台基前沿（≈6.05 m）与三级台阶（至 z ≈ 7.19 m）之外；
+ *     堂前铺地相应向 +z 延伸到 12.6 m（见 build 内“堂前铺地”段），基座完全落在铺地上。
+ *   - 朝向：面向庭院（+z），保持 task-4 核实的朝向；若后续证据表明应面向堂内，
+ *     把 STATUE_FACING 改为 -1 即可（人物整体转身；说明牌与说明石保留在庭院一侧）。
+ */
+const STATUE_Z = 10.9;
+const STATUE_FACING = 1; // +1 = 面向庭院（+z）；-1 = 面向堂内
+
 /* ------------------------------------------------------------------ */
 /*  红木格窗 / 格扇门（贴图窗芯 + 红木框 + 石窗台）                      */
 /* ------------------------------------------------------------------ */
@@ -362,11 +377,15 @@ export function build(ctx) {
   addBox(group, mats.stoneLight, [0, PLATFORM + 0.04, 5.94], [platX * 2 - 0.1, 0.14, 0.2]);
   // 正面台阶
   addFrontSteps(group, mats, { z: 5.98, width: 8.8, count: 3, rise: 0.18, run: 0.4 });
-  // 堂前铺地
-  addBox(group, mats.paving, [0, 0.05, 7.95], [21, 0.1, 2.75]);
+  // 堂前铺地：2026-11 群像后移（距门约 7.5 m）后，铺地自 z 6.575 延伸到 12.6，
+  // 保证 8.0 × 2.4 m 的群像基座（z≈9.70–12.10）完全落在铺地上；前端补压边石。
+  const COURT_FRONT_Z = 12.6;
+  const courtZ0 = 6.575;
+  addBox(group, mats.paving, [0, 0.05, (courtZ0 + COURT_FRONT_Z) / 2], [21, 0.1, COURT_FRONT_Z - courtZ0]);
   addBox(group, mats.stoneLight, [0, 0.07, 6.55], [21, 0.1, 0.22]);
-  for (let i = 0; i < 4; i += 1) {
-    addBox(group, mats.darkPaving, [0, 0.1, 6.98 + i * 0.58], [15.4 - i * 0.3, 0.02, 0.28]);
+  addBox(group, mats.stoneLight, [0, 0.08, COURT_FRONT_Z - 0.05], [21, 0.14, 0.22]);
+  for (let i = 0; i < 8; i += 1) {
+    addBox(group, mats.darkPaving, [0, 0.1, 6.98 + i * 0.72], [15.4 - i * 0.3, 0.02, 0.28]);
   }
 
   /* ---------------- 一层：白墙 + 灰绿墙裙 ---------------- */
@@ -533,17 +552,19 @@ export function build(ctx) {
   });
 
   /* ---------------- 堂前「春风化雨」坐像群 ---------------- */
-  const statueZ = 8.32;
+  // 定位依据见文件上方 STATUE_Z / STATUE_FACING 注释：正门中轴、台基与台阶之外、距门约 7.5 m。
+  const statueZ = STATUE_Z;
+  const faceFlip = STATUE_FACING === 1 ? 0 : Math.PI;
   addBox(group, mats.darkStone, [0, 0.16, statueZ], [7.2, 0.32, 2.0]);
   addBox(group, mats.darkPaving, [0, 0.33, statueZ], [6.9, 0.06, 1.7]);
   addBox(group, mats.stoneLight, [0, 0.06, statueZ], [8.0, 0.12, 2.4]);
   // 钟衍林先生（居中，座石略高）与四名学生
-  addSeatedFigure(group, mats, { x: 0, z: statueZ - 0.2, seatH: 0.62, ry: 0.12, scale: 1.08, robe: true });
-  addSeatedFigure(group, mats, { x: -2.5, z: statueZ + 0.18, seatH: 0.38, ry: 0.72, scale: 0.96 });
-  addSeatedFigure(group, mats, { x: -1.25, z: statueZ + 0.28, seatH: 0.36, ry: 0.42, scale: 0.94 });
-  addSeatedFigure(group, mats, { x: 1.3, z: statueZ + 0.28, seatH: 0.36, ry: -0.42, scale: 0.95 });
-  addSeatedFigure(group, mats, { x: 2.55, z: statueZ + 0.18, seatH: 0.38, ry: -0.72, scale: 0.97 });
-  // 群像说明牌「春风化雨」
+  addSeatedFigure(group, mats, { x: 0, z: statueZ - 0.2, seatH: 0.62, ry: 0.12 + faceFlip, scale: 1.08, robe: true });
+  addSeatedFigure(group, mats, { x: -2.5, z: statueZ + 0.18, seatH: 0.38, ry: 0.72 + faceFlip, scale: 0.96 });
+  addSeatedFigure(group, mats, { x: -1.25, z: statueZ + 0.28, seatH: 0.36, ry: 0.42 + faceFlip, scale: 0.94 });
+  addSeatedFigure(group, mats, { x: 1.3, z: statueZ + 0.28, seatH: 0.36, ry: -0.42 + faceFlip, scale: 0.95 });
+  addSeatedFigure(group, mats, { x: 2.55, z: statueZ + 0.18, seatH: 0.38, ry: -0.72 + faceFlip, scale: 0.97 });
+  // 群像说明牌「春风化雨」：置于基座 +z 侧（庭院一侧），不随人物朝向翻转
   if (M.chunfeng) {
     addPlaque(group, M.chunfeng, { x: 0, y: 0.5, z: statueZ + 1.02, w: 2.1, h: 0.46 });
   }

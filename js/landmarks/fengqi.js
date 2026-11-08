@@ -11,6 +11,8 @@
  *   - 白墙、红木格门窗（前墙 1 门 4 窗、侧墙各 2 窗）、弧形石框匾额「凤栖堂」；
  *   - 黄色琉璃透花栏板沿檐廊展开；红石台阶、灰石台基与庭院；
  *   - 庭院中夫子立像（深色石/铜坐立像剪影）、石凳、石盆与红土花池。
+ *     夫子像位于正门中轴（x=0）、台基与三级台阶之外、距门前约 5 m 的灰石庭院内，
+ *     默认面向庭院（+z）；详见下方 STATUE_X / STATUE_Z / STATUE_RY 注释。
  * 收尾调用 finalize：整组×0.5 缩放为场景单位并按材质合并网格。
  */
 import * as THREE from 'three';
@@ -43,7 +45,28 @@ const UPPER_H = 2.05;
 const STAIR_W = 4.4;            // 台阶宽
 const STAIR_RUN = 0.34;
 const STAIR_RISE = 0.195;
-const COURT_FRONT = 10.0;       // 灰石庭院前沿
+const COURT_MID = 10.0;         // 原灰石庭院前沿（主庭院全宽段到此）
+const COURT_FRONT = 12.5;       // 灰石庭院前沿（2026-11 雕像后移，庭院加深）
+const COURT_APRON_HALF = 3.8;   // 前部中央铺地半宽（收窄，减少与场景主路相压）
+
+/* 夫子像定位（米，模块局部坐标；集成后整组 ×0.5 到场景单位）：
+ *   - x = 0：凤栖堂正门中轴——门洞、红石台阶、匾额都居中于 x=0；
+ *   - z = 10.75：距前墙（门）HALL_FRONT = 3.25 约 7.5 m，落在“7–8 m”区间中部。
+ *     依据：用户 2026-11 反馈「春风化雨和夫子像，离建筑门口要远一些，大致 7 或 8 米」，
+ *     仍属目测/写意（此前官方照片/宣传片只证实了“居中轴、正对门口、台基外、面朝庭院”，
+ *     未给出精确米数；2024 官方正面照 /tmp/research/map/official/fengqi2024.png、
+ *     宣传片帧 /tmp/research/media/evid-凤栖堂-夫子像-正对中轴.jpg）。
+ *     台座（2.1 m 见方）z≈9.70–11.80：在台基前沿 PLAT_Z1 = 6.6 与三级台阶
+ *     （最外一级至 z≈7.62）之外，且完全落在 7.0–12.5 的灰石庭院内；
+ *   - 朝向：面向庭院（+z，背对建筑），保持 task-4 核实的朝向；
+ *     说明牌仍在台座 +z 侧；若后续证据表明应面向堂内，把 STATUE_RY 改为 Math.PI。
+ *   - 注意：场景主路 newMainRoad（campus-accurate.js，模块外）近边距前墙仅约 7.9 m，
+ *     雕像放到 7.5 m 必然贴近路缘；本模块把庭院前部收窄为 7.6 m 宽中央铺地，
+ *     尽量少压主路（详见“灰石庭院”段注释）。
+ */
+const STATUE_X = 0;
+const STATUE_Z = 10.75;
+const STATUE_RY = 0;
 
 /* ------------------------------------------------------------------ */
 /*  构件                                                               */
@@ -274,8 +297,12 @@ function pottedTree(parent, mats, M, x, z) {
   addBall(parent, mats.leaf, [x + 0.4, 1.85, z + 0.35], [0.4, 0.24, 0.36], 0);
 }
 
-/** 夫子立像：深色石像，双手前拢持笏，长髯、发髻、长袍。 */
-function confuciusStatue(parent, mats, M, x, z) {
+/**
+ * 夫子立像：深色石像，双手前拢持笏，长髯、发髻、长袍。
+ * ry：人物朝向（0 = 面向庭院 +z；Math.PI = 面向堂内）。台座与说明牌不随人物旋转，
+ * 说明牌固定在台座 +z 侧（庭院一侧）。
+ */
+function confuciusStatue(parent, mats, M, x, z, ry = 0) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
   parent.add(g);
@@ -284,50 +311,55 @@ function confuciusStatue(parent, mats, M, x, z) {
   addBox(g, mats.stone, [0, 0.1, 0], [2.1, 0.2, 2.1]);
   addBox(g, mats.darkStone, [0, 0.72, 0], [1.56, 1.04, 1.56]);
   addBox(g, mats.stone, [0, 1.3, 0], [1.72, 0.14, 1.72]);
-  // 红色说明牌
+  // 红色说明牌：固定在台座 +z 侧（庭院一侧），不随人物朝向转动
   addBox(g, mats.red, [0, 0.66, 0.79], [0.72, 0.44, 0.03]);
   addBox(g, mats.gold, [0, 0.87, 0.81], [0.76, 0.02, 0.015]);
+
+  // 人物本体：单独一层，随 ry 转向
+  const figure = new THREE.Group();
+  figure.rotation.y = ry;
+  g.add(figure);
 
   const b = 1.37; // 座顶
   const bronze = mats.granite;
 
   // 袍裙：下摆外张、层层衣褶
-  addCylinder(g, bronze, [0, b + 0.66, 0], 0.37, 0.56, 1.32, 14);
-  addCylinder(g, bronze, [0, b + 0.1, 0], 0.54, 0.62, 0.12, 14);
+  addCylinder(figure, bronze, [0, b + 0.66, 0], 0.37, 0.56, 1.32, 14);
+  addCylinder(figure, bronze, [0, b + 0.1, 0], 0.54, 0.62, 0.12, 14);
   for (const [yy, r] of [[0.36, 0.51], [0.62, 0.47], [0.88, 0.42], [1.12, 0.39]]) {
-    addCylinder(g, bronze, [0, b + yy, 0], r, r + 0.03, 0.06, 14);
+    addCylinder(figure, bronze, [0, b + yy, 0], r, r + 0.03, 0.06, 14);
   }
   // 袍前襟
-  addBox(g, bronze, [0, b + 0.75, 0.44], [0.035, 1.1, 0.03]);
+  addBox(figure, bronze, [0, b + 0.75, 0.44], [0.035, 1.1, 0.03]);
   // 腰束带
-  addCylinder(g, bronze, [0, b + 1.3, 0], 0.4, 0.39, 0.1, 12);
+  addCylinder(figure, bronze, [0, b + 1.3, 0], 0.4, 0.39, 0.1, 12);
   // 上身、肩与领口
-  addCylinder(g, bronze, [0, b + 1.62, 0], 0.32, 0.4, 0.5, 14);
-  addBall(g, bronze, [0, b + 1.92, 0], [0.48, 0.21, 0.32], 1);
-  addCylinder(g, bronze, [0, b + 1.84, 0], 0.24, 0.29, 0.08, 12);
+  addCylinder(figure, bronze, [0, b + 1.62, 0], 0.32, 0.4, 0.5, 14);
+  addBall(figure, bronze, [0, b + 1.92, 0], [0.48, 0.21, 0.32], 1);
+  addCylinder(figure, bronze, [0, b + 1.84, 0], 0.24, 0.29, 0.08, 12);
   // 头颈与发髻（束发高髻）
-  addCylinder(g, bronze, [0, b + 2.05, 0.01], 0.1, 0.13, 0.15, 8);
-  addBall(g, bronze, [0, b + 2.23, 0.02], [0.175, 0.215, 0.19], 1);
-  addCylinder(g, bronze, [0, b + 2.43, -0.03], 0.055, 0.1, 0.15, 8);
-  addBall(g, bronze, [0, b + 2.52, -0.03], [0.09, 0.075, 0.085], 0);
+  addCylinder(figure, bronze, [0, b + 2.05, 0.01], 0.1, 0.13, 0.15, 8);
+  addBall(figure, bronze, [0, b + 2.23, 0.02], [0.175, 0.215, 0.19], 1);
+  addCylinder(figure, bronze, [0, b + 2.43, -0.03], 0.055, 0.1, 0.15, 8);
+  addBall(figure, bronze, [0, b + 2.52, -0.03], [0.09, 0.075, 0.085], 0);
   // 长髯
   const beard = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.3, 7), bronze);
   beard.position.set(0, b + 2.03, 0.18);
   beard.rotation.x = Math.PI;
   beard.castShadow = true;
-  g.add(beard);
+  figure.add(beard);
   // 双臂前拢、宽袖
   for (const side of [-1, 1]) {
-    addRod(g, bronze, [side * 0.34, b + 1.9, 0.03], [side * 0.26, b + 1.6, 0.2], 0.095, 8);
-    addRod(g, bronze, [side * 0.26, b + 1.6, 0.2], [side * 0.13, b + 1.48, 0.31], 0.085, 8);
-    addBall(g, bronze, [side * 0.28, b + 1.72, 0.12], [0.17, 0.24, 0.18], 0);
-    addBall(g, bronze, [side * 0.13, b + 1.46, 0.31], [0.13, 0.17, 0.13], 0);
+    addRod(figure, bronze, [side * 0.34, b + 1.9, 0.03], [side * 0.26, b + 1.6, 0.2], 0.095, 8);
+    addRod(figure, bronze, [side * 0.26, b + 1.6, 0.2], [side * 0.13, b + 1.48, 0.31], 0.085, 8);
+    addBall(figure, bronze, [side * 0.28, b + 1.72, 0.12], [0.17, 0.24, 0.18], 0);
+    addBall(figure, bronze, [side * 0.13, b + 1.46, 0.31], [0.13, 0.17, 0.13], 0);
   }
   // 笏板
-  addBox(g, bronze, [0, b + 1.6, 0.39], [0.3, 0.46, 0.05]);
-  addBox(g, mats.gold, [0, b + 1.68, 0.42], [0.26, 0.055, 0.02]);
+  addBox(figure, bronze, [0, b + 1.6, 0.39], [0.3, 0.46, 0.05]);
+  addBox(figure, mats.gold, [0, b + 1.68, 0.42], [0.26, 0.055, 0.02]);
   // 足
-  addBox(g, bronze, [0, b + 0.04, 0.16], [0.44, 0.08, 0.3]);
+  addBox(figure, bronze, [0, b + 0.04, 0.16], [0.44, 0.08, 0.3]);
 }
 
 
@@ -609,13 +641,31 @@ export function build(ctx) {
   addBox(group, mats.darkMetal, [0, 6.15, -1.3], [21.4, 0.05, 10.5]);
 
   /* ---------------- 灰石庭院 ---------------- */
-  const courtDepth = COURT_FRONT - 7.0;
-  addBox(group, mats.darkPaving, [0, 0.05, 7.0 + courtDepth / 2], [17.2, 0.1, courtDepth]);
-  // 庭院前沿石
-  addBox(group, mats.stoneLight, [0, 0.08, COURT_FRONT - 0.08], [17.4, 0.14, 0.22]);
-  // 铺地分缝
+  // 2026-11 用户反馈要求夫子像后移到距门约 7–8 m。场景主路 newMainRoad 在模块外，
+  // 其近边距凤栖堂前墙仅约 7.9 m：若把整幅庭院按原宽（17.2 m）加深到 12.5 m，
+  // 会有约 5 个场景单位² 的铺地压到主路上。按 Lead「优先收窄铺地」处理：
+  //   - 主庭院（z 7.0–10.0）保持全宽 17.2 m 不变；
+  //   - 前部只加一条 7.6 m 宽（±3.8 m）的中央铺地 z 10.0–12.5，覆盖 2.1 m 见方的台座
+  //     （z≈9.70–11.80），并把压路面积压到最小；
+  //   - 主庭院前端两肩补压边石，保证 T 形铺地有完整收边。
+  addBox(group, mats.darkPaving, [0, 0.05, (7.0 + COURT_MID) / 2], [17.2, 0.1, COURT_MID - 7.0]);
+  addBox(group, mats.darkPaving, [0, 0.05, (COURT_MID + COURT_FRONT) / 2],
+    [COURT_APRON_HALF * 2, 0.1, COURT_FRONT - COURT_MID]);
+  // 中央铺地前沿石 + 主庭院前端两肩压边石
+  addBox(group, mats.stoneLight, [0, 0.08, COURT_FRONT - 0.08], [COURT_APRON_HALF * 2 + 0.2, 0.14, 0.22]);
+  for (const side of [-1, 1]) {
+    const shoulderW = 8.6 - COURT_APRON_HALF;
+    addBox(group, mats.stoneLight,
+      [side * (COURT_APRON_HALF + shoulderW / 2), 0.08, COURT_MID - 0.06],
+      [shoulderW, 0.14, 0.22]);
+  }
+  // 铺地分缝：主庭院（z 7.3–9.9，全宽）+ 中央铺地（z 10.1–12.4）
   for (let i = -4; i <= 4; i += 1) {
     addBox(group, mats.darkStone, [i * 1.9, 0.105, 8.6], [0.03, 0.012, 2.6]);
+    if (Math.abs(i * 1.9) <= COURT_APRON_HALF) {
+      addBox(group, mats.darkStone, [i * 1.9, 0.105, (COURT_MID + COURT_FRONT) / 2 - 0.05],
+        [0.03, 0.012, COURT_FRONT - COURT_MID - 0.3]);
+    }
   }
   // 两侧红土花池 + 灌木
   for (const side of [-1, 1]) {
@@ -626,11 +676,11 @@ export function build(ctx) {
     addBall(group, mats.leaf, [side * 9.9, 0.62, 9.3], [0.42, 0.3, 0.4], 0);
   }
 
-  // 夫子像
-  confuciusStatue(group, mats, M, -6.2, 8.95);
-  // 石凳与石盆
-  stoneBench(group, mats, -3.3, 9.4, 0.12);
-  stoneBench(group, mats, 7.35, 9.4, -0.12);
+  // 夫子像：正门中轴、台基与台阶之外、距门约 7.5 m（见文件上方 STATUE_* 注释）
+  confuciusStatue(group, mats, M, STATUE_X, STATUE_Z, STATUE_RY);
+  // 石凳与石盆：留在主庭院内对称布置，避开台座（台座 2.1 m 见方、z≈9.70–11.80）
+  stoneBench(group, mats, -4.0, 9.3, 0.12);
+  stoneBench(group, mats, 4.0, 9.3, -0.12);
   pottedPlant(group, mats, M, -2.95, 7.9, 1.0);
   pottedPlant(group, mats, M, 2.95, 7.9, 1.0);
   pottedTree(group, mats, M, 5.7, 9.15);

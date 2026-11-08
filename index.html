@@ -148,7 +148,7 @@
             <p class="intro__note"><i aria-hidden="true"></i>交互三维 · 写意复原 <span class="mono">NOT TO SCALE</span></p>
             <p class="intro__meta mono">
               <span data-campus-slot="yearRange">1923—2026</span>
-              <span id="introSpotCount">18 处地景</span>
+              <span id="introSpotCount">— 处地景</span>
               <span data-campus-slot="cityShortName">海口 · 府城</span>
             </p>
           </section>
@@ -156,7 +156,7 @@
           <nav class="index" id="index" aria-label="校园地标索引">
             <div class="index__head">
               <span class="index__label">地景索引</span>
-              <span class="index__count mono">18 SPOTS</span>
+              <span class="index__count mono">— SPOTS</span>
             </div>
             <ol class="index__list" id="indexList"></ol>
             <p class="index__hint mono">SELECT A PLACE / 点击进入图志</p>
@@ -167,7 +167,7 @@
             <p class="narrative__prompt-title">选择一处地景，读它的图与志。</p>
             <p class="narrative__prompt-text">从索引、场景中的编号，或校园总平面进入。每份图志含立面示意、沿革与观察要点。</p>
             <ul class="narrative__prompt-keys mono">
-              <li><span>01—18</span>地景索引</li>
+              <li><span id="indexRange">01—…</span>地景索引</li>
               <li><span class="key-dot" aria-hidden="true"></span>场景编号</li>
               <li><span class="key-plan" aria-hidden="true"></span>总平面定位</li>
             </ul>
@@ -252,7 +252,7 @@
           </button>
         </div>
 
-        <section class="light-panel" aria-label="日照时刻控制">
+        <section class="light-panel" aria-label="日照与天气控制">
           <div class="light-panel__head mono">
             <span>日照研究 / LIGHT</span>
             <span id="lightPhase">GOLDEN HOUR</span>
@@ -270,6 +270,24 @@
           </div>
           <div class="light-panel__ticks mono" aria-hidden="true">
             <span>晨</span><span>午</span><span>暮</span><span>夜</span>
+          </div>
+          <div class="light-panel__weather">
+            <div class="light-panel__weather-head mono">
+              <span>天气 / WEATHER</span>
+              <span id="weatherPhase">01 / 06</span>
+            </div>
+            <div class="light-panel__weather-body">
+              <div class="light-panel__weather-readout">
+                <span class="light-panel__weather-icon" id="weatherIcon" aria-hidden="true">☀︎</span>
+                <span class="light-panel__weather-name" id="weatherName">晴</span>
+                <span class="light-panel__weather-en mono" id="weatherEn">CLEAR</span>
+              </div>
+              <input id="weatherRange" type="range" min="0" max="5" step="1" value="0"
+                aria-label="切换校园天气" aria-valuetext="晴 CLEAR">
+            </div>
+            <div class="light-panel__weather-ticks mono" aria-hidden="true">
+              <span>晴</span><span>小雨</span><span>暴雨</span><span>台风</span><span>雷雨</span><span>雪</span>
+            </div>
           </div>
         </section>
 
@@ -340,14 +358,14 @@
           </section>
           <section>
             <h3 class="mono">复 原</h3>
-            <p>建筑轮廓、运动场与出入口位置参考 OpenStreetMap；建筑高度、立面、植被和部分体量由设计推演。模型是艺术化校园图志，不是测绘成果。</p>
+            <p>建筑轮廓、运动场与出入口位置参考 OpenStreetMap；建筑高度、立面、植被和部分体量由设计推演。模型是艺术化校园图志，不是测绘成果。食堂位置未能在公开影像与卫星图中确认，暂未标注。</p>
           </section>
         </div>
         <section class="about-dialog__sources">
           <h3 class="mono">文献线索 / SOURCES</h3>
           <ul id="sourceList"></ul>
         </section>
-        <p class="about-dialog__disclaimer">本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。</p>
+        <p class="about-dialog__disclaimer"><span data-campus-slot="campusScope">本图志仅绘制高中部（府城校区）；初中部校区尚未绘制。</span><br>本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。</p>
         <div class="about-dialog__footer mono">
           <span data-campus-slot="fullEn">HAINAN MIDDLE SCHOOL · FUCHENG CAMPUS</span>
           <span>THREE.JS / WEBGL / 2026</span>

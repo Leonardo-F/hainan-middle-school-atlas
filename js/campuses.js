@@ -151,6 +151,8 @@ export function defineCampus(config = {}, options = {}) {
     school: config.school ?? '',
     schoolEn: config.schoolEn ?? '',
     name: config.name ?? '',
+    /** 学段（如「高中部」）；仅作展示元数据，不参与校验与渲染决策。 */
+    division: config.division ?? '',
     shortName: config.shortName ?? config.name ?? '',
     en: config.en ?? '',
     shortEn: config.shortEn ?? '',
@@ -243,7 +245,9 @@ const meilunCampus = defineCampus(
 
 /** 全部已注册校区（id → campus）。planned 校区也在注册表内，由 UI 自行过滤。 */
 export const CAMPUSES = Object.freeze(
-  Object.fromEntries([fuchengCampus, meilunCampus].map((campus) => [campus.id, campus]))
+  Object.fromEntries(
+    [fuchengCampus, meilunCampus].map((campus) => [campus.id, campus])
+  )
 );
 
 /** 按 order 排序的全部校区（active 在前，planned 在后；order 相同按 id）。 */

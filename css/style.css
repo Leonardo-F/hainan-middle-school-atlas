@@ -1494,7 +1494,8 @@ body[data-night='true'] .rail-button .icon-moon {
   color: var(--muted);
 }
 
-#timeRange {
+#timeRange,
+#weatherRange {
   flex: 1;
   min-width: 0;
   appearance: none;
@@ -1516,7 +1517,8 @@ body[data-night='true'] .rail-button .icon-moon {
   background: linear-gradient(90deg, #c8aa6e 0%, #d59468 42%, #9e7464 66%, #344b50 100%);
 }
 
-#timeRange::-webkit-slider-thumb {
+#timeRange::-webkit-slider-thumb,
+#weatherRange::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 10px;
@@ -1529,7 +1531,8 @@ body[data-night='true'] .rail-button .icon-moon {
   cursor: pointer;
 }
 
-#timeRange::-moz-range-thumb {
+#timeRange::-moz-range-thumb,
+#weatherRange::-moz-range-thumb {
   width: 9px;
   height: 9px;
   border: 1px solid var(--accent);
@@ -1537,6 +1540,34 @@ body[data-night='true'] .rail-button .icon-moon {
   background: var(--paper);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
   cursor: pointer;
+}
+
+/* Weather stops run from warm daylight to a cold snowfield. */
+#weatherRange::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 0;
+  background: linear-gradient(
+    90deg,
+    #c8aa6e 0%,
+    #b5a68a 18%,
+    #8f9184 40%,
+    #6f7f80 58%,
+    #7a6f79 76%,
+    #ccd6d6 100%
+  );
+}
+
+#weatherRange::-moz-range-track {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    #c8aa6e 0%,
+    #b5a68a 18%,
+    #8f9184 40%,
+    #6f7f80 58%,
+    #7a6f79 76%,
+    #ccd6d6 100%
+  );
 }
 
 .light-panel__ticks {
@@ -1549,6 +1580,86 @@ body[data-night='true'] .rail-button .icon-moon {
   font-size: 6.5px;
   color: var(--muted);
   opacity: 0.6;
+}
+
+/* Weather row · below the daylight row, same capsule language --- */
+
+.light-panel__weather {
+  --weather-readout-w: 92px;
+  --weather-gap: 11px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.light-panel__weather-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 6px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.light-panel__weather-head span:last-child {
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
+}
+
+.light-panel__weather-body {
+  display: flex;
+  align-items: center;
+  gap: var(--weather-gap);
+  margin-top: 2px;
+}
+
+.light-panel__weather-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex: 0 0 var(--weather-readout-w);
+  width: var(--weather-readout-w);
+  min-width: 0;
+  height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.light-panel__weather-icon {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--accent);
+  transform: translateY(-0.5px);
+}
+
+.light-panel__weather-name {
+  font-family: var(--cn-serif);
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.light-panel__weather-en {
+  font-size: 5.6px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.light-panel__weather-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1px;
+  padding-left: calc(var(--weather-readout-w) + var(--weather-gap));
+  padding-right: 12px;
+  font-family: var(--cn-serif);
+  font-size: 6px;
+  color: var(--muted);
+  opacity: 0.55;
 }
 
 /* Site plan · bottom left ----------------------------------------- */
@@ -1956,6 +2067,14 @@ body[data-night='true'] .rail-button .icon-moon {
 
 .is-ready .marker {
   opacity: 0.88;
+}
+
+/* 编号 marker 默认隐藏：只有当前选中地标（点击建筑/索引/导览）才显示。
+   用 !important 盖过 .is-ready .marker 与 .marker.is-muted 的透明度。 */
+.marker.is-spot-hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 .marker.is-left {
@@ -2926,6 +3045,34 @@ html.show-native-cursor .cursor {
     font-size: 5.8px;
   }
 
+  .light-panel__weather {
+    --weather-readout-w: 84px;
+    --weather-gap: 9px;
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+
+  .light-panel__weather-head {
+    font-size: 5.4px;
+  }
+
+  .light-panel__weather-readout {
+    height: 18px;
+  }
+
+  .light-panel__weather-name {
+    font-size: 13px;
+  }
+
+  .light-panel__weather-icon {
+    font-size: 9px;
+  }
+
+  .light-panel__weather-ticks {
+    font-size: 5.6px;
+    padding-right: 8px;
+  }
+
   .map-panel,
   .stage-foot {
     display: none;
@@ -3114,6 +3261,23 @@ html.show-native-cursor .cursor {
   .light-panel__ticks {
     padding-left: 64px;
     padding-right: 8px;
+  }
+
+  .light-panel__weather {
+    --weather-readout-w: 78px;
+    --weather-gap: 8px;
+  }
+
+  .light-panel__weather-head {
+    font-size: 5.2px;
+  }
+
+  .light-panel__weather-readout {
+    height: 17px;
+  }
+
+  .light-panel__weather-ticks {
+    padding-right: 6px;
   }
 
   .command-dock {

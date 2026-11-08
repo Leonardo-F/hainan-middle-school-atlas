@@ -883,6 +883,193 @@ function flagTexture(renderer) {
   return tex(canvas, renderer);
 }
 
+/**
+ * 校旗纹理（3:2，1200×800）。
+ *
+ * 【依据公开校徽写意复刻 · 非官方校旗文件】
+ * 依据 2023 年百年校庆宣传片结尾的校徽帧
+ * （/tmp/research/media/frames/xuanchuanpian-BV1dh4y117nV/f070.jpg、f071.jpg）：
+ *   校徽为红色双圆环，上环绕 "HAINAN MIDDLE SCHOOL HAINAN PROVINCE"，
+ *   下环 "· 1923 ·"；环内中央为四柱三间校门牌楼剪影，其下为右读「海南中學」。
+ * 本纹理用 Canvas 重绘简化版（不嵌入官方图片，避免版权问题）：
+ *   - 红底（#b3261e 附近）渐变 + 轻微布纹/折光；
+ *   - 居中白色圆形校徽：双红环 + 环上英文 + 四柱三间牌楼剪影 + 右读「海南中學」+ 1923；
+ *   - 校徽下方「海南中学 / HAINAN MIDDLE SCHOOL」白色字样。
+ * 这不是官方校旗文件的复刻：旗帜底色与构图均为写意；如后续拿到官方校旗，
+ * 直接替换本函数即可，tex.schoolFlag 名称与 3:2 比例保持不变。
+ * 使用方：campus-accurate.js 运动场旗杆（国旗 + 校旗）。
+ */
+function schoolFlagTexture(renderer) {
+  const w = 1200;
+  const h = 800; // 3:2
+  const { canvas, ctx } = surface(w, h);
+  const random = mulberry32(1923);
+  const inkRed = '#b3261e';
+
+  /* ---------------- 校徽（简化重绘） ---------------- */
+
+  /** 四柱三间校门牌楼剪影：中央高屋顶 + 两侧低屋顶 + 四柱（柱身下部横向分段）。 */
+  const gateSilhouette = (cx, cy, r) => {
+    ctx.fillStyle = inkRed;
+    // 三段屋顶：中央高、两侧低，两端微翘
+    const roof = (x, y, halfW, rise, tip) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + x - halfW, cy + y);
+      ctx.quadraticCurveTo(cx + x - halfW * 0.55, cy + y - rise * 0.55, cx + x - halfW * 0.2, cy + y - rise);
+      ctx.lineTo(cx + x + halfW * 0.2, cy + y - rise);
+      ctx.quadraticCurveTo(cx + x + halfW * 0.55, cy + y - rise * 0.55, cx + x + halfW, cy + y);
+      ctx.lineTo(cx + x + halfW + tip, cy + y - rise * 0.3);
+      ctx.lineTo(cx + x + halfW - tip * 0.4, cy + y + rise * 0.22);
+      ctx.lineTo(cx + x - halfW + tip * 0.4, cy + y + rise * 0.22);
+      ctx.lineTo(cx + x - halfW - tip, cy + y - rise * 0.3);
+      ctx.closePath();
+      ctx.fill();
+    };
+    roof(-0.34 * r, -0.235 * r, 0.135 * r, 0.075 * r, 0.04 * r);
+    roof(0.34 * r, -0.235 * r, 0.135 * r, 0.075 * r, 0.04 * r);
+    roof(0, -0.34 * r, 0.26 * r, 0.11 * r, 0.05 * r);
+    // 额枋（横梁）
+    ctx.fillRect(cx - 0.38 * r, cy - 0.22 * r, 0.76 * r, 0.055 * r);
+    // 四柱：上段连续，下段横向分段（对应牌楼石柱的横向线脚）
+    for (const dx of [-0.30, -0.13, 0.13, 0.30]) {
+      const px = cx + dx * r - 0.026 * r;
+      ctx.fillRect(px, cy - 0.165 * r, 0.052 * r, 0.13 * r);
+      for (let i = 0; i < 4; i += 1) {
+        ctx.fillRect(px, cy - 0.03 * r + i * 0.052 * r, 0.052 * r, 0.034 * r);
+      }
+    }
+    // 环内校名：校徽为右读「海南中學」，按字序绘制「學中南海」
+    ctx.fillStyle = inkRed;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `500 ${0.13 * r}px ${CN_SERIF}`;
+    drawSpacedText(ctx, '學中南海', cx, cy + 0.245 * r, 0.012 * r);
+  };
+
+  /** 沿圆环排布英文（字符顶部朝外）。 */
+  const ringText = (text, cx, cy, r) => {
+    const chars = [...text];
+    const fontPx = Math.max(9, r * 0.062);
+    ctx.font = `500 ${fontPx}px ${LATIN}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const spacing = fontPx * 0.42;
+    const widths = chars.map((ch) => ctx.measureText(ch).width);
+    const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+    const sweep = total / r;
+    let angle = Math.PI * 1.5 - sweep / 2;
+    chars.forEach((ch, i) => {
+      const a = angle + widths[i] / 2 / r;
+      ctx.save();
+      ctx.translate(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      ctx.rotate(a - Math.PI * 1.5);
+      ctx.fillText(ch, 0, 0);
+      ctx.restore();
+      angle += (widths[i] + spacing) / r;
+    });
+  };
+
+  /** 白色圆形校徽整体（双环、环文、门楼剪影、右读校名、1923）。 */
+  const emblem = (cx, cy, R) => {
+    // 白底徽章 + 极淡的暖色旧化
+    ctx.fillStyle = '#f4f0e6';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, TAU);
+    ctx.fill();
+    const wash = ctx.createRadialGradient(cx - R * 0.25, cy - R * 0.3, R * 0.2, cx, cy, R);
+    wash.addColorStop(0, 'rgba(255,255,255,.55)');
+    wash.addColorStop(1, 'rgba(228,214,188,.22)');
+    ctx.fillStyle = wash;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, TAU);
+    ctx.fill();
+    // 双红环
+    ctx.strokeStyle = inkRed;
+    ctx.lineWidth = Math.max(3, R * 0.032);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 0.965, 0, TAU);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1.4, R * 0.012);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 0.9, 0, TAU);
+    ctx.stroke();
+    // 环上英文与底部 1923（先用红色填色，避免沿用上面的渐变导致环文不可见）
+    ctx.fillStyle = inkRed;
+    ringText('HAINAN MIDDLE SCHOOL · HAINAN PROVINCE', cx, cy, R * 0.83);
+    ctx.font = `500 ${R * 0.115}px ${LATIN}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = `${R * 0.02}px`;
+    ctx.fillText('· 1923 ·', cx, cy + R * 0.8);
+    ctx.letterSpacing = '0px';
+    // 中央牌楼与右读校名
+    gateSilhouette(cx, cy, R);
+  };
+
+  /* ---------------- 旗面：红底 + 布纹折光 ---------------- */
+  const base = ctx.createLinearGradient(0, 0, 0, h);
+  base.addColorStop(0, '#b3261e');
+  base.addColorStop(0.5, '#bd2b22');
+  base.addColorStop(1, '#9d1d18');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, w, h);
+  const folds = ctx.createLinearGradient(0, 0, w, 0);
+  folds.addColorStop(0, 'rgba(255,236,214,.10)');
+  folds.addColorStop(0.18, 'rgba(0,0,0,.06)');
+  folds.addColorStop(0.38, 'rgba(255,236,214,.05)');
+  folds.addColorStop(0.66, 'rgba(0,0,0,.09)');
+  folds.addColorStop(0.86, 'rgba(255,236,214,.04)');
+  folds.addColorStop(1, 'rgba(0,0,0,.11)');
+  ctx.fillStyle = folds;
+  ctx.fillRect(0, 0, w, h);
+  // 布纹（很轻，避免远看发花）
+  ctx.globalAlpha = 0.04;
+  ctx.strokeStyle = '#f7e6cf';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 7) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  /* ---------------- 校徽 + 旗名 ---------------- */
+  const cx = w / 2;
+  const cy = 316;
+  const R = 236;
+  // 徽章外一圈细金环（与页面主题呼应，克制）
+  ctx.strokeStyle = 'rgba(222,190,130,.9)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R + 9, 0, TAU);
+  ctx.stroke();
+  emblem(cx, cy, R);
+
+  ctx.fillStyle = '#f7efe0';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `500 92px ${CN_SERIF}`;
+  drawSpacedText(ctx, '海南中学', cx, 652, 20);
+  ctx.fillStyle = 'rgba(247,239,224,.88)';
+  ctx.font = `400 30px ${LATIN}`;
+  ctx.letterSpacing = '9px';
+  ctx.fillText('HAINAN MIDDLE SCHOOL', cx, 724);
+  ctx.letterSpacing = '0px';
+
+  /* 极轻的布面颗粒（克制） */
+  ctx.fillStyle = 'rgba(255,238,214,.025)';
+  for (let i = 0; i < 180; i += 1) {
+    ctx.fillRect(random() * w, random() * h, 2, 2);
+  }
+
+  const t = tex(canvas, renderer);
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
+
 function glowTexture(renderer) {
   const { canvas, ctx } = surface(256, 256);
   const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
@@ -932,6 +1119,8 @@ export function makeTextures(renderer) {
     lattice: latticeTexture(renderer),
     latticeWindow: latticeWindowTexture(renderer),
     flag: flagTexture(renderer),
+    // 校旗（3:2，写意；见 schoolFlagTexture 注释）。scene-editor 用于运动场旗杆。
+    schoolFlag: schoolFlagTexture(renderer),
     glow: glowTexture(renderer),
     shadow: shadowTexture(renderer),
     leafParticle: leafParticleTexture(renderer),

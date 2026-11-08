@@ -7,6 +7,7 @@ import {
   parseCampusParam,
   resolveCampus
 } from './campuses.js';
+import { WEATHERS, createWeather } from './weather.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -58,6 +59,11 @@ const timeRange = $('#timeRange');
 const timeReadout = $('#timeReadout');
 const lightState = $('#lightState');
 const lightPhase = $('#lightPhase');
+const weatherRange = $('#weatherRange');
+const weatherIcon = $('#weatherIcon');
+const weatherName = $('#weatherName');
+const weatherEn = $('#weatherEn');
+const weatherPhase = $('#weatherPhase');
 const phaseLabel = $('#phaseLabel');
 const clockLabel = $('#clock');
 const nightButton = $('#nightButton');
@@ -72,6 +78,7 @@ const sceneTitleEl = $('#sceneTitle');
 const sceneEnEl = $('#sceneEn');
 const sceneKindEl = $('#sceneKind');
 const introSpotCount = $('#introSpotCount');
+const indexRange = $('#indexRange');
 
 const state = {
   campusId: ACTIVE_CAMPUS.id,
@@ -80,6 +87,7 @@ const state = {
   hour: 16.3,
   dayHour: 16.3,
   isNight: false,
+  weatherId: 'clear',
   tourActive: false,
   tourIndex: -1,
   tourTimer: null,
@@ -95,6 +103,7 @@ let camera;
 let renderer;
 let controls;
 let campus;
+let weather;
 let raycaster;
 let pointerNdc;
 let clock;
@@ -138,7 +147,9 @@ const MOBILE_FRAME_WIDTH = {
   southgate: 18,
   stone: 15,
   confucius: 11,
-  bronze: 13
+  bronze: 13,
+  dorm: 32,
+  stand: 42
 };
 
 function isPhoneLayout() {
@@ -233,7 +244,8 @@ function getSpotView(spot) {
   const fov = 52;
   const target = new THREE.Vector3(...spot.camera.target);
   const offset = new THREE.Vector3(...spot.camera.position).sub(target);
-  const desiredWidth = (MOBILE_FRAME_WIDTH[spot.id] || 30) * 1.16;
+  const desiredWidth =
+    ((ACTIVE_CAMPUS.mobile?.frameWidth?.[spot.id] ?? MOBILE_FRAME_WIDTH[spot.id]) || 30) * 1.16;
   const requiredDistance = desiredWidth / (2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect);
   const distance = Math.max(offset.length(), requiredDistance);
   offset.setLength(distance);
@@ -271,6 +283,9 @@ async function boot() {
       theme: ACTIVE_CAMPUS.theme,
       reducedMotion
     });
+    // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
+    weather = createWeatherLayer();
+    applyWeather(resolveInitialWeather(), { silent: true });
     setLoadingState(76, '正在栽植百年榄仁树');
     await nextFrame();
     await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -287,9 +302,14 @@ async function boot() {
     window.__campusDebug = {
       get campus() { return ACTIVE_CAMPUS; },
       get sceneApi() { return campus; },
+      get scene() { return scene; },
+      get renderer() { return renderer; },
       get camera() { return camera; },
       get controls() { return controls; },
       get state() { return state; },
+      get weather() { return weather; },
+      get weatherId() { return state.weatherId; },
+      setWeather: (id) => applyWeather(id),
       switchCampus
     };
     clock = new THREE.Clock();
@@ -499,6 +519,10 @@ function setupUI() {
   const countEl = $('.index__count');
   if (countEl) countEl.textContent = `${String(LANDMARKS.length).padStart(2, '0')} SPOTS`;
   if (introSpotCount) introSpotCount.textContent = `${LANDMARKS.length} 处地景`;
+  // 编号区间跟随 LANDMARKS 数量，新增地标时无需再改 index.html。
+  if (indexRange) {
+    indexRange.textContent = `01—${String(LANDMARKS.length).padStart(2, '0')}`;
+  }
 
   const sources = $('#sourceList');
   if (sources) {
@@ -527,6 +551,10 @@ function setupUI() {
 
 function setupEvents() {
   window.addEventListener('resize', resize);
+  // 真正离开页面时释放天气层；bfcache 恢复（persisted）时不销毁。
+  window.addEventListener('pagehide', (event) => {
+    if (!event.persisted) disposeWeatherLayer();
+  });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) clock.getDelta();
   });
@@ -616,6 +644,12 @@ function setupEvents() {
     applyHour(parseFloat(event.target.value));
   });
   timeRange.addEventListener('pointerdown', markInteracted);
+
+  weatherRange.addEventListener('input', (event) => {
+    const entry = weatherList()[Number(event.target.value)] || null;
+    if (entry) applyWeather(entry.id);
+  });
+  weatherRange.addEventListener('pointerdown', markInteracted);
 
   $('#fullscreenButton').addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', () => {
@@ -904,29 +938,64 @@ function campusYearRange(campusEntry) {
   return campusEntry.founded ? `${campusEntry.founded}—2026` : '—';
 }
 
+/** planned 校区的状态词：「未绘制」（另一校区尚未建模）或「未上线」。 */
+function plannedCampusState(campusEntry) {
+  return campusEntry?.note?.includes('未绘制') ? '未绘制' : '未上线';
+}
+
+/** planned 校区的展示名：name 已是「…校区」时不重复后缀。 */
+function campusDisplayName(campusEntry) {
+  const name = campusEntry?.name || '该校区';
+  return /校区$/.test(name) ? name : `${name}校区`;
+}
+
+/** planned 校区的完整提示文案，如「初中部校区尚未绘制」。 */
+function plannedCampusMessage(campusEntry) {
+  const state = plannedCampusState(campusEntry);
+  return `${campusDisplayName(campusEntry)}尚未${state.replace(/^未/, '')}`;
+}
+
 /** 品牌文案数据化：按当前 campus 元信息写回 index.html 的 data-campus-slot 节点。 */
 function applyCampusBranding() {
   const campusEntry = ACTIVE_CAMPUS;
   const shortName = campusEntry.shortName || campusEntry.name || '校园';
   const school = campusEntry.school || '';
+  const division = campusEntry.division || '';
   const city = campusEntry.location?.city || '';
   const cityShort = city ? `${city} · ${shortName}` : shortName;
   const cityEn = city === '海口' ? 'HAIKOU' : city;
   const yearRange = campusYearRange(campusEntry);
+  // 「本图志仅绘制…」的说明：只绘制当前学段校区，未绘制的兄弟校区点名（如初中部）。
+  const drawnScope = division ? `${division}（${campusEntry.name}）` : campusEntry.name;
+  const unbuiltSiblings = CAMPUS_LIST.filter(
+    (item) =>
+      item.id !== campusEntry.id &&
+      item.status !== 'active' &&
+      item.note?.includes('未绘制')
+  ).map((item) => campusDisplayName(item));
+  const campusScope =
+    `本图志仅绘制${drawnScope}` +
+    (unbuiltSiblings.length ? `；${unbuiltSiblings.join('、')}尚未绘制` : '') +
+    '。';
   const slots = {
     fullName: [school, campusEntry.name].filter(Boolean).join(' · '),
     loadingYears: `三维校园图志 / ${yearRange}`,
     schoolEnShortEn: [campusEntry.schoolEn || school, campusEntry.shortEn].filter(Boolean).join(' · '),
     loadingTitle: `${escapeHtml(shortName)}<span>校园图志</span>`,
     brandName: `${shortName}校园图志`,
-    brandSub: `${school} · ${campusEntry.name} / A CAMPUS ATLAS`,
+    brandSub: `${school} · ${campusEntry.name}${division ? `（${division}）` : ''} / A CAMPUS ATLAS`,
     introEyebrow: [campusEntry.shortEn, cityEn].filter(Boolean).join(', ') + ` · ${shortName}`,
     shortName,
-    introLead: `把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访${campusEntry.name}的日常。`,
+    introLead: `把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访${
+      division ? `${school}${division}` : campusEntry.name
+    }的日常。`,
     yearRange,
     cityShortName: cityShort,
     canvasLabel: `${school}${campusEntry.name}交互三维模型。可拖动旋转、滚轮缩放，点击建筑查看图志。`,
-    aboutLead: `这不是一张测绘地图，而是一份以建筑为线索的校园阅读。拖动、靠近、点击，在体量与光影之间，重访${campusEntry.name}的日常。`,
+    aboutLead: `这不是一张测绘地图，而是一份以建筑为线索的校园阅读。拖动、靠近、点击，在体量与光影之间，重访${
+      division ? `${school}${division}` : campusEntry.name
+    }的日常。`,
+    campusScope,
     fullEn: [campusEntry.schoolEn, campusEntry.en].filter(Boolean).join(' · ')
   };
   document.querySelectorAll('[data-campus-slot]').forEach((element) => {
@@ -941,7 +1010,7 @@ function applyCampusBranding() {
   if (metaDescription) {
     metaDescription.setAttribute(
       'content',
-      `${school}${campusEntry.name}交互三维校园图志。${campusEntry.summary || ''}`
+      `${school}${campusEntry.name}${division ? `（${division}）` : ''}交互三维校园图志。${campusEntry.summary || ''}`
     );
   }
   document.title = `${shortName}校园图志 · ${school}三维校园`;
@@ -972,6 +1041,8 @@ function renderCampusSwitcher() {
   for (const campusEntry of CAMPUS_LIST) {
     const isActive = campusEntry.id === ACTIVE_CAMPUS.id;
     const isPlanned = campusEntry.status !== 'active';
+    // planned 后缀区分「未绘制」（初中部：另一校区尚未建模）与「未上线」（美伦）。
+    const plannedSuffix = isPlanned ? `（${plannedCampusState(campusEntry)}）` : '';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `campus-tab${isActive ? ' is-active' : ''}${isPlanned ? ' is-planned' : ''}`;
@@ -982,11 +1053,11 @@ function renderCampusSwitcher() {
     if (isPlanned) {
       button.disabled = true;
       button.setAttribute('aria-disabled', 'true');
-      button.title = `${campusEntry.name}（未上线）`;
+      button.title = `${campusEntry.name}${plannedSuffix}`;
     }
     const name = document.createElement('span');
     name.className = 'campus-tab__name';
-    name.textContent = isPlanned ? `${campusEntry.name}（未上线）` : campusEntry.name;
+    name.textContent = `${campusEntry.name}${plannedSuffix}`;
     const en = document.createElement('span');
     en.className = 'campus-tab__en mono';
     en.textContent = campusEntry.shortEn || campusEntry.en || '';
@@ -1013,7 +1084,7 @@ function announceCampusFallback(resolvedRoute) {
       : null;
     showToast(
       resolvedRoute.reason === 'planned'
-        ? `${requested?.name ?? resolvedRoute.param}尚未上线，先为你展示${ACTIVE_CAMPUS.name}`
+        ? `${plannedCampusMessage(requested)}，先为你展示${ACTIVE_CAMPUS.name}`
         : `未知校区「${resolvedRoute.param}」，已回到${ACTIVE_CAMPUS.name}`
     );
   }
@@ -1034,7 +1105,7 @@ function switchCampus(nextId) {
     const requested = CAMPUS_LIST.find((campusEntry) => campusEntry.id === resolved.requestedId);
     showToast(
       resolved.reason === 'planned'
-        ? `${requested?.name ?? resolved.requestedId}尚未上线`
+        ? plannedCampusMessage(requested)
         : `未知校区「${nextId}」`
     );
     return;
@@ -1046,6 +1117,7 @@ function switchCampus(nextId) {
     stopTour();
     closeSpot({ stop: true });
     cancelCameraTween();
+    disposeWeatherLayer();
     if (campus) {
       campus.dispose?.();
       campus = null;
@@ -1068,6 +1140,9 @@ function switchCampus(nextId) {
       theme: ACTIVE_CAMPUS.theme,
       reducedMotion
     });
+    // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
+    weather = createWeatherLayer();
+    applyWeather(state.weatherId, { silent: true });
     applyHour(resolveInitialHour(), { silent: true });
     resize();
     const overview = getOverviewView();
@@ -1192,6 +1267,7 @@ function applyHour(nextHour, options = {}) {
   phaseLabel.textContent = phase.cn;
   lightState.textContent = phase.light;
   lightPhase.textContent = phase.en;
+  weather?.setHour?.(hour);
   if (!options.silent) markInteracted();
 }
 
@@ -1217,6 +1293,95 @@ function toggleNight() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Weather                                                            */
+/*  契约：js/weather.js 导出 WEATHERS 与 createWeather；本文件只负责面板   */
+/*  滑杆状态、文案与场景层生命周期。所有引擎调用都用可选链保护，引擎缺失    */
+/*  或抛错时昼夜系统与页面其余部分照常工作。                               */
+/* ------------------------------------------------------------------ */
+
+/** 单色字符符号（避免彩色 emoji 破坏暖纸色设计语言）。 */
+const WEATHER_ICONS = {
+  clear: '☀︎',
+  'light-rain': '☂︎',
+  'heavy-rain': '☔︎',
+  typhoon: '◎',
+  thunder: '⚡︎',
+  snow: '❄︎'
+};
+
+const DEFAULT_WEATHER_ID = 'clear';
+
+/** ?weather=<id> 的初始天气；未知值静默回退 clear，与 ?hour / ?spot 兼容。 */
+function resolveInitialWeather() {
+  const requested = (params.get('weather') || '')
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-');
+  if (!requested) return DEFAULT_WEATHER_ID;
+  const match = WEATHERS.find((item) => item && item.id === requested);
+  return match ? match.id : DEFAULT_WEATHER_ID;
+}
+
+function weatherList() {
+  return Array.isArray(WEATHERS) ? WEATHERS.filter(Boolean) : [];
+}
+
+/** 场景天气层（js/weather.js）；失败时降级为 null，不影响昼夜系统。 */
+function createWeatherLayer() {
+  if (!scene || !renderer || !camera || !campus?.world) return null;
+  try {
+    return createWeather({
+      scene,
+      renderer,
+      camera,
+      controls,
+      site: SITE,
+      world: campus.world
+    });
+  } catch (error) {
+    console.warn('Weather layer failed to initialise:', error);
+    return null;
+  }
+}
+
+function disposeWeatherLayer() {
+  try {
+    weather?.dispose?.();
+  } catch (error) {
+    console.warn('Weather layer failed to dispose:', error);
+  }
+  weather = null;
+}
+
+/**
+ * 切换天气：同步场景层 + 面板文案/滑杆/无障碍值。
+ * @param {string} id WEATHERS 里的天气 id；未知值回退 clear。
+ */
+function applyWeather(id, options = {}) {
+  const list = weatherList();
+  if (!list.length) return;
+  const entry =
+    list.find((item) => item.id === id) ||
+    list.find((item) => item.id === DEFAULT_WEATHER_ID) ||
+    list[0];
+  state.weatherId = entry.id;
+  try {
+    weather?.setWeather?.(entry.id);
+  } catch (error) {
+    console.warn('Weather layer failed to switch:', error);
+  }
+  const index = Math.max(0, list.indexOf(entry));
+  const total = list.length;
+  weatherRange.value = String(index);
+  weatherRange.setAttribute('aria-valuetext', `${entry.name} ${entry.en}`);
+  weatherIcon.textContent = WEATHER_ICONS[entry.id] || '·';
+  weatherName.textContent = entry.name;
+  weatherEn.textContent = entry.en;
+  weatherPhase.textContent = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+  if (!options.silent) markInteracted();
+}
+
+/* ------------------------------------------------------------------ */
 /*  Markers & map                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -1228,6 +1393,16 @@ function updateMarkers() {
   const visible = [];
 
   for (const entry of markerEntries) {
+    // 编号 marker 默认全部隐藏，只显示当前选中地标的那一个（点击建筑/索引/导览时出现）。
+    const isHidden = entry.id !== state.activeId;
+    if (entry.hidden !== isHidden) {
+      entry.hidden = isHidden;
+      entry.el.classList.toggle('is-spot-hidden', isHidden);
+      entry.el.tabIndex = isHidden ? -1 : 0;
+      if (isHidden) entry.el.setAttribute('aria-hidden', 'true');
+      else entry.el.removeAttribute('aria-hidden');
+    }
+
     const world = entry.anchor;
     const toPoint = new THREE.Vector3().subVectors(world, camera.position);
     const inFront = toPoint.dot(cameraDir) > 0;
@@ -1247,7 +1422,7 @@ function updateMarkers() {
     entry.el.style.left = `${x}px`;
     entry.el.style.top = `${y}px`;
     entry.el.classList.toggle('is-left', x > width * 0.55);
-    visible.push(entry);
+    if (!isHidden) visible.push(entry);
   }
 
   // A small label-collision pass keeps the overview legible.
@@ -1395,11 +1570,12 @@ function drawMap() {
   // buildings
   for (const b of SITE.buildings) {
     const active = b.name && LANDMARKS.find((l) => l.id === state.activeId) &&
-      ((b.name === '1号教学楼' && state.activeId === 'hall1') ||
+      ((b.name === '主教学楼' && state.activeId === 'hall1') ||
        (b.name === '科学馆' && state.activeId === 'science') ||
        (b.name === '凤栖堂' && state.activeId === 'fengqi') ||
        (b.name === '衍林堂' && state.activeId === 'yanlin') ||
-       (b.name === '体育馆' && state.activeId === 'gym'));
+       (b.name === '体育馆' && state.activeId === 'gym') ||
+       (b.name === '女生宿舍' && state.activeId === 'dorm'));
     ctx.beginPath();
     b.poly.forEach(([x, z], i) => {
       if (i === 0) ctx.moveTo(t.px(x), t.py(z));
@@ -1934,6 +2110,7 @@ function renderFrame(now) {
   if (!campus || !renderer) return;
   const delta = Math.min(clock ? clock.getDelta() : 0.016, 0.055);
   campus.tick(delta);
+  weather?.tick?.(delta);
   campus.updateBuildingLabels(camera);
   updateCameraTween(now);
   controls.update();

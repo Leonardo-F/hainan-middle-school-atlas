@@ -20,7 +20,15 @@
  *   - 门额：正面传统右读「海南中學」（右读纹理），校内面左读「海南中学」；
  *   - 门前四只石狮，石座 + 蹲狮，朝向门外；
  *   - 装饰：回纹额枋装饰带、金色雀替挑臂/金钱纹、椽头、柱身金线与铜牌。
- * 场景包围盒：28.4 m × 4.8 m × 高 10.8 m（预览 HUD 可核对）。
+ * 场景包围盒（默认参数）：28.4 m 宽 × 4.8 m 深 × 10.8 m 高（预览 HUD 可核对）。
+ *
+ * 复用选项（南门沿用北门形制；默认值即北门原形，北门尺寸/外观不变）：
+ *   - ctx.lions：默认 true 建四只石狮与石座；false 时省略（南门无石狮）。
+ *   - ctx.widthScale：默认 1；门楼横向（x 向）尺寸统一缩放系数。
+ *     南门围墙缺口 22 m，北门总宽 28.4 m，故南门取 22 / 28.4 ≈ 0.7746。
+ *   - ctx.name：group.name，默认 'north gate'；南门传 'south gate'。
+ * 调用示例（南门）：
+ *   build({ M, tex, lions: false, widthScale: 22 / 28.4, name: 'south gate' });
  */
 import * as THREE from 'three';
 import {
@@ -105,11 +113,38 @@ function friezeMaps() {
 /*  模型                                                               */
 /* ------------------------------------------------------------------ */
 
-export function build(ctx) {
+export function build(ctx = {}) {
   const { M, tex } = ctx;
   const mats = makePalette(M);
   const group = new THREE.Group();
-  group.name = 'north gate';
+
+  // 复用选项（默认值 = 北门原行为，保证北门像素级不变）：
+  //   ctx.name       group.name，默认 'north gate'；南门传 'south gate'。
+  //   ctx.lions      默认 true；false 时省略四只石狮与石座（南门无石狮）。
+  //   ctx.widthScale 默认 1；门楼横向（x 向）尺寸统一缩放系数。
+  //     实现方式：把 LAYOUT 的 x 尺寸、柱位、屋顶宽度、门额宽度与两侧围墙返段长度
+  //     统一乘以 widthScale，并让瓦垄/瓦当数量随缩放后的屋面宽度重新排布；
+  //     竖向（y）与进深（z）保持原值，柱身截面、瓦垄尺寸、装饰线不横向压扁——
+  //     避免直接 group.scale.x 把曲面瓦顶、瓦垄和匾额文字一起横向压缩的失真。
+  //     南门围墙缺口 22 m / 北门总宽 28.4 m ≈ 0.7746，调用方按缺口宽度计算即可。
+  const widthScale = Number.isFinite(ctx.widthScale) && ctx.widthScale > 0 ? ctx.widthScale : 1;
+  const withLions = ctx.lions !== false;
+  const sx = (v) => v * widthScale;
+  const L = {
+    innerX: sx(LAYOUT.innerX),
+    outerX: sx(LAYOUT.outerX),
+    innerTop: LAYOUT.innerTop,
+    outerTop: LAYOUT.outerTop,
+    central: { ...LAYOUT.central, x: 0, w: sx(LAYOUT.central.w) },
+    side: { ...LAYOUT.side, x: sx(LAYOUT.side.x), w: sx(LAYOUT.side.w) },
+    centralRoof: { ...LAYOUT.centralRoof, width: sx(LAYOUT.centralRoof.width) },
+    sideRoof: { ...LAYOUT.sideRoof, width: sx(LAYOUT.sideRoof.width) },
+    // 门额宽高同比缩放，保持 gatePlaque 纹理比例（字不被横向压扁）。
+    plaque: { y: LAYOUT.plaque.y, frameW: sx(LAYOUT.plaque.frameW), frameH: sx(LAYOUT.plaque.frameH) },
+    wallHalf: sx(LAYOUT.wallHalf),
+    wallInner: sx(LAYOUT.wallInner)
+  };
+  group.name = ctx.name || 'north gate';
 
   const friezeMaterials = new Map();
   const friezeMaterial = (kind, width) => {
@@ -159,11 +194,11 @@ export function build(ctx) {
   };
 
   /* ---------------------------- 台基与踏步 ------------------------- */
-  addBox(group, mats.stoneLight, [0, PLATFORM_TOP / 2, 0], [24.4, PLATFORM_TOP, 4.4]);
-  addBox(group, mats.stone, [0, PLATFORM_TOP - 0.03, 0], [24.44, 0.06, 4.46]);
+  addBox(group, mats.stoneLight, [0, PLATFORM_TOP / 2, 0], [sx(24.4), PLATFORM_TOP, 4.4]);
+  addBox(group, mats.stone, [0, PLATFORM_TOP - 0.03, 0], [sx(24.44), 0.06, 4.46]);
   // 门前一级石线踏步（照片中校门入口处的浅踏步）
-  addBox(group, mats.stone, [0, 0.04, 2.28], [24.4, 0.08, 0.52]);
-  addBox(group, mats.stoneLight, [0, 0.075, 2.31], [24.4, 0.05, 0.42]);
+  addBox(group, mats.stone, [0, 0.04, 2.28], [sx(24.4), 0.08, 0.52]);
+  addBox(group, mats.stoneLight, [0, 0.075, 2.31], [sx(24.4), 0.05, 0.42]);
 
   /* ---------------------------- 四根门柱 --------------------------- */
   const pillar = (x, top, inner) => {
@@ -227,10 +262,10 @@ export function build(ctx) {
     lion.position.y = p + 0.705;
   };
 
-  for (const x of [-LAYOUT.outerX, -LAYOUT.innerX, LAYOUT.innerX, LAYOUT.outerX]) {
-    pillar(x, Math.abs(x) === LAYOUT.innerX ? LAYOUT.innerTop : LAYOUT.outerTop,
-      Math.abs(x) === LAYOUT.innerX);
-    lionMount(x);
+  for (const x of [-L.outerX, -L.innerX, L.innerX, L.outerX]) {
+    pillar(x, Math.abs(x) === L.innerX ? L.innerTop : L.outerTop,
+      Math.abs(x) === L.innerX);
+    if (withLions) lionMount(x);
   }
 
   /** 额枋两端的金色雀替挑臂（照片中贴在洞口上角、向外挑出的金线）。 */
@@ -285,58 +320,58 @@ export function build(ctx) {
   };
 
   // 中央间
-  bay(LAYOUT.central, [
-    { y: LAYOUT.central.bottom + 0.17, h: 0.34, kind: 'light' },
-    { y: LAYOUT.central.top - 0.16, h: 0.32, kind: 'dark' }
+  bay(L.central, [
+    { y: L.central.bottom + 0.17, h: 0.34, kind: 'light' },
+    { y: L.central.top - 0.16, h: 0.32, kind: 'dark' }
   ]);
   // 两侧间
   for (const side of [-1, 1]) {
-    bay({ ...LAYOUT.side, x: side * LAYOUT.side.x }, [
-      { y: LAYOUT.side.bottom + 0.16, h: 0.32, kind: 'light' },
-      { y: LAYOUT.side.top - 0.16, h: 0.3, kind: 'light' }
+    bay({ ...L.side, x: side * L.side.x }, [
+      { y: L.side.bottom + 0.16, h: 0.32, kind: 'light' },
+      { y: L.side.top - 0.16, h: 0.3, kind: 'light' }
     ]);
   }
 
   /* ---------------------------- 中央门额 --------------------------- */
-  const plaqueY = LAYOUT.plaque.y;
-  addBox(group, mats.gold, [0, plaqueY, 0.6], [LAYOUT.plaque.frameW, LAYOUT.plaque.frameH, 0.1]);
-  addBox(group, mats.cream, [0, plaqueY, 0.665], [9.1, 1.96, 0.06]);
-  addBox(group, mats.gold, [0, plaqueY + 0.945, 0.7], [9.16, 0.03, 0.03]);
-  addBox(group, mats.gold, [0, plaqueY - 0.945, 0.7], [9.16, 0.03, 0.03]);
+  const plaqueY = L.plaque.y;
+  addBox(group, mats.gold, [0, plaqueY, 0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
+  addBox(group, mats.cream, [0, plaqueY, 0.665], [sx(9.1), sx(1.96), 0.06]);
+  addBox(group, mats.gold, [0, plaqueY + sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
+  addBox(group, mats.gold, [0, plaqueY - sx(0.945), 0.7], [sx(9.16), 0.03, 0.03]);
   // 2013 年照片与参考作品中门额均为传统右读「海南中學」。
   const plaqueTexture = tex.gatePlaqueTraditional || tex.gatePlaque;
   if (plaqueTexture) {
     addPlaque(group, M.signMaterial(plaqueTexture, true), {
-      x: 0, y: plaqueY, z: 0.7, w: 8.86, h: 8.86 / 4.6
+      x: 0, y: plaqueY, z: 0.7, w: sx(8.86), h: sx(8.86 / 4.6)
     });
   } else {
-    addBox(group, mats.cream, [0, plaqueY, 0.7], [8.86, 8.86 / 4.6, 0.02]);
+    addBox(group, mats.cream, [0, plaqueY, 0.7], [sx(8.86), sx(8.86 / 4.6), 0.02]);
   }
   // 门额下沿的金线托座
-  addBox(group, mats.gold, [0, plaqueY - 1.02, 0.6], [9.3, 0.05, 0.06]);
+  addBox(group, mats.gold, [0, plaqueY - sx(1.02), 0.6], [sx(9.3), 0.05, 0.06]);
   // 校内一侧的门额：用左读「海南中学」，供校内轴线视角观看
-  addBox(group, mats.gold, [0, plaqueY, -0.6], [LAYOUT.plaque.frameW, LAYOUT.plaque.frameH, 0.1]);
-  addBox(group, mats.cream, [0, plaqueY, -0.665], [9.1, 1.96, 0.06]);
+  addBox(group, mats.gold, [0, plaqueY, -0.6], [L.plaque.frameW, L.plaque.frameH, 0.1]);
+  addBox(group, mats.cream, [0, plaqueY, -0.665], [sx(9.1), sx(1.96), 0.06]);
   if (tex.gatePlaque) {
     addPlaque(group, M.signMaterial(tex.gatePlaque, true), {
-      x: 0, y: plaqueY, z: -0.7, w: 8.86, h: 8.86 / 4.6, rotation: Math.PI
+      x: 0, y: plaqueY, z: -0.7, w: sx(8.86), h: sx(8.86 / 4.6), rotation: Math.PI
     });
   }
-  addBox(group, mats.gold, [0, plaqueY - 1.02, -0.6], [9.3, 0.05, 0.06]);
+  addBox(group, mats.gold, [0, plaqueY - sx(1.02), -0.6], [sx(9.3), 0.05, 0.06]);
 
   /* ---------------------------- 三段曲面瓦顶 ----------------------- */
-  addChineseRoof(group, mats, { ...LAYOUT.centralRoof, tiles: true, detail: true });
+  addChineseRoof(group, mats, { ...L.centralRoof, tiles: true, detail: true });
   for (const side of [-1, 1]) {
     addChineseRoof(group, mats, {
-      ...LAYOUT.sideRoof, x: side * LAYOUT.side.x, tiles: true, detail: false
+      ...L.sideRoof, x: side * L.side.x, tiles: true, detail: false
     });
   }
   // 檐下椽头与金色垫板：参考作品里白色檐口线下的连续椽头
-  const centralRoof = LAYOUT.centralRoof;
-  rafterRow(0, centralRoof.y - 0.36, centralRoof.depth / 2 - 0.24, centralRoof.width - 1.5);
-  const sideRoof = LAYOUT.sideRoof;
+  const centralRoof = L.centralRoof;
+  rafterRow(0, centralRoof.y - 0.36, centralRoof.depth / 2 - 0.24, centralRoof.width - sx(1.5));
+  const sideRoof = L.sideRoof;
   for (const side of [-1, 1]) {
-    rafterRow(side * LAYOUT.side.x, sideRoof.y - 0.35, sideRoof.depth / 2 - 0.2, sideRoof.width - 1.5);
+    rafterRow(side * L.side.x, sideRoof.y - 0.35, sideRoof.depth / 2 - 0.2, sideRoof.width - sx(1.5));
   }
 
   /* ---------------------------- 两侧围墙返段 ----------------------- */
@@ -365,8 +400,8 @@ export function build(ctx) {
 
   for (const side of [-1, 1]) {
     // 靠门的高墙返段：墙身 2.15 m，压顶与校门绿瓦呼应
-    const a0 = LAYOUT.wallInner;
-    const a1 = 12.72;
+    const a0 = L.wallInner;
+    const a1 = sx(12.72);
     const aLen = a1 - a0;
     const aMid = side * (a0 + aLen / 2);
     addBox(group, mats.stoneLight, [aMid, 0.11, 0], [aLen, 0.22, 0.72]);
@@ -375,14 +410,14 @@ export function build(ctx) {
     addBox(group, mats.gold, [aMid, 2.12, 0], [aLen + 0.01, 0.03, 0.7]);
     tileCoping(aMid, aLen, 2.15, 0.54, 0.3);
     // 过渡石柱墩
-    addBox(group, mats.stoneLight, [side * 12.98, 1.2, 0], [0.5, 2.4, 0.74]);
-    addBox(group, mats.gold, [side * 12.98, 2.2, 0], [0.52, 0.03, 0.76]);
-    addBox(group, mats.stone, [side * 12.98, 2.42, 0], [0.64, 0.1, 0.92]);
-    addBox(group, mats.stoneLight, [side * 12.98, 2.51, 0], [0.54, 0.08, 0.82]);
-    addBox(group, mats.roofEdge, [side * 12.98, 2.585, 0], [0.38, 0.09, 0.5]);
+    addBox(group, mats.stoneLight, [side * sx(12.98), 1.2, 0], [0.5, 2.4, 0.74]);
+    addBox(group, mats.gold, [side * sx(12.98), 2.2, 0], [0.52, 0.03, 0.76]);
+    addBox(group, mats.stone, [side * sx(12.98), 2.42, 0], [0.64, 0.1, 0.92]);
+    addBox(group, mats.stoneLight, [side * sx(12.98), 2.51, 0], [0.54, 0.08, 0.82]);
+    addBox(group, mats.roofEdge, [side * sx(12.98), 2.585, 0], [0.38, 0.09, 0.5]);
     // 低墙返段：与校园围墙同高同厚，压顶顶面 1.82 m 齐平
-    const b0 = 13.23;
-    const bLen = LAYOUT.wallHalf - b0;
+    const b0 = sx(13.23);
+    const bLen = L.wallHalf - b0;
     addBox(group, mats.stoneLight, [side * (b0 + bLen / 2), 0.1, 0], [bLen, 0.2, 0.7]);
     addBox(group, mats.white, [side * (b0 + bLen / 2), 0.8, 0], [bLen, 1.6, 0.68]);
     addBox(group, mats.roofEdge, [side * (b0 + bLen / 2), 1.71, 0], [bLen, 0.22, 1.0]);
