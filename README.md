@@ -42,7 +42,10 @@ URL 参数：`?campus=fucheng` · `?spot=fengqi` · `?hour=19.6` · `?view=top` 
 
 ## 文档
 
-功能与实现见 [features.md](docs/features.md)；开发、构建与 Agent 协作见 [contributing.md](docs/contributing.md)；完整目录见 [structure.md](docs/structure.md)；精度审计见 [accuracy.md](docs/accuracy.md)；设计注记见 [design-notes.md](docs/design-notes.md)；变更记录见 [changelog.md](docs/changelog.md)；视觉回归见 [visual-regression.md](docs/visual-regression.md)；多校区见 [campuses.md](docs/campuses.md)；调研见 [AI 生成 3D 游戏](docs/ai-generated-3d-games.md) 与 [视频还原建筑](docs/ai-video-reconstruction.md)。
+- **功能与实现**：[功能一览](docs/features.md) · [开发与构建](docs/contributing.md) · [完整目录](docs/structure.md)
+- **精度与设计**：[精度与证据](docs/accuracy.md) · [设计注记](docs/design-notes.md) · [变更记录](docs/changelog.md)
+- **工程工具**：[视觉回归](docs/visual-regression.md) · [多校区扩展](docs/campuses.md)
+- **相关调研**：[AI 生成 3D 网页游戏](docs/ai-generated-3d-games.md) · [视频还原建筑模型](docs/ai-video-reconstruction.md)
 
 ## 注意事项
 
