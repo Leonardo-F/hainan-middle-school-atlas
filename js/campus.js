@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeTextures } from './textures.js';
+import { makeTextures, applyDetailMaps } from './textures.js';
 
 const TAU = Math.PI * 2;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -123,7 +123,8 @@ function remapMaterialMaps(material) {
 /*  Materials                                                          */
 /* ------------------------------------------------------------------ */
 
-function buildMaterials(tex, renderer) {
+function buildMaterials(tex, renderer, options = {}) {
+  const detailMaps = options.detailMaps !== false;
   const cloneTex = (source, rx, ry) => {
     const t = source.clone();
     t.needsUpdate = true;
@@ -440,6 +441,22 @@ function buildMaterials(tex, renderer) {
     facadeMaterials.push(material);
     return material;
   };
+
+  // 近景材质细节：从程序化 albedo 生成法线/粗糙度（砖缝、瓦垄、铺地拼缝、抹灰颗粒）。
+  // 只在有 map 的材质上生效；参数按“结构越强、法线越明显”调，整体克制以保持纸感。
+  if (detailMaps) {
+  applyDetailMaps(M.plaster, { normalStrength: 0.7, roughnessContrast: 0.05 });
+  applyDetailMaps(M.plasterWarm, { normalStrength: 0.7, roughnessContrast: 0.05 });
+  applyDetailMaps(M.plasterPale, { normalStrength: 0.7, roughnessContrast: 0.05 });
+  applyDetailMaps(M.stone, { normalStrength: 1.8, roughnessContrast: 0.08 });
+  applyDetailMaps(M.path, { normalStrength: 1.8, roughnessContrast: 0.08 });
+  applyDetailMaps(M.pathDark, { normalStrength: 1.8, roughnessContrast: 0.08 });
+  applyDetailMaps(M.brick, { normalStrength: 2.4, roughnessContrast: 0.08 });
+  applyDetailMaps(M.courtyard, { normalStrength: 2.4, roughnessContrast: 0.08 });
+  applyDetailMaps(M.roof, { normalStrength: 2.0, roughnessContrast: 0.06 });
+  applyDetailMaps(M.track, { normalStrength: 0.5, roughnessContrast: 0.04 });
+  applyDetailMaps(M.plaza, { normalStrength: 1.6, roughnessContrast: 0.06 });
+  }
 
   return M;
 }

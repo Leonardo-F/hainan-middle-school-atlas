@@ -316,7 +316,8 @@ async function boot() {
       envMap: params.get('env') !== 'off',
       envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
       envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
-      envSelective: params.get('envsel') !== 'off'
+      envSelective: params.get('envsel') !== 'off',
+      detailMaps: params.get('detail') !== 'off'
     });
     // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
     weather = createWeatherLayer();
@@ -1207,7 +1208,8 @@ function switchCampus(nextId) {
       envMap: params.get('env') !== 'off',
       envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
       envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
-      envSelective: params.get('envsel') !== 'off'
+      envSelective: params.get('envsel') !== 'off',
+      detailMaps: params.get('detail') !== 'off'
     });
     // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
     weather = createWeatherLayer();

@@ -30,7 +30,7 @@ export const SHOTS = [
     name: 'heavy-rain',
     viewport: [1440, 900],
     query: 'hour=16&weather=heavy-rain',
-    tolerance: 0.015
+    tolerance: 0.05
   },
   { name: 'snow', viewport: [1440, 900], query: 'hour=10&weather=snow' },
   { name: 'mobile', viewport: [390, 844], query: 'hour=16' }

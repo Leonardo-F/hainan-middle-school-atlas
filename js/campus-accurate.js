@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeTextures } from './textures.js';
+import { makeTextures, applyDetailMaps } from './textures.js';
 import { SITE as SITE_FALLBACK } from './site.js';
 import {
   buildMaterials, createHipRoof, createPalm, createCanopyTree, addHedge,
@@ -296,7 +296,7 @@ export function buildCampus(scene, renderer, options = {}) {
 
   let disposed = false;
   const tex = makeTextures(renderer);
-  const M = buildMaterials(tex, renderer);
+  const M = buildMaterials(tex, renderer, { detailMaps: options.detailMaps !== false });
   const pickables = [];
   const swayers = [];
   const lampSprites = [];
@@ -363,6 +363,7 @@ export function buildCampus(scene, renderer, options = {}) {
   pavingTex.wrapS = pavingTex.wrapT = THREE.RepeatWrapping;
   pavingTex.repeat.set(1.8, 1.8);
   M.darkPaving = new THREE.MeshStandardMaterial({ map: pavingTex, color: 0xc6c4bb, roughness: 0.95 });
+  if (options.detailMaps !== false) applyDetailMaps(M.darkPaving, { normalStrength: 1.6, roughnessContrast: 0.06 });
 
   const plazaTex = makeCanvasTexture(512, 512, (g, w, h) => {
     g.fillStyle = '#bdb7a6'; g.fillRect(0, 0, w, h);
@@ -383,6 +384,7 @@ export function buildCampus(scene, renderer, options = {}) {
   plazaTex.wrapS = plazaTex.wrapT = THREE.RepeatWrapping;
   plazaTex.repeat.set(2.2, 2.2);
   M.plaza = new THREE.MeshStandardMaterial({ map: plazaTex, color: 0xd9d2c1, roughness: 0.95 });
+  if (options.detailMaps !== false) applyDetailMaps(M.plaza, { normalStrength: 1.6, roughnessContrast: 0.06 });
 
   const studyTex = makeCanvasTexture(512, 512, (g, w, h) => {
     g.fillStyle = '#b3a78f'; g.fillRect(0, 0, w, h);
@@ -994,6 +996,7 @@ export function buildCampus(scene, renderer, options = {}) {
   const trackGroup = new THREE.Group();
   trackGroup.name = 'sports-field';
   const trackMat = new THREE.MeshStandardMaterial({ map: tex.track, color: 0xffffff, roughness: 0.97 });
+  if (options.detailMaps !== false) applyDetailMaps(trackMat, { normalStrength: 0.5, roughnessContrast: 0.04 });
   const trackPlane = new THREE.Mesh(new THREE.PlaneGeometry(site.track.size[1], site.track.size[0]), trackMat);
   trackPlane.rotation.x = -Math.PI / 2;
   trackPlane.position.y = 0.075;

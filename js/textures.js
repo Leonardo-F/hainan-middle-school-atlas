@@ -1193,3 +1193,114 @@ export function makeTextures(renderer) {
     drawFacade: (options) => facadeTexture(renderer, options)
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Detail maps: normal + roughness from the albedo canvas             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 近景材质的程序化细节：把已有 albedo 的亮度当作高度场，中心差分求法线，
+ * 并用亮度调制粗糙度（暗部略粗糙）。零外部贴图，与 albedo 共用 repeat/wrap，
+ * 因此砖缝、瓦垄、铺地拼缝的凹凸能与颜色对齐。
+ *
+ * 缓存键包含源纹理、repeat 与参数：同一张图 + 同一个 repeat 只算一次，
+ * 抹灰三个色号共享一张细节图。纹理尺寸默认 256，兼顾近景与移动端显存。
+ */
+const detailCache = new Map();
+
+export function applyDetailMaps(material, options = {}) {
+  const source = material?.map;
+  const image = source?.image;
+  if (!image || source.repeat === undefined) return material;
+  const {
+    size = 256,
+    normalStrength = 1,
+    roughnessBase = 0.92,
+    roughnessContrast = 0.1
+  } = options;
+  const key = [
+    image.uuid || image.src || 'canvas',
+    `${source.repeat.x},${source.repeat.y}`,
+    size,
+    normalStrength,
+    roughnessBase,
+    roughnessContrast
+  ].join('|');
+  let maps = detailCache.get(key);
+  if (!maps) {
+    maps = buildDetailMaps(image, source, { size, normalStrength, roughnessBase, roughnessContrast });
+    detailCache.set(key, maps);
+  }
+  material.normalMap = maps.normalMap;
+  material.normalScale.set(1, 1);
+  material.roughnessMap = maps.roughnessMap;
+  material.needsUpdate = true;
+  return material;
+}
+
+function buildDetailMaps(image, source, { size, normalStrength, roughnessBase, roughnessContrast }) {
+  const heightSurface = surface(size, size);
+  heightSurface.ctx.drawImage(image, 0, 0, size, size);
+  const pixels = heightSurface.ctx.getImageData(0, 0, size, size).data;
+  const height = new Float32Array(size * size);
+  for (let i = 0; i < height.length; i += 1) {
+    const o = i * 4;
+    height[i] = (0.2126 * pixels[o] + 0.7152 * pixels[o + 1] + 0.0722 * pixels[o + 2]) / 255;
+  }
+
+  const normalSurface = surface(size, size);
+  const roughSurface = surface(size, size);
+  const normalImage = normalSurface.ctx.createImageData(size, size);
+  const roughImage = roughSurface.ctx.createImageData(size, size);
+  const slope = normalStrength * 6;
+
+  for (let y = 0; y < size; y += 1) {
+    const ym = ((y - 1 + size) % size) * size;
+    const yp = ((y + 1) % size) * size;
+    const row = y * size;
+    for (let x = 0; x < size; x += 1) {
+      const xm = (x - 1 + size) % size;
+      const xp = (x + 1) % size;
+      const dx = height[row + xp] - height[row + xm];
+      // canvas 行向下，法线贴图 green 通道向上：dy 取反向
+      const dy = height[ym + x] - height[yp + x];
+      let nx = -dx * slope;
+      let ny = -dy * slope;
+      let nz = 1;
+      const inv = 1 / Math.hypot(nx, ny, nz);
+      nx *= inv;
+      ny *= inv;
+      nz *= inv;
+      const o = (row + x) * 4;
+      normalImage.data[o] = Math.round((nx * 0.5 + 0.5) * 255);
+      normalImage.data[o + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      normalImage.data[o + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      normalImage.data[o + 3] = 255;
+      const lum = height[row + x];
+      const rough = Math.min(1, Math.max(0, roughnessBase + (0.5 - lum) * roughnessContrast * 2));
+      const value = Math.round(rough * 255);
+      roughImage.data[o] = value;
+      roughImage.data[o + 1] = value;
+      roughImage.data[o + 2] = value;
+      roughImage.data[o + 3] = 255;
+    }
+  }
+  normalSurface.ctx.putImageData(normalImage, 0, 0);
+  roughSurface.ctx.putImageData(roughImage, 0, 0);
+
+  return {
+    normalMap: detailTexture(normalSurface.canvas, source),
+    roughnessMap: detailTexture(roughSurface.canvas, source)
+  };
+}
+
+function detailTexture(canvas, source) {
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.copy(source.repeat);
+  texture.anisotropy = source.anisotropy || 4;
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}

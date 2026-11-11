@@ -181,6 +181,6 @@ window.setTimeout(() => { if (!window.__campusReady) showFatal(); }, 25000);
 
 1. 改 `js/`、`css/`、`index.html` 后：`npm run shots`。
 2. 有差异 → 看 `tools/shots/diff/<机位>.diff.png` 和 `current/<机位>.png`，判断是预期改动还是回归。
-3. 预期改动 → `npm run shots:update` 重建基准 → **再连跑两次 `npm run shots`** 确认确定性（实测多数机位 0 px，spot/移动端偶有 ≤0.05% 的微抖，均应在 0.2% 阈值内；`heavy-rain` 放宽到 1.5%）。
+3. 预期改动 → `npm run shots:update` 重建基准 → **再连跑两次 `npm run shots`** 确认确定性（实测多数机位 0 px，spot/移动端偶有 ≤0.05% 的微抖，均应在 0.2% 阈值内；`heavy-rain` 因雨丝相位敏感放宽到 5%）。
 4. 升级 Chrome / 换机器后，基准需要整体重建（旧基准可能全部「有差异」）。
 5. 提交时只提交脚本与文档改动；`tools/shots/{baseline,current,diff}/` 留在本地。

@@ -1,6 +1,6 @@
 # 参与开发 · 府城校园图志
 
-面向后续维护者、建模与前端协作者，以及在此仓库上工作的 AI agent。新增校区的完整流程见 [campuses.md](campuses.md)；模型与建筑处理见 [design-notes.md](design-notes.md)；精度声明见 [accuracy.md](accuracy.md)。
+面向后续维护者、建模与前端协作者，以及在此仓库上工作的 AI agent。完整目录见 [structure.md](structure.md)；新增校区的完整流程见 [campuses.md](campuses.md)；模型与建筑处理见 [design-notes.md](design-notes.md)；精度声明见 [accuracy.md](accuracy.md)。
 
 ---
 
@@ -41,6 +41,13 @@ npm run build        # node build.mjs → hainan-middle-school.html
 - **不要手改 `hainan-middle-school.html`**：它是产物，会被下一次构建覆盖。改源码后重新 build。
 - 单文件版是发布与分享的主入口；开发入口 `index.html` 加载的仍是源码模块，二者行为应一致。
 - 构建产物体积是显式预算：新增依赖、贴图或字体前先确认必要性，避免把单文件版推向数 MB。
+
+## 发布（GitHub Pages）
+
+- 线上地址：<https://leonardo-f.github.io/hainan-middle-school-atlas/>。GitHub Pages 直接服务 `main` 分支根目录，**不需要额外构建**：根目录的 `index.html` 就是入口，`.nojekyll` 负责关闭 Jekyll。
+- 因此 `index.html`、`js/`、`css/`、`vendor/`、`assets/` 必须保持「纯静态、相对路径、线上可加载」；不要改成依赖本地绝对路径或 Node 服务。
+- 更新流程：本地 `npm run build` 更新单文件产物 → 提交 → 推送 `main` → Pages 自动重建（通常 1 分钟内）。
+- 若 Pages 页面出现 404/白屏，先检查：仓库 Settings → Pages 的 Source 是否为 `main` 根目录、`.nojekyll` 是否存在、`index.html` 的 import map 路径是否仍是相对路径。
 
 ## 视觉回归
 
