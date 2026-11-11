@@ -49,6 +49,5 @@ URL 参数：`?campus=fucheng` · `?spot=fengqi` · `?hour=19.6` · `?view=top` 
 
 ## 注意事项
 
-- **代码与页面**：[MIT](LICENSE)，Copyright © 2026 Gaoming Fan（范高铭）。
 - **数据与素材**：校园空间数据来自 [OpenStreetMap](https://www.openstreetmap.org/way/1127981105)（© OpenStreetMap contributors，[ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)）；字体按 SIL OFL 1.1；预览图与样片为本项目渲染输出。
 - 校名、「海中」等学校标识权利归学校所有；正式用于宣传、导览或空间决策前，请以学校官方资料与实测图纸为准。
