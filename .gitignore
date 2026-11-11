@@ -3,3 +3,8 @@ node_modules/
 .npm-cache/
 .npm-logs/
 *.log
+
+# 视觉回归基准/输出（本地生成；npm run shots:update 重建基准）
+tools/shots/baseline/
+tools/shots/current/
+tools/shots/diff/

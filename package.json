@@ -2,13 +2,19 @@
   "name": "hainan-middle-school-atlas",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
+  "author": "Gaoming Fan",
   "description": "Three.js interactive campus atlas of Hainan Middle School, Fucheng campus",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "shots": "node tools/shot.mjs",
+    "shots:update": "node tools/shot.mjs --update"
   },
   "devDependencies": {
+    "playwright-core": "^1.65.0",
+    "pngjs": "^7.0.0",
     "rollup": "4.52.5"
   }
 }

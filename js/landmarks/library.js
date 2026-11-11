@@ -1,5 +1,5 @@
 /**
- * 府城校区 · 图书馆三维模型（新建模块，尚未接入 site.js / campus-accurate.js）。
+ * 府城校区 · 图书馆三维模型（已接入 site.js 与 campus-accurate.js；位置为编辑推测）。
  *
  * 局部坐标（单位：米，调用方按 parts.js 约定放置并 finalize 后 ×0.5 变成场景单位）：
  *   +z 为建筑正面（入口/广场一侧），+x 为面宽（长轴），y 向上，模块基座 y=0。
@@ -203,12 +203,11 @@ export function build(ctx = {}) {
   const canopyGreen = new THREE.MeshStandardMaterial({
     color: 0x3f6b52, roughness: 0.55, metalness: 0.28
   });
-  // 银色金属穹顶/扶手。注意：校园场景没有环境贴图（无 PMREM/envMap），
-  // metalness 过高的金属会渲染成近似黑色；这里参照 campus.js 的金/铜材质
-  // （metalness 0.5 左右）压到 0.45，并加一点暗色自发光提亮，保证“银色”可读。
+  // 银色金属穹顶/扶手。场景已有程序化 PMREM 环境贴图（见 campus-accurate.js），
+  // 金属可以走真实反射；保留少量自发光只为夜间/背光时仍能读出“银色”轮廓。
   const silver = new THREE.MeshStandardMaterial({
-    color: 0xccd3d6, roughness: 0.34, metalness: 0.45,
-    emissive: 0x3b4346, emissiveIntensity: 0.22
+    color: 0xccd3d6, roughness: 0.3, metalness: 0.55,
+    emissive: 0x2a3033, emissiveIntensity: 0.08
   });
   const steel = new THREE.MeshStandardMaterial({
     color: 0x9aa2a6, roughness: 0.45, metalness: 0.4,

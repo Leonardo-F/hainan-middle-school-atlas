@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eee5d6">
-  <meta name="description" content="海南中学府城校区交互三维校园图志。依据 OpenStreetMap 建筑轮廓重建海南中学府城校区三维总图：校门、凤栖堂、衍林堂、教学楼、科学馆、体育馆与运动场，支持自由漫游、地标导览与日照变化。">
+  <meta name="description" content="海南中学府城校区交互三维校园图志（非官方、非测绘）。依据 OpenStreetMap 轮廓与公开影像写意重建：校门、凤栖堂、衍林堂、教学楼、科学馆、体育馆与运动场，支持自由漫游、地标导览与日照变化。">
   <title>府城校园图志 · 海南中学三维校园</title>
 
 
@@ -47044,7 +47044,7 @@ void main() {
 	        10,
 	        138.5
 	      ],
-	      "area": 190,
+	      "area": 760,
 	      "kind": "named",
 	      "floors": 3,
 	      "roof": 0,
@@ -52237,7 +52237,7 @@ void main() {
 	}
 
 	/**
-	 * 府城校区 · 图书馆三维模型（新建模块，尚未接入 site.js / campus-accurate.js）。
+	 * 府城校区 · 图书馆三维模型（已接入 site.js 与 campus-accurate.js；位置为编辑推测）。
 	 *
 	 * 局部坐标（单位：米，调用方按 parts.js 约定放置并 finalize 后 ×0.5 变成场景单位）：
 	 *   +z 为建筑正面（入口/广场一侧），+x 为面宽（长轴），y 向上，模块基座 y=0。
@@ -52437,12 +52437,11 @@ void main() {
 	  const canopyGreen = new MeshStandardMaterial({
 	    color: 0x3f6b52, roughness: 0.55, metalness: 0.28
 	  });
-	  // 银色金属穹顶/扶手。注意：校园场景没有环境贴图（无 PMREM/envMap），
-	  // metalness 过高的金属会渲染成近似黑色；这里参照 campus.js 的金/铜材质
-	  // （metalness 0.5 左右）压到 0.45，并加一点暗色自发光提亮，保证“银色”可读。
+	  // 银色金属穹顶/扶手。场景已有程序化 PMREM 环境贴图（见 campus-accurate.js），
+	  // 金属可以走真实反射；保留少量自发光只为夜间/背光时仍能读出“银色”轮廓。
 	  const silver = new MeshStandardMaterial({
-	    color: 0xccd3d6, roughness: 0.34, metalness: 0.45,
-	    emissive: 0x3b4346, emissiveIntensity: 0.22
+	    color: 0xccd3d6, roughness: 0.3, metalness: 0.55,
+	    emissive: 0x2a3033, emissiveIntensity: 0.08
 	  });
 	  const steel = new MeshStandardMaterial({
 	    color: 0x9aa2a6, roughness: 0.45, metalness: 0.4,
@@ -53734,6 +53733,11 @@ void main() {
 
 	function buildCampus(scene, renderer, options = {}) {
 	  const reducedMotion = Boolean(options.reducedMotion);
+	  // ?env=off 可关闭 PMREM 环境反射（A/B 截图调试用）。
+	  const envMapEnabled = options.envMap !== false;
+	  const envIntensity = Number.isFinite(options.envIntensity) ? options.envIntensity : 0;
+	  const envMaterialIntensity = Number.isFinite(options.envMaterialIntensity) ? options.envMaterialIntensity : 1.2;
+	  const envSelective = options.envSelective !== false;
 
 	  /* ------------------------- campus contract ----------------------- */
 	  // 多校区契约：options.site 提供空间数据，options.campus / options.landmarks /
@@ -54175,6 +54179,57 @@ void main() {
 	  );
 	  sky.renderOrder = -10;
 	  world.add(sky);
+
+	  /* ------------------- environment map (PMREM) ---------------------- */
+	  // 零资产的环境反射：用程序化天空烘一张 PMREM 贴图，供玻璃/金属/水面等
+	  // PBR 材质使用（本场景没有 HDRI，此前 library.js 只能靠压 metalness + 自发光
+	  // 假装“银色”）。日照或天气变化时按 0.25 s 节流重烘，避免滑杆拖动时卡顿。
+	  const envScene = new Scene();
+	  const envSky = new Mesh(new SphereGeometry(1, 32, 16), sky.material);
+	  envSky.material.side = BackSide;
+	  envSky.material.depthWrite = false;
+	  envScene.add(envSky);
+	  let envGenerator = null;
+	  let envTarget = null;
+	  let envDirty = true;
+	  let envCooldown = 0;
+	  let envApplied = false;
+	  const envMaterials = new Set();
+
+	  // 只给“确实会反光”的材质挂 envMap（金属/玻璃/水面），避免把整片草地和
+	  // 墙面一起提亮、冲淡图志的纸感与明暗层次。scene.environment 只保留很低的环境光。
+	  function collectEnvMaterials() {
+	    envMaterials.clear();
+	    world.traverse((object) => {
+	      if (!object.isMesh) return;
+	      const list = Array.isArray(object.material) ? object.material : [object.material];
+	      for (const material of list) {
+	        if (!material || !material.isMeshStandardMaterial) continue;
+	        const metalness = typeof material.metalness === 'number' ? material.metalness : 0;
+	        if (metalness >= 0.15 || (material.transparent && metalness >= 0.08)) envMaterials.add(material);
+	      }
+	    });
+	  }
+
+	  function bakeEnvironment() {
+	    if (!envMapEnabled || disposed || !renderer) return;
+	    if (!envGenerator) envGenerator = new PMREMGenerator(renderer);
+	    const previous = envTarget;
+	    envTarget = envGenerator.fromScene(envScene, 0.04, 0.1, 10);
+	    const texture = envTarget.texture;
+	    scene.environment = texture;
+	    scene.environmentIntensity = envIntensity;
+	    if (envSelective) {
+	      if (!envMaterials.size) collectEnvMaterials();
+	      for (const material of envMaterials) {
+	        material.envMap = texture;
+	        material.envMapIntensity = envMaterialIntensity;
+	        if (!envApplied) material.needsUpdate = true;
+	      }
+	      envApplied = true;
+	    }
+	    if (previous) previous.dispose();
+	  }
 
 	  const hemi = new HemisphereLight(0xc4d4cc, 0x625d47, 1.2);
 	  world.add(hemi);
@@ -55267,8 +55322,8 @@ void main() {
 	   * 注：用户口述"靠近体育馆那一侧"与上述证据一致；此前一度依据 Google 影像把看台
 	   * 误判到跑道东北弯道（那里其实只有绿地和活动场地），已按 Bing 校准结论改回。
 	   * 形制：长 30 场景单位（≈60 m）、进深 4.6；8–10 级台阶（本实现 10 级），
-	   * 坐席下蓝上黄；白色薄板顶棚 + 细白柱 + 顶上绿藤；主席台在看台**东北端**
-	   * （约 12×6 单位，白弧形顶 + 红/蓝座椅 + 红底背景板）；**主席台居中**（用户反馈），
+	   * 坐席下蓝上黄；白色薄板顶棚 + 细白柱 + 顶上绿藤；主席台居中（约 12×6 单位，
+	   * 白弧形顶 + 红/蓝座椅 + 红底背景板；用户反馈修正了早期“位于东北端”的误判），
 	   * 长条顶棚在主席台两侧断开、不压主席台；旗杆仅保留国旗一根（用户反馈），
 	   * 立于主席台前缘外（无影像证据 → 位置与高度为写意）。
 	   * 坐标系：standGroup 与 trackGroup 共用局部坐标（局部 x = 跑道长轴 u、
@@ -55413,9 +55468,8 @@ void main() {
 	  const standBanner = plane(5.6, 1.02, M.signMaterial(bannerTex, false));
 	  standBanner.position.set(podiumU, podiumTop + 1.05, podiumV - podiumD / 2 - 0.19);
 	  standGroup.add(standBanner);
-	  // ---- 国旗 / 校旗两根旗杆（主席台前缘外，写意）----
-	  // 位置无影像证据：按 Lead 建议放在主席台前缘外 1–2 单位；高度按用户需求
-	  // 「国旗 12–14 m、校旗略低」取 7.0 / 5.6 场景单位（14 m / 11.2 m）。
+	  // ---- 国旗旗杆（仅一根；主席台前缘外，写意）----
+	  // 位置与高度均无影像证据：放在主席台前缘外 1–2 单位，高度取 7.0 场景单位（约 14 m）。
 	  const nationalFlagTex = makeCanvasTexture(450, 300, (g, w, h) => {
 	    g.fillStyle = '#de2910';
 	    g.fillRect(0, 0, w, h);
@@ -56211,12 +56265,21 @@ void main() {
 	    for (const mat of lampGlowMaterials) mat.opacity = night * 0.2;
 	    M.lampWarm.emissiveIntensity = 0.15 + night * 3.3;
 	    for (const light of pointLights) light.intensity = night * 14;
+	    envDirty = true;
 	  }
 
 	  /* ---------------------------- animation --------------------------- */
 	  let elapsed = 0;
 	  function animate(delta) {
 	    if (disposed) return;
+	    if (envDirty) {
+	      envCooldown -= delta;
+	      if (envCooldown <= 0) {
+	        bakeEnvironment();
+	        envDirty = false;
+	        envCooldown = 0.25;
+	      }
+	    }
 	    elapsed += delta;
 	    const t = reducedMotion ? 0 : elapsed;
 	    for (const sway of swayers) {
@@ -56322,6 +56385,17 @@ void main() {
 	    const released = disposeSceneResources(world, tex);
 	    scene.remove(world);
 	    scene.fog = null;
+	    scene.environment = null;
+	    if (envTarget) {
+	      envTarget.dispose();
+	      envTarget = null;
+	    }
+	    if (envGenerator) {
+	      envGenerator.dispose();
+	      envGenerator = null;
+	    }
+	    envSky.geometry.dispose();
+	    envScene.clear();
 	    pickables.length = 0;
 	    swayers.length = 0;
 	    pointLights.length = 0;
@@ -56339,6 +56413,14 @@ void main() {
 	    setTime,
 	    getTime: () => hour,
 	    getNight: () => night,
+	    /** 天气切换会改天空色；调用后环境贴图会在下一帧重烘。 */
+	    refreshEnvironment: () => {
+	      if (!envMapEnabled) return;
+	      envDirty = true;
+	      envCooldown = 0;
+	    },
+	    /** 环境反射调试：当前挂上 envMap 的材质数量。 */
+	    envMaterialCount: () => envMaterials.size,
 	    /** 天气 → 学生行为（打伞/躲雨/恢复）；main.js 的 applyWeather 会调用。 */
 	    setWeather: (id) => setStudentWeather(id),
 	    getWeather: () => weatherId,
@@ -56571,7 +56653,7 @@ void main() {
 	    diagram: 'field',
 	    summary: '一圈红土色，收住校园的呼吸。',
 	    description:
-	      '运动场沿校园西侧展开，是府城校区最大的一片开阔地。环形跑道围住中央球场，四周被教学楼、体育馆与树木环绕。场边直道上是主席台与长条看台，校运会与校庆的主会场就在这里；国旗与校旗立在主席台一侧。清晨的列队、傍晚的慢跑、球场边的欢呼都在这里发生；它也是整个校园图景中最容易辨认的一块颜色。',
+	      '运动场沿校园西侧展开，是府城校区最大的一片开阔地。环形跑道围住中央球场，四周被教学楼、体育馆与树木环绕。场边直道上是主席台与长条看台，校运会与校庆的主会场就在这里；主席台前缘外侧立着一根国旗旗杆（位置与高度无影像证据，为写意布置）。清晨的列队、傍晚的慢跑、球场边的欢呼都在这里发生；它也是整个校园图景中最容易辨认的一块颜色。',
 	    facts: [
 	      ['类型', '环形跑道 · 球场'],
 	      ['场边', '主席台与看台 · 校庆主会场'],
@@ -59410,6 +59492,19 @@ void main() {
 	const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 	const params = new URLSearchParams(window.location.search);
 
+	/* 视觉回归（tools/shot.mjs）：?still=1 时固定随机数、冻结时钟、只渲染一帧，
+	   让同一机位每次截图逐像素一致。仅开发/测试使用，不影响正常访问。 */
+	const STILL = params.get('still') === '1';
+	if (STILL) {
+	  let seed = 20261112;
+	  Math.random = () => {
+	    seed = (seed + 0x6d2b79f5) | 0;
+	    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+	    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+	    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	  };
+	}
+
 	/* ------------------------------------------------------------------ */
 	/*  Multi-campus registry & routing                                    */
 	/*  数据层：js/campuses.js（注册表 / URL 契约）；场景层：js/campus-accurate.js */
@@ -59687,7 +59782,11 @@ void main() {
 	      site: SITE,
 	      landmarks: LANDMARKS,
 	      theme: ACTIVE_CAMPUS.theme,
-	      reducedMotion
+	      reducedMotion,
+	      envMap: params.get('env') !== 'off',
+	      envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
+	      envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
+	      envSelective: params.get('envsel') !== 'off'
 	    });
 	    // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
 	    weather = createWeatherLayer();
@@ -59734,6 +59833,15 @@ void main() {
 	    if (elapsed < minLoad) await wait(minLoad - elapsed);
 	    if (!(reducedMotion || params.get('nointro'))) await wait(180);
 	    finishBoot();
+	    if (STILL) {
+	      // 等 finishBoot() 里的 0ms 取景任务先执行，再冻结时钟渲染一帧。
+	      renderer.setAnimationLoop(null);
+	      clock.stop();
+	      window.setTimeout(() => {
+	        renderFrame(performance.now());
+	        window.__stillReady = true;
+	      }, 60);
+	    }
 	  } catch (error) {
 	    console.error('Campus scene failed to initialise:', error);
 	    window.__showFatal?.();
@@ -60565,7 +60673,11 @@ void main() {
 	      site: SITE,
 	      landmarks: LANDMARKS,
 	      theme: ACTIVE_CAMPUS.theme,
-	      reducedMotion
+	      reducedMotion,
+	      envMap: params.get('env') !== 'off',
+	      envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
+	      envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
+	      envSelective: params.get('envsel') !== 'off'
 	    });
 	    // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
 	    weather = createWeatherLayer();
@@ -60803,6 +60915,8 @@ void main() {
 	  // 切校区/未就绪时用可选链保护，晚于本文件交付也不会崩。
 	  try {
 	    campus?.setWeather?.(entry.id);
+	    // 天气会改变天空色（weather.js 写天空 uniform），环境反射需要跟着重烘。
+	    campus?.refreshEnvironment?.();
 	  } catch (error) {
 	    console.warn('Campus weather behaviour failed to switch:', error);
 	  }

@@ -1134,7 +1134,7 @@ export const SITE = {
         10,
         138.5
       ],
-      "area": 190,
+      "area": 760,
       "kind": "named",
       "floors": 3,
       "roof": 0,

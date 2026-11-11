@@ -21,6 +21,19 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(window.location.search);
 
+/* 视觉回归（tools/shot.mjs）：?still=1 时固定随机数、冻结时钟、只渲染一帧，
+   让同一机位每次截图逐像素一致。仅开发/测试使用，不影响正常访问。 */
+const STILL = params.get('still') === '1';
+if (STILL) {
+  let seed = 20261112;
+  Math.random = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Multi-campus registry & routing                                    */
 /*  数据层：js/campuses.js（注册表 / URL 契约）；场景层：js/campus-accurate.js */
@@ -299,7 +312,11 @@ async function boot() {
       site: SITE,
       landmarks: LANDMARKS,
       theme: ACTIVE_CAMPUS.theme,
-      reducedMotion
+      reducedMotion,
+      envMap: params.get('env') !== 'off',
+      envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
+      envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
+      envSelective: params.get('envsel') !== 'off'
     });
     // 天气层建立在校园世界之上；引擎缺失/抛错时降级为 null，页面照常可用。
     weather = createWeatherLayer();
@@ -346,6 +363,15 @@ async function boot() {
     if (elapsed < minLoad) await wait(minLoad - elapsed);
     if (!(reducedMotion || params.get('nointro'))) await wait(180);
     finishBoot();
+    if (STILL) {
+      // 等 finishBoot() 里的 0ms 取景任务先执行，再冻结时钟渲染一帧。
+      renderer.setAnimationLoop(null);
+      clock.stop();
+      window.setTimeout(() => {
+        renderFrame(performance.now());
+        window.__stillReady = true;
+      }, 60);
+    }
   } catch (error) {
     console.error('Campus scene failed to initialise:', error);
     window.__showFatal?.();
@@ -1177,7 +1203,11 @@ function switchCampus(nextId) {
       site: SITE,
       landmarks: LANDMARKS,
       theme: ACTIVE_CAMPUS.theme,
-      reducedMotion
+      reducedMotion,
+      envMap: params.get('env') !== 'off',
+      envIntensity: params.get('envint') ? Number(params.get('envint')) : undefined,
+      envMaterialIntensity: params.get('envmat') ? Number(params.get('envmat')) : undefined,
+      envSelective: params.get('envsel') !== 'off'
     });
     // 旧天气层已随旧校区 dispose；新校区重建后恢复当前天气再校准时刻。
     weather = createWeatherLayer();
@@ -1415,6 +1445,8 @@ function applyWeather(id, options = {}) {
   // 切校区/未就绪时用可选链保护，晚于本文件交付也不会崩。
   try {
     campus?.setWeather?.(entry.id);
+    // 天气会改变天空色（weather.js 写天空 uniform），环境反射需要跟着重烘。
+    campus?.refreshEnvironment?.();
   } catch (error) {
     console.warn('Campus weather behaviour failed to switch:', error);
   }

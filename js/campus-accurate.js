@@ -276,6 +276,11 @@ function disposeSceneResources(root, extraTextures) {
 
 export function buildCampus(scene, renderer, options = {}) {
   const reducedMotion = Boolean(options.reducedMotion);
+  // ?env=off 可关闭 PMREM 环境反射（A/B 截图调试用）。
+  const envMapEnabled = options.envMap !== false;
+  const envIntensity = Number.isFinite(options.envIntensity) ? options.envIntensity : 0;
+  const envMaterialIntensity = Number.isFinite(options.envMaterialIntensity) ? options.envMaterialIntensity : 1.2;
+  const envSelective = options.envSelective !== false;
 
   /* ------------------------- campus contract ----------------------- */
   // 多校区契约：options.site 提供空间数据，options.campus / options.landmarks /
@@ -793,6 +798,57 @@ export function buildCampus(scene, renderer, options = {}) {
   );
   sky.renderOrder = -10;
   world.add(sky);
+
+  /* ------------------- environment map (PMREM) ---------------------- */
+  // 零资产的环境反射：用程序化天空烘一张 PMREM 贴图，供玻璃/金属/水面等
+  // PBR 材质使用（本场景没有 HDRI，此前 library.js 只能靠压 metalness + 自发光
+  // 假装“银色”）。日照或天气变化时按 0.25 s 节流重烘，避免滑杆拖动时卡顿。
+  const envScene = new THREE.Scene();
+  const envSky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), sky.material);
+  envSky.material.side = THREE.BackSide;
+  envSky.material.depthWrite = false;
+  envScene.add(envSky);
+  let envGenerator = null;
+  let envTarget = null;
+  let envDirty = true;
+  let envCooldown = 0;
+  let envApplied = false;
+  const envMaterials = new Set();
+
+  // 只给“确实会反光”的材质挂 envMap（金属/玻璃/水面），避免把整片草地和
+  // 墙面一起提亮、冲淡图志的纸感与明暗层次。scene.environment 只保留很低的环境光。
+  function collectEnvMaterials() {
+    envMaterials.clear();
+    world.traverse((object) => {
+      if (!object.isMesh) return;
+      const list = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of list) {
+        if (!material || !material.isMeshStandardMaterial) continue;
+        const metalness = typeof material.metalness === 'number' ? material.metalness : 0;
+        if (metalness >= 0.15 || (material.transparent && metalness >= 0.08)) envMaterials.add(material);
+      }
+    });
+  }
+
+  function bakeEnvironment() {
+    if (!envMapEnabled || disposed || !renderer) return;
+    if (!envGenerator) envGenerator = new THREE.PMREMGenerator(renderer);
+    const previous = envTarget;
+    envTarget = envGenerator.fromScene(envScene, 0.04, 0.1, 10);
+    const texture = envTarget.texture;
+    scene.environment = texture;
+    scene.environmentIntensity = envIntensity;
+    if (envSelective) {
+      if (!envMaterials.size) collectEnvMaterials();
+      for (const material of envMaterials) {
+        material.envMap = texture;
+        material.envMapIntensity = envMaterialIntensity;
+        if (!envApplied) material.needsUpdate = true;
+      }
+      envApplied = true;
+    }
+    if (previous) previous.dispose();
+  }
 
   const hemi = new THREE.HemisphereLight(0xc4d4cc, 0x625d47, 1.2);
   world.add(hemi);
@@ -1886,8 +1942,8 @@ export function buildCampus(scene, renderer, options = {}) {
    * 注：用户口述"靠近体育馆那一侧"与上述证据一致；此前一度依据 Google 影像把看台
    * 误判到跑道东北弯道（那里其实只有绿地和活动场地），已按 Bing 校准结论改回。
    * 形制：长 30 场景单位（≈60 m）、进深 4.6；8–10 级台阶（本实现 10 级），
-   * 坐席下蓝上黄；白色薄板顶棚 + 细白柱 + 顶上绿藤；主席台在看台**东北端**
-   * （约 12×6 单位，白弧形顶 + 红/蓝座椅 + 红底背景板）；**主席台居中**（用户反馈），
+   * 坐席下蓝上黄；白色薄板顶棚 + 细白柱 + 顶上绿藤；主席台居中（约 12×6 单位，
+   * 白弧形顶 + 红/蓝座椅 + 红底背景板；用户反馈修正了早期“位于东北端”的误判），
    * 长条顶棚在主席台两侧断开、不压主席台；旗杆仅保留国旗一根（用户反馈），
    * 立于主席台前缘外（无影像证据 → 位置与高度为写意）。
    * 坐标系：standGroup 与 trackGroup 共用局部坐标（局部 x = 跑道长轴 u、
@@ -2032,9 +2088,8 @@ export function buildCampus(scene, renderer, options = {}) {
   const standBanner = plane(5.6, 1.02, M.signMaterial(bannerTex, false));
   standBanner.position.set(podiumU, podiumTop + 1.05, podiumV - podiumD / 2 - 0.19);
   standGroup.add(standBanner);
-  // ---- 国旗 / 校旗两根旗杆（主席台前缘外，写意）----
-  // 位置无影像证据：按 Lead 建议放在主席台前缘外 1–2 单位；高度按用户需求
-  // 「国旗 12–14 m、校旗略低」取 7.0 / 5.6 场景单位（14 m / 11.2 m）。
+  // ---- 国旗旗杆（仅一根；主席台前缘外，写意）----
+  // 位置与高度均无影像证据：放在主席台前缘外 1–2 单位，高度取 7.0 场景单位（约 14 m）。
   const nationalFlagTex = makeCanvasTexture(450, 300, (g, w, h) => {
     g.fillStyle = '#de2910';
     g.fillRect(0, 0, w, h);
@@ -2833,12 +2888,21 @@ export function buildCampus(scene, renderer, options = {}) {
     for (const mat of lampGlowMaterials) mat.opacity = night * 0.2;
     M.lampWarm.emissiveIntensity = 0.15 + night * 3.3;
     for (const light of pointLights) light.intensity = night * 14;
+    envDirty = true;
   }
 
   /* ---------------------------- animation --------------------------- */
   let elapsed = 0;
   function animate(delta) {
     if (disposed) return;
+    if (envDirty) {
+      envCooldown -= delta;
+      if (envCooldown <= 0) {
+        bakeEnvironment();
+        envDirty = false;
+        envCooldown = 0.25;
+      }
+    }
     elapsed += delta;
     const t = reducedMotion ? 0 : elapsed;
     for (const sway of swayers) {
@@ -2944,6 +3008,17 @@ export function buildCampus(scene, renderer, options = {}) {
     const released = disposeSceneResources(world, tex);
     scene.remove(world);
     scene.fog = null;
+    scene.environment = null;
+    if (envTarget) {
+      envTarget.dispose();
+      envTarget = null;
+    }
+    if (envGenerator) {
+      envGenerator.dispose();
+      envGenerator = null;
+    }
+    envSky.geometry.dispose();
+    envScene.clear();
     pickables.length = 0;
     swayers.length = 0;
     pointLights.length = 0;
@@ -2961,6 +3036,14 @@ export function buildCampus(scene, renderer, options = {}) {
     setTime,
     getTime: () => hour,
     getNight: () => night,
+    /** 天气切换会改天空色；调用后环境贴图会在下一帧重烘。 */
+    refreshEnvironment: () => {
+      if (!envMapEnabled) return;
+      envDirty = true;
+      envCooldown = 0;
+    },
+    /** 环境反射调试：当前挂上 envMap 的材质数量。 */
+    envMaterialCount: () => envMaterials.size,
     /** 天气 → 学生行为（打伞/躲雨/恢复）；main.js 的 applyWeather 会调用。 */
     setWeather: (id) => setStudentWeather(id),
     getWeather: () => weatherId,
