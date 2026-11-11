@@ -47,7 +47,9 @@ comparePng(baseline, current) → diffPixels / ratio / diff 图
 2. **`?still=1` 是确定性的来源。** `js/main.js` 在 `still` 模式下：把 `Math.random` 换成固定种子的 PRNG（种子 `20261112`）、`renderer.setAnimationLoop(null)`、`clock.stop()`，在 `finishBoot()` 后延时渲染**恰好一帧**并置 `window.__stillReady = true`。`?nointro=1` 跳过入场相机动画；`reducedMotion: 'reduce'`（Playwright context 参数）让 CSS 过渡/动画近似 0，`main.js` 也据此缩短加载节拍。**但 reducedMotion 只压缩 `transition-duration`、不压缩 `transition-delay`**：舞台右下角的交互提示（`拖动旋转 · 滚轮缩放 · 点击建筑`）带 1.8s 延迟，页面启动快慢会让截图时这行小字时有时无（实测 overview-noon 同一机位 0 px 与 468 px 交替）。所以脚本在截图前显式等 `getComputedStyle(#interactionHint).opacity >= 0.8`，把它稳定在「可见」状态；`spot` 机位打开图志时会 `markInteracted()`，提示按设计保持隐藏（此时脚本看到 `has-interacted` 就直接通过）。
 3. **天气缓动在截图前推到稳态。** 天气层（`js/weather.js`）的雨/雪粒子、地面积雪、曝光、雾、天空色都按**真实墙钟**做指数缓动，冻结帧只保证「之后不再更新」，不保证「过渡已经走完」——同样等 `__stillReady`，页面首帧的快慢会让积雪停在 60% 还是 95%，跨运行差到 10% 以上。因此 `tools/shot.mjs` 在截图前通过公开 API `window.__campusDebug.weather.tick(0.05)` 连推 240 次（12s 模拟时间）让所有缓动收敛，再 `renderer.render(scene, camera)` 重绘一帧然后截图。这步只改 harness，不需要改 `js/`；代价是天气机位测的是「天气稳定后的画面」，而非切换瞬间。
 4. **每个 shot 都是全新 browser context / page。** 曝光（`toneMappingExposure`）、天气过渡、粒子、相机补间、滚动/焦点等状态不跨 shot 复用；复用同一 page 会让第二张图带上第一张的残留，见 [§5.1](#51-坑一复用同一页面曝光与粒子状态污染)。
-5. **对比算法。** `comparePng` 用 pngjs 逐像素比较；单通道差值 > `channelTolerance`（默认 6/255）记为「不同像素」，`ratio = diffPixels / (width × height)`。尺寸不一致永远视为失败（`status: size-mismatch`）。
+5. **电子宠物不引入随机性。** `js/pet.js` 在 `?still=1` 下使用固定初始状态、不读写 `localStorage`、不按时间衰减，只参与单帧渲染，因此截图里海海的位置/表情/面板状态可复现；正常访问时才启用存档与实时衰减。
+
+6. **对比算法。** `comparePng` 用 pngjs 逐像素比较；单通道差值 > `channelTolerance`（默认 6/255）记为「不同像素」，`ratio = diffPixels / (width × height)`。尺寸不一致永远视为失败（`status: size-mismatch`）。
 6. **不用 `--virtual-time-budget`。** 原因见 [§5.2](#52-坑二virtual-time-budget-会触发页面的-25s-看门狗)。
 
 ---

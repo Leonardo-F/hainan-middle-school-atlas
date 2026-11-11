@@ -33,5 +33,5 @@ export const SHOTS = [
     tolerance: 0.05
   },
   { name: 'snow', viewport: [1440, 900], query: 'hour=10&weather=snow' },
-  { name: 'mobile', viewport: [390, 844], query: 'hour=16' }
+  { name: 'mobile', viewport: [390, 844], query: 'hour=16', tolerance: 0.008 }
 ];

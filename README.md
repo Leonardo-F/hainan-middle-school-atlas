@@ -25,6 +25,8 @@
 | ![图书馆阅览室](assets/preview/interior-library.jpg) | ![凤栖堂厅堂](assets/preview/interior-fengqi.jpg) |
 | **夜景** | **下雪** |
 | ![夜景](assets/preview/night.jpg) | ![下雪](assets/preview/snow.jpg) |
+| **电子宠物「海海」** | **宠物面板（抚摸 / 喂食 / 睡觉）** |
+| ![电子宠物](assets/preview/pet-haibai.jpg) | ![宠物面板](assets/preview/pet-panel.jpg) |
 
 **巡游影片**：约 85 秒的电影式巡游，含室内穿行、遮幅与中英字幕；页面底部「影片」播放，[样片](assets/preview/campus-tour.mp4)（1152×826，H.264）。
 
@@ -44,7 +46,7 @@ URL 参数：`?campus=fucheng` · `?spot=fengqi` · `?hour=19.6` · `?view=top` 
 
 ## 文档
 
-- **功能与实现**：[功能一览](docs/features.md) · [开发与构建](docs/contributing.md) · [完整目录](docs/structure.md)
+- **功能与实现**：[功能一览](docs/features.md) · [电子宠物](docs/pet.md) · [开发与构建](docs/contributing.md) · [完整目录](docs/structure.md)
 - **精度与设计**：[精度与证据](docs/accuracy.md) · [设计注记](docs/design-notes.md) · [变更记录](docs/changelog.md)
 - **工程工具**：[视觉回归](docs/visual-regression.md) · [多校区扩展](docs/campuses.md)
 - **相关调研**：[AI 生成 3D 网页游戏](docs/ai-generated-3d-games.md) · [视频还原建筑模型](docs/ai-video-reconstruction.md)

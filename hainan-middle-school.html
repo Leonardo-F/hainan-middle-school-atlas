@@ -3890,6 +3890,257 @@ html.show-native-cursor .cursor {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  电子宠物 · 海海                                                    */
+/*  A paper-card pet panel that sits beside the scene, plus the dock    */
+/*  toggle. The mascot itself is rendered in 3D (js/pet.js), so this   */
+/*  stylesheet only owns the panel chrome.                             */
+/* ------------------------------------------------------------------ */
+
+.dock-button--pet svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+.dock-button--pet.is-on {
+  color: var(--accent);
+}
+
+.pet-panel {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  z-index: 17;
+  width: 254px;
+  padding: 12px 14px 11px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui-paper) 92%, transparent);
+  box-shadow: 0 14px 44px rgba(18, 31, 24, 0.14);
+  backdrop-filter: blur(16px);
+}
+
+.pet-panel[hidden] {
+  display: none;
+}
+
+.pet-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pet-panel__eyebrow {
+  margin: 0 0 3px;
+  color: var(--ink-soft);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  opacity: 0.62;
+}
+
+.pet-panel__title {
+  margin: 0;
+  font-family: var(--cn-serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pet-panel__en {
+  margin-left: 4px;
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  opacity: 0.5;
+}
+
+.pet-panel__close {
+  width: 22px;
+  height: 22px;
+  margin-top: -2px;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pet-panel__close:hover {
+  background: var(--ui-hover);
+}
+
+.pet-panel__mood {
+  margin: 7px 0 9px;
+  color: var(--accent);
+  font-family: var(--ui-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.pet-panel__stats {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.pet-stat {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.pet-stat dt {
+  color: var(--ink-soft);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.pet-stat dd {
+  display: grid;
+  grid-template-columns: 1fr 26px;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+}
+
+.pet-stat__bar {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+}
+
+.pet-stat__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 50%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+#petEnergy + b,
+.pet-stat:nth-child(2) .pet-stat__bar i {
+  background: #4c7f9a;
+}
+
+#petAffection + b,
+.pet-stat:nth-child(3) .pet-stat__bar i {
+  background: #c76a72;
+}
+
+.pet-stat dd b {
+  color: var(--ink-soft);
+  font-family: var(--ui-mono);
+  font-size: 8.5px;
+  font-weight: 400;
+  text-align: right;
+}
+
+.pet-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.pet-action {
+  height: 26px;
+  padding: 0 2px;
+  color: var(--ink);
+  font-family: var(--ui-sans);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.pet-action:hover {
+  background: var(--ui-hover);
+}
+
+.pet-action--primary {
+  color: var(--paper);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.pet-action--primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pet-action--ghost {
+  color: var(--ink-soft);
+}
+
+.pet-action[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pet-panel__hint {
+  margin: 9px 0 0;
+  color: var(--ink-soft);
+  font-size: 8.5px;
+  line-height: 1.5;
+  opacity: 0.64;
+}
+
+@media (max-width: 760px) {
+  .pet-panel {
+    left: 8px;
+    right: 8px;
+    bottom: 64px;
+    width: auto;
+    padding: 8px 10px 8px;
+  }
+
+  .pet-panel__eyebrow,
+  .pet-panel__hint {
+    display: none;
+  }
+
+  .pet-panel__title {
+    font-size: 17px;
+  }
+
+  .pet-panel__mood {
+    margin: 2px 0 6px;
+  }
+
+  .pet-panel__stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .pet-stat {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .pet-stat dd {
+    grid-template-columns: 1fr 20px;
+    gap: 4px;
+  }
+
+  .pet-stat__bar {
+    height: 3px;
+  }
+
+  .pet-panel__actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 </style>
 </head>
 <body data-night="false">
@@ -4194,7 +4445,40 @@ html.show-native-cursor .cursor {
             <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
             <span>复位</span>
           </button>
+          <span class="dock-sep" aria-hidden="true"></span>
+          <button class="dock-button dock-button--pet" id="petButton" type="button" aria-pressed="false"
+            title="电子宠物 · 海南中学吉祥物海海">
+            <svg aria-hidden="true" viewBox="0 0 20 20">
+              <path d="M2.9 11.1c0-3 2.7-5.2 6.3-5.2 2.6 0 4.3.8 5.5 1.7l.2-2 2 .9-.8 2.6c.2 2.9-2.3 5.6-6.4 5.6-3.4 0-6.8-1.4-6.8-3.6z"/>
+              <path d="M9.4 4.2l.7-1.4.8 1.3"/>
+              <circle cx="13" cy="9.5" r=".8" fill="currentColor" stroke="none"/>
+            </svg>
+            <span>海海</span>
+          </button>
         </div>
+
+        <aside class="pet-panel" id="petPanel" hidden aria-label="电子宠物 海海">
+          <header class="pet-panel__head">
+            <div>
+              <p class="pet-panel__eyebrow mono">CAMPUS PET / 校园电子宠物</p>
+              <h3 class="pet-panel__title">海海 <span class="pet-panel__en mono">HAIBAI</span></h3>
+            </div>
+            <button class="pet-panel__close" id="petClose" type="button" aria-label="收起宠物面板">×</button>
+          </header>
+          <p class="pet-panel__mood" id="petMood" aria-live="polite">悠闲巡游 · CRUISING</p>
+          <dl class="pet-panel__stats">
+            <div class="pet-stat"><dt>饱腹</dt><dd><span class="pet-stat__bar"><i id="petHunger"></i></span><b id="petHungerVal">--</b></dd></div>
+            <div class="pet-stat"><dt>精力</dt><dd><span class="pet-stat__bar"><i id="petEnergy"></i></span><b id="petEnergyVal">--</b></dd></div>
+            <div class="pet-stat"><dt>亲密</dt><dd><span class="pet-stat__bar"><i id="petAffection"></i></span><b id="petAffectionVal">--</b></dd></div>
+          </dl>
+          <div class="pet-panel__actions">
+            <button class="pet-action pet-action--primary" id="petTouch" type="button">抚摸</button>
+            <button class="pet-action" id="petFeed" type="button">喂食</button>
+            <button class="pet-action" id="petSleep" type="button">睡觉</button>
+            <button class="pet-action pet-action--ghost" id="petHide" type="button">隐藏</button>
+          </div>
+          <p class="pet-panel__hint">点画面里的海海也可以抚摸；状态会自动保存在本机，下次打开继续养。</p>
+        </aside>
 
         <div class="film" id="filmLayer" aria-hidden="true">
           <div class="film__bar film__bar--top" aria-hidden="true"></div>
@@ -44726,7 +45010,7 @@ void main() {
 	  return { canvas, ctx: canvas.getContext('2d') };
 	}
 
-	function mulberry32$1(seed) {
+	function mulberry32$2(seed) {
 	  let a = seed >>> 0;
 	  return function () {
 	    a |= 0;
@@ -44784,7 +45068,7 @@ void main() {
 
 	function plasterTexture(renderer) {
 	  const { canvas, ctx } = surface(512, 512);
-	  const random = mulberry32$1(32);
+	  const random = mulberry32$2(32);
 	  ctx.fillStyle = '#e9dfcd';
 	  ctx.fillRect(0, 0, 512, 512);
 	  blotches(ctx, 512, 512, random, ['#d9caae', '#f5ecdb', '#b9a98f'], 34, 0.1);
@@ -44810,7 +45094,7 @@ void main() {
 
 	function grassTexture(renderer) {
 	  const { canvas, ctx } = surface(512, 512);
-	  const random = mulberry32$1(9);
+	  const random = mulberry32$2(9);
 	  ctx.fillStyle = '#617c50';
 	  ctx.fillRect(0, 0, 512, 512);
 	  blotches(ctx, 512, 512, random, ['#4d693f', '#78905e', '#526f43', '#82966a'], 60, 0.22);
@@ -44835,7 +45119,7 @@ void main() {
 
 	function stoneTexture(renderer) {
 	  const { canvas, ctx } = surface(512, 512);
-	  const random = mulberry32$1(15);
+	  const random = mulberry32$2(15);
 	  ctx.fillStyle = '#cfc1a9';
 	  ctx.fillRect(0, 0, 512, 512);
 	  const cellW = 128;
@@ -44861,7 +45145,7 @@ void main() {
 
 	function brickTexture(renderer) {
 	  const { canvas, ctx } = surface(512, 512);
-	  const random = mulberry32$1(44);
+	  const random = mulberry32$2(44);
 	  ctx.fillStyle = '#c8b192';
 	  ctx.fillRect(0, 0, 512, 512);
 	  const bw = 82;
@@ -44886,7 +45170,7 @@ void main() {
 
 	function roofTexture(renderer) {
 	  const { canvas, ctx } = surface(512, 512);
-	  const random = mulberry32$1(83);
+	  const random = mulberry32$2(83);
 	  const g = ctx.createLinearGradient(0, 0, 0, 512);
 	  g.addColorStop(0, '#4f7862');
 	  g.addColorStop(0.55, '#3c6652');
@@ -44933,7 +45217,7 @@ void main() {
 
 	function plazaTexture(renderer) {
 	  const { canvas, ctx } = surface(1024, 1024);
-	  const random = mulberry32$1(1023);
+	  const random = mulberry32$2(1023);
 	  const cx = 512;
 	  const cy = 512;
 	  ctx.fillStyle = '#d9cbb2';
@@ -44992,7 +45276,7 @@ void main() {
 	  const w = 1536;
 	  const h = 768;
 	  const { canvas, ctx } = surface(w, h);
-	  const random = mulberry32$1(1923);
+	  const random = mulberry32$2(1923);
 	  const cx = w / 2;
 	  const cy = h / 2;
 	  // grass bed
@@ -45095,7 +45379,7 @@ void main() {
 	  const w = 1024;
 	  const h = Math.round(w / ratio);
 	  const { canvas, ctx } = surface(w, h);
-	  const random = mulberry32$1(text.length * 79);
+	  const random = mulberry32$2(text.length * 79);
 	  const grad = ctx.createLinearGradient(0, 0, w, h);
 	  grad.addColorStop(0, background);
 	  grad.addColorStop(0.5, background);
@@ -45294,7 +45578,7 @@ void main() {
 	  const pxH = Math.max(256, Math.min(1024, Math.round(height * 32)));
 	  const { canvas, ctx } = surface(pxW, pxH);
 	  const mask = surface(pxW, pxH);
-	  const random = mulberry32$1(seed);
+	  const random = mulberry32$2(seed);
 	  const wall = ctx.createLinearGradient(0, 0, 0, pxH);
 	  wall.addColorStop(0, '#f1e8d7');
 	  wall.addColorStop(0.55, base);
@@ -45617,7 +45901,7 @@ void main() {
 	  const w = 1200;
 	  const h = 800; // 3:2
 	  const { canvas, ctx } = surface(w, h);
-	  const random = mulberry32$1(1923);
+	  const random = mulberry32$2(1923);
 	  const inkRed = '#b3261e';
 
 	  /* ---------------- 校徽（简化重绘） ---------------- */
@@ -48370,7 +48654,7 @@ void main() {
 	/*  Small utilities                                                    */
 	/* ------------------------------------------------------------------ */
 
-	function mulberry32(seed) {
+	function mulberry32$1(seed) {
 	  let a = seed >>> 0;
 	  return function () {
 	    a |= 0;
@@ -48381,7 +48665,7 @@ void main() {
 	  };
 	}
 
-	const random = mulberry32(1923);
+	const random = mulberry32$1(1923);
 	const rand$1 = (min, max) => min + (max - min) * random();
 
 	function box(w, h, d, material) {
@@ -50461,7 +50745,7 @@ void main() {
 	/*  纹理（CanvasTexture，浏览器内才生成）                              */
 	/* ------------------------------------------------------------------ */
 
-	function makeCanvas$2(w, h) {
+	function makeCanvas$3(w, h) {
 	  if (typeof document === 'undefined') return null;
 	  const canvas = document.createElement('canvas');
 	  canvas.width = w;
@@ -50471,7 +50755,7 @@ void main() {
 
 	/** 红瓦：横向瓦垄 + 竖向瓦缝，供曲面瓦顶使用。 */
 	function makeTerracottaMaterial(repeatX, repeatY) {
-	  const surface = makeCanvas$2(128, 128);
+	  const surface = makeCanvas$3(128, 128);
 	  if (!surface) return null;
 	  const { ctx } = surface;
 	  ctx.fillStyle = '#a8543c';
@@ -50505,7 +50789,7 @@ void main() {
 
 	/** 广场铺装：浅色方砖 + 深色点缀，接近照片里的麻石铺地。 */
 	function makePavingMaterial(repeatX, repeatY) {
-	  const surface = makeCanvas$2(128, 128);
+	  const surface = makeCanvas$3(128, 128);
 	  if (!surface) return null;
 	  const { ctx } = surface;
 	  ctx.fillStyle = '#cfc8b8';
@@ -50544,7 +50828,7 @@ void main() {
 
 	/** 「1923」门架铭牌：深色石材上浅色浮雕数字。 */
 	function makeYearTexture() {
-	  const surface = makeCanvas$2(512, 128);
+	  const surface = makeCanvas$3(512, 128);
 	  if (!surface) return null;
 	  const { ctx } = surface;
 	  ctx.clearRect(0, 0, 512, 128);
@@ -50566,7 +50850,7 @@ void main() {
 
 	/** 太湖石题字（页面 M.inscription 不可用时的兜底）。 */
 	function makeInscriptionTexture() {
-	  const surface = makeCanvas$2(640, 200);
+	  const surface = makeCanvas$3(640, 200);
 	  if (!surface) return null;
 	  const { ctx } = surface;
 	  ctx.clearRect(0, 0, 640, 200);
@@ -52448,7 +52732,7 @@ void main() {
 	/*  Canvas 纹理（浏览器内生成；Node 下返回 null 走纯色兜底）           */
 	/* ------------------------------------------------------------------ */
 
-	function makeCanvas$1(w, h) {
+	function makeCanvas$2(w, h) {
 	  if (typeof document === 'undefined') return null;
 	  const canvas = document.createElement('canvas');
 	  canvas.width = w;
@@ -52464,7 +52748,7 @@ void main() {
 
 	function tileSource() {
 	  if (TILE_SOURCE !== undefined && TILE_SOURCE !== null) return TILE_SOURCE;
-	  const surface = makeCanvas$1(128, 128);
+	  const surface = makeCanvas$2(128, 128);
 	  if (!surface) {
 	    TILE_SOURCE = null;
 	    return null;
@@ -52513,7 +52797,7 @@ void main() {
 	 * 因此这里生成**透明底 + 金色字**的贴图（与校门的整块匾额不同）。
 	 */
 	function makeLibrarySignTexture() {
-	  const surface = makeCanvas$1(1024, 256);
+	  const surface = makeCanvas$2(1024, 256);
 	  if (!surface) return null;
 	  const { ctx } = surface;
 	  ctx.clearRect(0, 0, 1024, 256);
@@ -53654,7 +53938,7 @@ void main() {
 	new Vector3(0, 1, 0);
 	// 随机数用于植被 / 人物 / 飘落物等细节；buildCampus 开头会重置种子，
 	// 保证重复 build / 切换校区时得到同一套布局（确定性）。
-	let rng = mulberry32(20261019);
+	let rng = mulberry32$1(20261019);
 	const rand = (a, b) => a + (b - a) * rng();
 	const deg = MathUtils.degToRad;
 
@@ -53878,7 +54162,7 @@ void main() {
 	  // 场景构建（府城视觉不变）。未来其他校区应通过 options.landmarkBuilders 或
 	  // campus.scene 配置注入自己的重点建筑模型与主题材质，而不是改本文件。
 	  // 每次 build 重置随机种子，保证重复 build / dispose 后的布局确定性。
-	  rng = mulberry32(20261019);
+	  rng = mulberry32$1(20261019);
 
 	  let disposed = false;
 	  const tex = makeTextures(renderer);
@@ -58047,7 +58331,7 @@ void main() {
 	  return current + (target - current) * (1 - Math.exp(-lambda * dt));
 	}
 
-	function makeCanvas(size, draw) {
+	function makeCanvas$1(size, draw) {
 	  const c = document.createElement('canvas');
 	  c.width = size;
 	  c.height = size;
@@ -58061,7 +58345,7 @@ void main() {
 
 	/** 雪花贴图：柔光圆点 + 极淡的六角晶枝，避免“廉价大圆盘”。 */
 	function makeSnowflakeTexture() {
-	  return makeCanvas(64, (g, s) => {
+	  return makeCanvas$1(64, (g, s) => {
 	    const c = s / 2;
 	    const glow = g.createRadialGradient(c, c, 0, c, c, c);
 	    glow.addColorStop(0, 'rgba(255,255,255,1)');
@@ -58099,7 +58383,7 @@ void main() {
 
 	/** 地面积雪用的极低对比噪声贴图，避免大面积纯白显得“平”。 */
 	function makeSnowNoiseTexture() {
-	  const t = makeCanvas(128, (g, s) => {
+	  const t = makeCanvas$1(128, (g, s) => {
 	    g.fillStyle = '#f4f7f6';
 	    g.fillRect(0, 0, s, s);
 	    for (let i = 0; i < 420; i += 1) {
@@ -59613,6 +59897,581 @@ void main() {
 	  };
 	}
 
+	/**
+	 * 电子宠物「海海」——海南中学校园吉祥物（虎鲸）的程序化三维再现。
+	 *
+	 * 设计原则：
+	 * - 零外部素材：身体/背鳍/尾鳍/帽子/校徽全部用 Three.js 基础几何 + Canvas 贴图拼成，
+	 *   和整站「程序当美术」的做法一致；
+	 * - 不抢主场景：宠物挂在相机前方右下角，随视角移动，不参与射线拾取；
+	 * - 轻量状态机：饱腹/精力/亲密度按真实时间衰减，可抚摸、喂食、睡觉、隐藏；
+	 *   状态存 localStorage，下次打开继续养；
+	 * - 确定性：视觉回归（?still=1）下不读存档、不衰减、只渲染一帧，保证截图可复现。
+	 *
+	 * 形态参考：海南中学吉祥物虎鲸「海海」的公开形象（蓝色虎鲸、白色肚皮、校徽棒球帽），
+	 * 为写意程序化还原，非官方素材。
+	 */
+
+	const STORAGE_KEY = 'hainan-pet-haibai-v1';
+	const DAY_MS = 24 * 60 * 60 * 1000;
+
+	const BODY_BLUE = 0x2f86c8;
+	const BODY_DEEP = 0x1f6fa8;
+	const BELLY = 0xf6f2e7;
+	const CAP_BLUE = 0x1d5fa8;
+	const INK = 0x1b2a33;
+
+	const MOODS = {
+	  happy: { label: '超开心', en: 'HAPPY' },
+	  idle: { label: '悠闲巡游', en: 'CRUISING' },
+	  hungry: { label: '肚子饿了', en: 'HUNGRY' },
+	  sleepy: { label: '有点困', en: 'SLEEPY' },
+	  sleeping: { label: '呼呼大睡', en: 'SLEEPING' }
+	};
+
+	function clamp01(value) {
+	  return Math.max(0, Math.min(100, value));
+	}
+
+	function mulberry32(seed) {
+	  let a = seed >>> 0;
+	  return () => {
+	    a = (a + 0x6d2b79f5) | 0;
+	    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+	    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+	    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	  };
+	}
+
+	function makeCanvas(w, h) {
+	  const canvas = document.createElement('canvas');
+	  canvas.width = w;
+	  canvas.height = h;
+	  return { canvas, ctx: canvas.getContext('2d') };
+	}
+
+	function badgeTexture() {
+	  const { canvas, ctx } = makeCanvas(128, 128);
+	  ctx.clearRect(0, 0, 128, 128);
+	  ctx.beginPath();
+	  ctx.arc(64, 64, 58, 0, Math.PI * 2);
+	  ctx.fillStyle = '#f7f3e6';
+	  ctx.fill();
+	  ctx.lineWidth = 7;
+	  ctx.strokeStyle = '#1d5fa8';
+	  ctx.stroke();
+	  ctx.beginPath();
+	  ctx.arc(64, 64, 45, 0, Math.PI * 2);
+	  ctx.lineWidth = 3;
+	  ctx.strokeStyle = '#c0392b';
+	  ctx.stroke();
+	  ctx.fillStyle = '#1d5fa8';
+	  ctx.font = '700 46px "Songti SC", "STSong", serif';
+	  ctx.textAlign = 'center';
+	  ctx.textBaseline = 'middle';
+	  ctx.fillText('海中', 64, 66);
+	  const texture = new CanvasTexture(canvas);
+	  texture.colorSpace = SRGBColorSpace;
+	  texture.anisotropy = 4;
+	  return texture;
+	}
+
+	function heartTexture() {
+	  const { canvas, ctx } = makeCanvas(64, 64);
+	  ctx.fillStyle = '#e8707f';
+	  ctx.beginPath();
+	  ctx.moveTo(32, 56);
+	  ctx.bezierCurveTo(2, 34, 8, 10, 32, 22);
+	  ctx.bezierCurveTo(56, 10, 62, 34, 32, 56);
+	  ctx.fill();
+	  const texture = new CanvasTexture(canvas);
+	  texture.colorSpace = SRGBColorSpace;
+	  return texture;
+	}
+
+	function standard(color, extra = {}) {
+	  return new MeshStandardMaterial({
+	    color,
+	    roughness: 0.62,
+	    metalness: 0.02,
+	    ...extra
+	  });
+	}
+
+	function buildOrca() {
+	  const group = new Group();
+	  group.name = 'pet-haibai';
+
+	  const blue = standard(BODY_BLUE);
+	  const deepBlue = standard(BODY_DEEP, { roughness: 0.55 });
+	  const white = standard(BELLY, { roughness: 0.72 });
+	  const capBlue = standard(CAP_BLUE, { roughness: 0.5 });
+	  const ink = standard(INK, { roughness: 0.4 });
+	  const pink = standard(0xf0a5ad, { roughness: 0.8 });
+	  const eyeWhite = standard(0xfdfbf2, { roughness: 0.35 });
+	  const nose = standard(0x2a3b45, { roughness: 0.5 });
+
+	  const bodyGroup = new Group();
+	  group.add(bodyGroup);
+
+	  const body = new Mesh(new SphereGeometry(0.5, 28, 22), blue);
+	  body.scale.set(1.04, 0.9, 1.2);
+	  bodyGroup.add(body);
+
+	  const belly = new Mesh(new SphereGeometry(0.5, 24, 18), white);
+	  belly.scale.set(0.8, 0.64, 0.7);
+	  belly.position.set(0, -0.16, 0.24);
+	  bodyGroup.add(belly);
+
+	  // 眼白 / 瞳孔 / 高光
+	  const eyes = [];
+	  for (const side of [-1, 1]) {
+	    const eye = new Group();
+	    eye.position.set(side * 0.16, 0.17, 0.5);
+	    eye.rotation.y = side * 0.12;
+	    const whitePart = new Mesh(new SphereGeometry(0.062, 18, 14), eyeWhite);
+	    whitePart.scale.set(1, 1.1, 0.62);
+	    const pupil = new Mesh(new SphereGeometry(0.036, 14, 12), ink);
+	    pupil.position.set(side * 0.004, -2e-3, 0.035);
+	    pupil.scale.set(1, 1.05, 0.6);
+	    const shine = new Mesh(new SphereGeometry(0.012, 8, 8), eyeWhite);
+	    shine.position.set(side * 0.012, 0.016, 0.06);
+	    eye.add(whitePart, pupil, shine);
+	    bodyGroup.add(eye);
+	    eyes.push(eye);
+	  }
+
+	  // 腮红
+	  for (const side of [-1, 1]) {
+	    const cheek = new Mesh(new CircleGeometry(0.045, 16), pink);
+	    cheek.position.set(side * 0.255, 0.02, 0.47);
+	    cheek.rotation.y = side * 0.35;
+	    bodyGroup.add(cheek);
+	  }
+
+	  // 嘴（小弧线）
+	  const mouthCurve = new QuadraticBezierCurve3(
+	    new Vector3(-0.07, -0.045, 0.535),
+	    new Vector3(0, -0.095, 0.555),
+	    new Vector3(0.07, -0.045, 0.535)
+	  );
+	  const mouth = new Mesh(new TubeGeometry(mouthCurve, 12, 0.011, 6, false), nose);
+	  bodyGroup.add(mouth);
+
+	  // 背鳍
+	  const dorsal = new Mesh(new ConeGeometry(0.15, 0.4, 5), deepBlue);
+	  dorsal.scale.set(0.42, 1, 1);
+	  dorsal.position.set(0, 0.42, -0.06);
+	  dorsal.rotation.x = -0.22;
+	  bodyGroup.add(dorsal);
+
+	  // 胸鳍
+	  const fins = [];
+	  for (const side of [-1, 1]) {
+	    const fin = new Mesh(new ConeGeometry(0.1, 0.34, 4), deepBlue);
+	    fin.scale.set(0.4, 1, 1);
+	    fin.position.set(side * 0.46, -0.1, 0.14);
+	    fin.rotation.z = side * 0.9;
+	    fin.rotation.y = side * 0.25;
+	    bodyGroup.add(fin);
+	    fins.push(fin);
+	  }
+
+	  // 尾鳍（两片，通过尾部 group 摆动）
+	  const tail = new Group();
+	  tail.position.set(0, 0.02, -0.58);
+	  for (const side of [-1, 1]) {
+	    const fluke = new Mesh(new SphereGeometry(0.16, 14, 10), deepBlue);
+	    fluke.scale.set(1.5, 0.16, 0.62);
+	    fluke.position.set(side * 0.14, 0, -0.04);
+	    fluke.rotation.y = side * 0.3;
+	    tail.add(fluke);
+	  }
+	  bodyGroup.add(tail);
+
+	  // 校徽棒球帽
+	  const cap = new Group();
+	  cap.position.set(0, 0.33, 0.03);
+	  cap.rotation.x = -0.08;
+	  const crown = new Mesh(
+	    new SphereGeometry(0.34, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2),
+	    capBlue
+	  );
+	  crown.scale.set(1.06, 0.72, 1.06);
+	  const brim = new Mesh(new CylinderGeometry(0.33, 0.33, 0.028, 24, 1, false, 0, Math.PI), capBlue);
+	  brim.position.set(0, 0.005, 0.22);
+	  brim.rotation.y = Math.PI / 2;
+	  brim.rotation.x = -0.04;
+	  const badge = new Mesh(new CircleGeometry(0.1, 24), new MeshStandardMaterial({
+	    map: badgeTexture(), transparent: true, roughness: 0.5, metalness: 0.02
+	  }));
+	  badge.position.set(0, 0.16, 0.355);
+	  badge.rotation.x = -0.12;
+	  cap.add(crown, brim, badge);
+	  bodyGroup.add(cap);
+
+	  // 肚皮上的小铭牌：让吉祥物和学校产生身份关联
+	  const bellyBadge = new Mesh(new CircleGeometry(0.075, 20), new MeshStandardMaterial({
+	    map: badgeTexture(), transparent: true, roughness: 0.6
+	  }));
+	  bellyBadge.position.set(0, -0.2, 0.585);
+	  bellyBadge.scale.set(1, 0.92, 1);
+	  bellyBadge.rotation.x = -0.18;
+	  bodyGroup.add(bellyBadge);
+
+	  // 被抚摸时飘出的爱心
+	  const heartMat = new SpriteMaterial({ map: heartTexture(), transparent: true, depthTest: false });
+	  const hearts = [];
+	  for (let i = 0; i < 3; i += 1) {
+	    const sprite = new Sprite(heartMat.clone());
+	    sprite.scale.setScalar(0.16);
+	    sprite.visible = false;
+	    group.add(sprite);
+	    hearts.push({ sprite, life: 0, x: 0, y: 0, phase: 0 });
+	  }
+
+	  return { group, bodyGroup, eyes, fins, tail, cap, hearts };
+	}
+
+	function createPet({ camera, renderer, scene, reducedMotion = false, still = false } = {}) {
+	  const orca = buildOrca();
+	  const group = orca.group;
+	  group.visible = true;
+	  scene.add(group);
+
+	  const storage = (() => {
+	    try {
+	      const probe = '__pet_probe__';
+	      window.localStorage.setItem(probe, '1');
+	      window.localStorage.removeItem(probe);
+	      return window.localStorage;
+	    } catch {
+	      return null;
+	    }
+	  })();
+
+	  const random = mulberry32(20261112);
+	  const baseState = {
+	    hunger: 78,
+	    energy: 72,
+	    affection: 46,
+	    sleeping: false,
+	    visible: true,
+	    lastSeen: Date.now()
+	  };
+
+	  function readState() {
+	    if (still || !storage) return { ...baseState, lastSeen: Date.now() };
+	    try {
+	      const raw = storage.getItem(STORAGE_KEY);
+	      if (!raw) return { ...baseState, lastSeen: Date.now() };
+	      const parsed = JSON.parse(raw);
+	      return {
+	        hunger: clamp01(Number(parsed.hunger) || baseState.hunger),
+	        energy: clamp01(Number(parsed.energy) || baseState.energy),
+	        affection: clamp01(Number(parsed.affection) || baseState.affection),
+	        sleeping: Boolean(parsed.sleeping),
+	        visible: parsed.visible !== false,
+	        lastSeen: Number(parsed.lastSeen) || Date.now()
+	      };
+	    } catch {
+	      return { ...baseState, lastSeen: Date.now() };
+	    }
+	  }
+
+	  const state = readState();
+
+	  function applyRealTimeDecay() {
+	    if (still) return;
+	    const elapsed = Math.min(Date.now() - state.lastSeen, 3 * DAY_MS) / 1000;
+	    if (elapsed <= 0) return;
+	    state.hunger = clamp01(state.hunger - elapsed / 180);
+	    state.energy = clamp01(state.energy - (state.sleeping ? elapsed / 900 : elapsed / 240));
+	    state.affection = clamp01(state.affection - elapsed / 480);
+	    if (state.sleeping && state.energy > 96) state.sleeping = false;
+	    state.lastSeen = Date.now();
+	  }
+	  applyRealTimeDecay();
+
+	  function save() {
+	    if (still || !storage) return;
+	    state.lastSeen = Date.now();
+	    try {
+	      storage.setItem(STORAGE_KEY, JSON.stringify({
+	        hunger: state.hunger,
+	        energy: state.energy,
+	        affection: state.affection,
+	        sleeping: state.sleeping,
+	        visible: state.visible,
+	        lastSeen: state.lastSeen
+	      }));
+	    } catch {
+	      /* 忽略存储失败（隐私模式等） */
+	    }
+	  }
+
+	  function moodOf() {
+	    if (state.sleeping) return MOODS.sleeping;
+	    if (state.hunger < 24) return MOODS.hungry;
+	    if (state.energy < 22) return MOODS.sleepy;
+	    if (state.affection > 74) return MOODS.happy;
+	    return MOODS.idle;
+	  }
+
+	  // ---- 交互与动画状态 ----
+	  const cooldowns = { pet: 0, feed: 0 };
+	  let time = 0;
+	  let blinkIn = 2.4;
+	  let blink = 0;
+	  let bounce = 0;
+	  let spin = 0;
+	  let heartBurst = 0;
+	  let suppressed = false;
+	  let disposed = false;
+
+	  function pet() {
+	    if (disposed) return false;
+	    if (cooldowns.pet > 0) return false;
+	    cooldowns.pet = 1.1;
+	    state.affection = clamp01(state.affection + 7);
+	    state.energy = clamp01(state.energy - 0.6);
+	    state.sleeping = false;
+	    bounce = 1;
+	    heartBurst = 1;
+	    spin = reducedMotion ? 0 : 1;
+	    save();
+	    chirp(660, 0.09, 0.03);
+	    setTimeout(() => chirp(880, 0.08, 0.024), 90);
+	    return true;
+	  }
+
+	  function feed() {
+	    if (disposed) return false;
+	    if (cooldowns.feed > 0) return false;
+	    cooldowns.feed = 4;
+	    state.hunger = clamp01(state.hunger + 20);
+	    state.energy = clamp01(state.energy + 4);
+	    state.affection = clamp01(state.affection + 2);
+	    state.sleeping = false;
+	    bounce = 0.7;
+	    save();
+	    chirp(520, 0.12, 0.03);
+	    setTimeout(() => chirp(700, 0.1, 0.026), 110);
+	    return true;
+	  }
+
+	  function toggleSleep() {
+	    if (disposed) return state.sleeping;
+	    state.sleeping = !state.sleeping;
+	    if (!state.sleeping) state.energy = clamp01(state.energy + 2);
+	    save();
+	    return state.sleeping;
+	  }
+
+	  function setVisible(next) {
+	    state.visible = Boolean(next);
+	    group.visible = state.visible && !suppressed;
+	    save();
+	    return state.visible;
+	  }
+
+	  function setSuppressed(next) {
+	    suppressed = Boolean(next);
+	    group.visible = state.visible && !suppressed;
+	  }
+
+	  function reset() {
+	    Object.assign(state, { ...baseState, lastSeen: Date.now() });
+	    save();
+	  }
+
+	  let audioCtx = null;
+	  function chirp(freq, duration, gain) {
+	    try {
+	      const Ctx = window.AudioContext || window.webkitAudioContext;
+	      if (!Ctx) return;
+	      if (!audioCtx) audioCtx = new Ctx();
+	      if (audioCtx.state === 'suspended') audioCtx.resume();
+	      const osc = audioCtx.createOscillator();
+	      const amp = audioCtx.createGain();
+	      const now = audioCtx.currentTime;
+	      osc.type = 'sine';
+	      osc.frequency.setValueAtTime(freq, now);
+	      osc.frequency.exponentialRampToValueAtTime(freq * 1.18, now + duration);
+	      amp.gain.setValueAtTime(0.0001, now);
+	      amp.gain.exponentialRampToValueAtTime(gain, now + 0.015);
+	      amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+	      osc.connect(amp).connect(audioCtx.destination);
+	      osc.start(now);
+	      osc.stop(now + duration + 0.02);
+	    } catch {
+	      /* 音频失败不影响宠物 */
+	    }
+	  }
+
+	  const raycaster = new Raycaster();
+	  const ndc = new Vector2();
+	  const tmpVec = new Vector3();
+
+	  function place() {
+	    const distance = 2.55;
+	    const halfH = Math.tan(MathUtils.degToRad(camera.fov / 2)) * distance;
+	    const halfW = halfH * (camera.aspect || 1);
+	    const narrow = (camera.aspect || 1) < 0.9;
+	    const x = halfW * (narrow ? 0.42 : 0.62);
+	    const y = halfH * (narrow ? 0.05 : -0.22);
+	    tmpVec.set(x, y, -distance).applyQuaternion(camera.quaternion);
+	    group.position.copy(camera.position).add(tmpVec);
+	    group.quaternion.copy(camera.quaternion);
+	    const scale = (narrow ? 0.4 : 0.42) * halfH;
+	    group.scale.setScalar(scale);
+	  }
+
+	  function update(delta) {
+	    if (disposed) return;
+	    time += delta;
+	    cooldowns.pet = Math.max(0, cooldowns.pet - delta);
+	    cooldowns.feed = Math.max(0, cooldowns.feed - delta);
+	    if (!still) {
+	      state.hunger = clamp01(state.hunger - delta / 180);
+	      const sleeping = state.sleeping;
+	      state.energy = clamp01(state.energy + delta * (sleeping ? 1.6 : -1 / 240));
+	      state.affection = clamp01(state.affection - delta / 480);
+	      if (state.energy > 96 && sleeping) state.sleeping = false;
+	    }
+	    place();
+
+	    // 呼吸 / 漂浮
+	    const mood = moodOf();
+	    const rate = mood === MOODS.sleeping ? 0.6 : mood === MOODS.happy ? 3.2 : 2.0;
+	    const bob = Math.sin(time * rate) * (mood === MOODS.sleeping ? 0.012 : 0.028);
+	    orca.bodyGroup.position.y = bob;
+	    orca.bodyGroup.rotation.z = Math.sin(time * 1.1) * 0.035;
+	    orca.bodyGroup.rotation.y = Math.sin(time * 0.6) * 0.12;
+	    orca.tail.rotation.y = Math.sin(time * (mood === MOODS.happy ? 7 : 4)) * 0.35;
+	    orca.fins.forEach((fin, index) => {
+	      const side = index === 0 ? -1 : 1;
+	      fin.rotation.z = side * (0.9 + Math.sin(time * 2.4 + index) * 0.12);
+	    });
+	    orca.cap.rotation.z = Math.sin(time * 0.9) * 0.03;
+
+	    // 眨眼 / 睡觉闭眼
+	    if (mood === MOODS.sleeping) {
+	      blink = 1;
+	    } else {
+	      blinkIn -= delta;
+	      if (blinkIn <= 0) {
+	        blink = 0.16;
+	        blinkIn = 2.4 + random() * 3.4;
+	      }
+	      blink = Math.max(0, blink - delta);
+	    }
+	    const lid = mood === MOODS.sleeping || blink > 0 ? 0.12 : 1;
+	    orca.eyes.forEach((eye) => {
+	      eye.scale.y = MathUtils.lerp(eye.scale.y, lid, 0.35);
+	    });
+
+	    // 被抚摸的弹跳与转圈
+	    bounce = Math.max(0, bounce - delta * 2.2);
+	    const hop = Math.sin((1 - bounce) * Math.PI) * bounce * 0.06;
+	    group.position.y += hop;
+	    if (spin > 0) {
+	      spin = Math.max(0, spin - delta * 1.8);
+	      group.rotateY((1 - spin) * 0.02);
+	    }
+
+	    // 爱心
+	    if (heartBurst > 0) heartBurst = Math.max(0, heartBurst - delta);
+	    orca.hearts.forEach((heart, index) => {
+	      if (heartBurst > 0 && heart.life <= 0) {
+	        heart.life = 1;
+	        heart.x = (index - 1) * 0.16 + (random() - 0.5) * 0.06;
+	        heart.y = 0.05 + random() * 0.06;
+	        heart.phase = random() * Math.PI * 2;
+	      }
+	      if (heart.life > 0) {
+	        heart.life = Math.max(0, heart.life - delta * 0.85);
+	        const age = 1 - heart.life;
+	        heart.sprite.visible = true;
+	        heart.sprite.position.set(
+	          heart.x + Math.sin(age * 5 + heart.phase) * 0.05,
+	          heart.y + age * 0.5,
+	          0.15
+	        );
+	        heart.sprite.scale.setScalar(0.14 + age * 0.1);
+	        heart.sprite.material.opacity = Math.min(1, heart.life * 2.2);
+	      } else {
+	        heart.sprite.visible = false;
+	      }
+	    });
+
+	    if (!still && Math.round(time * 2) % 30 === 0) save();
+	  }
+
+	  function hitTest(raycast, ndcVec) {
+	    if (disposed || !group.visible) return false;
+	    raycaster.setFromCamera(ndcVec || ndc, camera);
+	    return raycaster.intersectObject(group, true).length > 0;
+	  }
+
+	  function getSnapshot() {
+	    const mood = moodOf();
+	    return {
+	      hunger: Math.round(state.hunger),
+	      energy: Math.round(state.energy),
+	      affection: Math.round(state.affection),
+	      sleeping: state.sleeping,
+	      visible: state.visible,
+	      mood: { ...mood },
+	      cooldowns: { pet: cooldowns.pet, feed: cooldowns.feed }
+	    };
+	  }
+
+	  function dispose() {
+	    if (disposed) return;
+	    disposed = true;
+	    scene.remove(group);
+	    group.traverse((object) => {
+	      if (object.geometry) object.geometry.dispose();
+	      if (object.material) {
+	        const materials = Array.isArray(object.material) ? object.material : [object.material];
+	        for (const material of materials) {
+	          if (material.map && material.map.dispose) material.map.dispose();
+	          material.dispose();
+	        }
+	      }
+	    });
+	    if (audioCtx) {
+	      try { audioCtx.close(); } catch { /* noop */ }
+	      audioCtx = null;
+	    }
+	  }
+
+	  function onPageHide() {
+	    save();
+	  }
+	  if (typeof window !== 'undefined' && !still) {
+	    window.addEventListener('pagehide', onPageHide);
+	    window.addEventListener('visibilitychange', () => {
+	      if (document.hidden) save();
+	    });
+	  }
+
+	  return {
+	    group,
+	    update,
+	    hitTest,
+	    getSnapshot,
+	    pet,
+	    feed,
+	    toggleSleep,
+	    setVisible,
+	    setSuppressed,
+	    reset,
+	    dispose
+	  };
+	}
+
 	/* ------------------------------------------------------------------ */
 	/*  Elements & state                                                   */
 	/* ------------------------------------------------------------------ */
@@ -59738,6 +60597,9 @@ void main() {
 	let campus;
 	let weather;
 	let film;
+	let pet;
+	let petPanelOpen = false;
+	let petHudTick = 0;
 	let filmUiCache = { index: -1, seconds: -1, duration: -1};
 	let raycaster;
 	let pointerNdc;
@@ -59926,6 +60788,8 @@ void main() {
 	    applyWeather(resolveInitialWeather(), { silent: true });
 	    // 影片控制器：室内机位来自 campus.interiorCameras，切校区后重建。
 	    film = createFilmLayer();
+	    // 电子宠物「海海」：独立于校园场景，挂在相机前方；?still=1 下确定性单帧。
+	    pet = createPet({ camera, renderer, scene, reducedMotion, still: STILL });
 	    setLoadingState(76, '正在栽植百年榄仁树');
 	    await nextFrame();
 	    await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -59935,6 +60799,9 @@ void main() {
 	    if (hasCustomCursor) document.documentElement.classList.add('has-custom-cursor');
 	    setupUI();
 	    setupEvents();
+	    setupPetUI();
+	    if (params.get('pet') === 'off') pet?.setVisible(false);
+	    if (params.get('pet') === 'reset') pet?.reset();
 	    setupIntroCamera();
 	    resize();
 	    applyHour(resolveInitialHour(), { silent: true });
@@ -59950,6 +60817,7 @@ void main() {
 	      get weather() { return weather; },
 	      get weatherId() { return state.weatherId; },
 	      get film() { return film; },
+	      get pet() { return pet; },
 	      setWeather: (id) => applyWeather(id),
 	      startFilm: (options = {}) => startFilm(options),
 	      stopFilm: (options = {}) => stopFilm(options),
@@ -60202,6 +61070,84 @@ void main() {
 	/*  Events                                                             */
 	/* ------------------------------------------------------------------ */
 
+	/* ------------------------------------------------------------------ */
+	/*  Pet UI                                                             */
+	/* ------------------------------------------------------------------ */
+
+	function setupPetUI() {
+	  const button = $('#petButton');
+	  const panel = $('#petPanel');
+	  if (!button || !panel || !pet) return;
+
+	  button.addEventListener('click', () => {
+	    markInteracted();
+	    if (!pet.getSnapshot().visible) {
+	      pet.setVisible(true);
+	      showToast('海海又游回来啦');
+	    }
+	    setPetPanel(!petPanelOpen);
+	  });
+	  $('#petClose')?.addEventListener('click', () => setPetPanel(false));
+	  $('#petTouch')?.addEventListener('click', () => {
+	    if (pet.pet()) showToast('海海很喜欢被摸头');
+	    refreshPetHud();
+	  });
+	  $('#petFeed')?.addEventListener('click', () => {
+	    if (pet.feed()) showToast('海海吃了一条小鱼');
+	    refreshPetHud();
+	  });
+	  $('#petSleep')?.addEventListener('click', () => {
+	    pet.toggleSleep();
+	    refreshPetHud();
+	  });
+	  $('#petHide')?.addEventListener('click', () => {
+	    pet.setVisible(false);
+	    setPetPanel(false);
+	    showToast('海海潜入水底了');
+	  });
+	  setPetPanel(false);
+	  refreshPetHud();
+	}
+
+	function setPetPanel(open) {
+	  const panel = $('#petPanel');
+	  const button = $('#petButton');
+	  if (!panel) return;
+	  petPanelOpen = Boolean(open);
+	  panel.hidden = !petPanelOpen;
+	  button?.classList.toggle('is-on', petPanelOpen);
+	  button?.setAttribute('aria-pressed', String(petPanelOpen));
+	  if (petPanelOpen) refreshPetHud();
+	}
+
+	function refreshPetHud() {
+	  if (!pet) return;
+	  const snapshot = pet.getSnapshot();
+	  const mood = $('#petMood');
+	  if (mood) mood.textContent = `${snapshot.mood.label} · ${snapshot.mood.en}`;
+	  setPetBar('#petHunger', '#petHungerVal', snapshot.hunger);
+	  setPetBar('#petEnergy', '#petEnergyVal', snapshot.energy);
+	  setPetBar('#petAffection', '#petAffectionVal', snapshot.affection);
+	  const sleep = $('#petSleep');
+	  if (sleep) sleep.textContent = snapshot.sleeping ? '叫醒' : '睡觉';
+	  const touch = $('#petTouch');
+	  if (touch) touch.disabled = snapshot.cooldowns.pet > 0;
+	  const feed = $('#petFeed');
+	  if (feed) feed.disabled = snapshot.cooldowns.feed > 0;
+	  const button = $('#petButton');
+	  if (button) {
+	    button.classList.toggle('is-off', !snapshot.visible);
+	    button.setAttribute('aria-label', snapshot.visible ? '电子宠物 海海' : '电子宠物 海海（已隐藏）');
+	  }
+	}
+
+	function setPetBar(barSelector, valueSelector, value) {
+	  const bar = $(barSelector);
+	  if (bar) bar.style.width = `${value}%`;
+	  const label = $(valueSelector);
+	  if (label) label.textContent = String(value);
+	}
+
 	function setupEvents() {
 	  window.addEventListener('resize', resize);
 	  // 真正离开页面时释放天气层；bfcache 恢复（persisted）时不销毁。
@@ -60248,8 +61194,9 @@ void main() {
 	    const spot = pickSpot(event.clientX, event.clientY);
 	    if (spot !== state.hoveredSpot) {
 	      state.hoveredSpot = spot;
-	      cursorEl.classList.toggle('is-hover', Boolean(spot));
 	    }
+	    const overPet = Boolean(pet?.hitTest(null, pointerNdc));
+	    cursorEl.classList.toggle('is-hover', Boolean(spot) || overPet);
 	  });
 
 	  canvas.addEventListener('pointerleave', () => {
@@ -60903,6 +61850,13 @@ void main() {
 	}
 
 	function handleCanvasClick(clientX, clientY) {
+	  setPointerNdc(clientX, clientY);
+	  if (pet?.hitTest(null, pointerNdc)) {
+	    if (pet.pet()) showToast('海海很喜欢被摸头');
+	    if (!petPanelOpen) setPetPanel(true);
+	    refreshPetHud();
+	    return;
+	  }
 	  const spot = pickSpot(clientX, clientY);
 	  if (spot) {
 	    stopTour();
@@ -61216,6 +62170,7 @@ void main() {
 	  }
 	  stopTour();
 	  if (state.activeId) closeSpot({ stop: false });
+	  pet?.setSuppressed(true);
 	  cancelCameraTween();
 	  filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
 	  // 移动端：把场景卡片滚到视口内，避免影片在屏幕外播放。
@@ -61239,6 +62194,7 @@ void main() {
 	  if (!film?.isPlaying?.()) return false;
 	  const wasRecording = state.filmRecording;
 	  film.stop();
+	  pet?.setSuppressed(false);
 	  state.filmActive = false;
 	  state.filmRecording = false;
 	  app.classList.remove('is-filming');
@@ -62018,6 +62974,11 @@ void main() {
 	  }
 
 	  updateMarkers();
+	  if (pet) {
+	    pet.update(delta);
+	    petHudTick += 1;
+	    if (petHudTick % 15 === 0) refreshPetHud();
+	  }
 
 	  if (renderer) renderer.render(scene, camera);
 

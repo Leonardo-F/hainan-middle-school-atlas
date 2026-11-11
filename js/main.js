@@ -9,6 +9,7 @@ import {
 } from './campuses.js';
 import { WEATHERS, createWeather } from './weather.js';
 import { createFilm, FILM_TITLE } from './film.js';
+import { createPet } from './pet.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -135,6 +136,9 @@ let controls;
 let campus;
 let weather;
 let film;
+let pet;
+let petPanelOpen = false;
+let petHudTick = 0;
 let filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
 let raycaster;
 let pointerNdc;
@@ -324,6 +328,8 @@ async function boot() {
     applyWeather(resolveInitialWeather(), { silent: true });
     // 影片控制器：室内机位来自 campus.interiorCameras，切校区后重建。
     film = createFilmLayer();
+    // 电子宠物「海海」：独立于校园场景，挂在相机前方；?still=1 下确定性单帧。
+    pet = createPet({ camera, renderer, scene, reducedMotion, still: STILL });
     setLoadingState(76, '正在栽植百年榄仁树');
     await nextFrame();
     await wait(reducedMotion || params.get('nointro') ? 10 : 170);
@@ -333,6 +339,9 @@ async function boot() {
     if (hasCustomCursor) document.documentElement.classList.add('has-custom-cursor');
     setupUI();
     setupEvents();
+    setupPetUI();
+    if (params.get('pet') === 'off') pet?.setVisible(false);
+    if (params.get('pet') === 'reset') pet?.reset();
     setupIntroCamera();
     resize();
     applyHour(resolveInitialHour(), { silent: true });
@@ -348,6 +357,7 @@ async function boot() {
       get weather() { return weather; },
       get weatherId() { return state.weatherId; },
       get film() { return film; },
+      get pet() { return pet; },
       setWeather: (id) => applyWeather(id),
       startFilm: (options = {}) => startFilm(options),
       stopFilm: (options = {}) => stopFilm(options),
@@ -600,6 +610,84 @@ function setupUI() {
 /*  Events                                                             */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/*  Pet UI                                                             */
+/* ------------------------------------------------------------------ */
+
+function setupPetUI() {
+  const button = $('#petButton');
+  const panel = $('#petPanel');
+  if (!button || !panel || !pet) return;
+
+  button.addEventListener('click', () => {
+    markInteracted();
+    if (!pet.getSnapshot().visible) {
+      pet.setVisible(true);
+      showToast('海海又游回来啦');
+    }
+    setPetPanel(!petPanelOpen);
+  });
+  $('#petClose')?.addEventListener('click', () => setPetPanel(false));
+  $('#petTouch')?.addEventListener('click', () => {
+    if (pet.pet()) showToast('海海很喜欢被摸头');
+    refreshPetHud();
+  });
+  $('#petFeed')?.addEventListener('click', () => {
+    if (pet.feed()) showToast('海海吃了一条小鱼');
+    refreshPetHud();
+  });
+  $('#petSleep')?.addEventListener('click', () => {
+    pet.toggleSleep();
+    refreshPetHud();
+  });
+  $('#petHide')?.addEventListener('click', () => {
+    pet.setVisible(false);
+    setPetPanel(false);
+    showToast('海海潜入水底了');
+  });
+  setPetPanel(false);
+  refreshPetHud();
+}
+
+function setPetPanel(open) {
+  const panel = $('#petPanel');
+  const button = $('#petButton');
+  if (!panel) return;
+  petPanelOpen = Boolean(open);
+  panel.hidden = !petPanelOpen;
+  button?.classList.toggle('is-on', petPanelOpen);
+  button?.setAttribute('aria-pressed', String(petPanelOpen));
+  if (petPanelOpen) refreshPetHud();
+}
+
+function refreshPetHud() {
+  if (!pet) return;
+  const snapshot = pet.getSnapshot();
+  const mood = $('#petMood');
+  if (mood) mood.textContent = `${snapshot.mood.label} · ${snapshot.mood.en}`;
+  setPetBar('#petHunger', '#petHungerVal', snapshot.hunger);
+  setPetBar('#petEnergy', '#petEnergyVal', snapshot.energy);
+  setPetBar('#petAffection', '#petAffectionVal', snapshot.affection);
+  const sleep = $('#petSleep');
+  if (sleep) sleep.textContent = snapshot.sleeping ? '叫醒' : '睡觉';
+  const touch = $('#petTouch');
+  if (touch) touch.disabled = snapshot.cooldowns.pet > 0;
+  const feed = $('#petFeed');
+  if (feed) feed.disabled = snapshot.cooldowns.feed > 0;
+  const button = $('#petButton');
+  if (button) {
+    button.classList.toggle('is-off', !snapshot.visible);
+    button.setAttribute('aria-label', snapshot.visible ? '电子宠物 海海' : '电子宠物 海海（已隐藏）');
+  }
+}
+
+function setPetBar(barSelector, valueSelector, value) {
+  const bar = $(barSelector);
+  if (bar) bar.style.width = `${value}%`;
+  const label = $(valueSelector);
+  if (label) label.textContent = String(value);
+}
+
 function setupEvents() {
   window.addEventListener('resize', resize);
   // 真正离开页面时释放天气层；bfcache 恢复（persisted）时不销毁。
@@ -646,8 +734,9 @@ function setupEvents() {
     const spot = pickSpot(event.clientX, event.clientY);
     if (spot !== state.hoveredSpot) {
       state.hoveredSpot = spot;
-      cursorEl.classList.toggle('is-hover', Boolean(spot));
     }
+    const overPet = Boolean(pet?.hitTest(null, pointerNdc));
+    cursorEl.classList.toggle('is-hover', Boolean(spot) || overPet);
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -1301,6 +1390,13 @@ function pickSpot(clientX, clientY) {
 }
 
 function handleCanvasClick(clientX, clientY) {
+  setPointerNdc(clientX, clientY);
+  if (pet?.hitTest(null, pointerNdc)) {
+    if (pet.pet()) showToast('海海很喜欢被摸头');
+    if (!petPanelOpen) setPetPanel(true);
+    refreshPetHud();
+    return;
+  }
   const spot = pickSpot(clientX, clientY);
   if (spot) {
     stopTour();
@@ -1614,6 +1710,7 @@ function startFilm(options = {}) {
   }
   stopTour();
   if (state.activeId) closeSpot({ stop: false });
+  pet?.setSuppressed(true);
   cancelCameraTween();
   filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
   // 移动端：把场景卡片滚到视口内，避免影片在屏幕外播放。
@@ -1637,6 +1734,7 @@ function stopFilm(options = {}) {
   if (!film?.isPlaying?.()) return false;
   const wasRecording = state.filmRecording;
   film.stop();
+  pet?.setSuppressed(false);
   state.filmActive = false;
   state.filmRecording = false;
   app.classList.remove('is-filming');
@@ -2427,6 +2525,11 @@ function renderFrame(now) {
   }
 
   updateMarkers();
+  if (pet) {
+    pet.update(delta);
+    petHudTick += 1;
+    if (petHudTick % 15 === 0) refreshPetHud();
+  }
 
   if (renderer) renderer.render(scene, camera);
 

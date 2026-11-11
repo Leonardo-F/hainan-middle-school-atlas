@@ -314,7 +314,40 @@
             <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
             <span>复位</span>
           </button>
+          <span class="dock-sep" aria-hidden="true"></span>
+          <button class="dock-button dock-button--pet" id="petButton" type="button" aria-pressed="false"
+            title="电子宠物 · 海南中学吉祥物海海">
+            <svg aria-hidden="true" viewBox="0 0 20 20">
+              <path d="M2.9 11.1c0-3 2.7-5.2 6.3-5.2 2.6 0 4.3.8 5.5 1.7l.2-2 2 .9-.8 2.6c.2 2.9-2.3 5.6-6.4 5.6-3.4 0-6.8-1.4-6.8-3.6z"/>
+              <path d="M9.4 4.2l.7-1.4.8 1.3"/>
+              <circle cx="13" cy="9.5" r=".8" fill="currentColor" stroke="none"/>
+            </svg>
+            <span>海海</span>
+          </button>
         </div>
+
+        <aside class="pet-panel" id="petPanel" hidden aria-label="电子宠物 海海">
+          <header class="pet-panel__head">
+            <div>
+              <p class="pet-panel__eyebrow mono">CAMPUS PET / 校园电子宠物</p>
+              <h3 class="pet-panel__title">海海 <span class="pet-panel__en mono">HAIBAI</span></h3>
+            </div>
+            <button class="pet-panel__close" id="petClose" type="button" aria-label="收起宠物面板">×</button>
+          </header>
+          <p class="pet-panel__mood" id="petMood" aria-live="polite">悠闲巡游 · CRUISING</p>
+          <dl class="pet-panel__stats">
+            <div class="pet-stat"><dt>饱腹</dt><dd><span class="pet-stat__bar"><i id="petHunger"></i></span><b id="petHungerVal">--</b></dd></div>
+            <div class="pet-stat"><dt>精力</dt><dd><span class="pet-stat__bar"><i id="petEnergy"></i></span><b id="petEnergyVal">--</b></dd></div>
+            <div class="pet-stat"><dt>亲密</dt><dd><span class="pet-stat__bar"><i id="petAffection"></i></span><b id="petAffectionVal">--</b></dd></div>
+          </dl>
+          <div class="pet-panel__actions">
+            <button class="pet-action pet-action--primary" id="petTouch" type="button">抚摸</button>
+            <button class="pet-action" id="petFeed" type="button">喂食</button>
+            <button class="pet-action" id="petSleep" type="button">睡觉</button>
+            <button class="pet-action pet-action--ghost" id="petHide" type="button">隐藏</button>
+          </div>
+          <p class="pet-panel__hint">点画面里的海海也可以抚摸；状态会自动保存在本机，下次打开继续养。</p>
+        </aside>
 
         <div class="film" id="filmLayer" aria-hidden="true">
           <div class="film__bar film__bar--top" aria-hidden="true"></div>

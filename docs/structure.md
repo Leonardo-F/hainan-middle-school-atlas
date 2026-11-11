@@ -18,6 +18,7 @@ js/textures.js             程序化贴图、立面绘制、法线/粗糙度细�
 js/interiors.js            低模室内场景与室内机位
 js/weather.js              六种天气、粒子与天气联动
 js/film.js                 自动巡游影片脚本与 WebM 录制
+js/pet.js                  电子宠物「海海」：程序化建模、状态机、持久化与音效
 js/landmarks/parts.js      四座重点建筑共享的中式构件库
 js/landmarks/gate.js       校门（米制）
 js/landmarks/teaching.js   主教学楼（米制）
@@ -40,6 +41,7 @@ assets/preview/            预览图与巡游样片（构建产物，随 MIT 分
 docs/changelog.md          按日期的变更记录与 2026-11 修正证据表
 docs/design-notes.md       建筑处理、系统设计与已知写意项
 docs/features.md           功能与实现说明
+docs/pet.md                电子宠物「海海」的实现说明
 docs/accuracy.md           精度审计：逐条证据、边界与建议措辞
 docs/contributing.md       开发工作流、构建、视觉回归、建模与 agent 协作约定
 docs/structure.md          本文件：完整目录结构

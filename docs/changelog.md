@@ -11,6 +11,7 @@
 - **视觉回归 harness**：新增 `tools/shot.mjs`（Playwright 驱动本机 Chrome，按固定机位截图并与基准逐像素比较）、`tools/imagediff.mjs`、`tools/shots.mjs`（9 个机位）；新增 `npm run shots` / `npm run shots:update`，基准图不入库（`.gitignore`）。详见 [visual-regression.md](visual-regression.md)。
 - **环境反射（PMREM）**：用程序化天空烘一张 PMREM 环境贴图，仅给金属 / 玻璃 / 水面材质挂 `envMap`，替代此前「压 metalness + 自发光」的临时方案；可用 `?env=off`、`?envint=`、`?envmat=`、`?envsel=off` 做 A/B 对比。
 - **调研入库**：[ai-generated-3d-games.md](ai-generated-3d-games.md) 的「AI 一次生成可玩 3D 网页游戏」技术拆解与可用性评估纳入仓库，其中记录的 GTAO/PMREM/视觉回归清单即本轮改动的来源之一。
+- **电子宠物「海海」**：基于吉祥物虎鲸的公开形象，用基础几何 + Canvas 贴图程序化重建，作为相机前的小跟班常驻画面；饱腹/精力/亲密三轴按真实时间衰减、`localStorage` 持久化，支持抚摸/喂食/睡觉/隐藏、点击拾取与 WebAudio 音效；`?pet=off` / `?pet=reset` 可控制，`?still=1` 下固定状态保证视觉回归可复现。详见 [pet.md](pet.md)。
 - **材质细节**：新增 `applyDetailMaps()`（`js/textures.js`）：把程序化 albedo 的亮度当高度场，生成法线 + 粗糙度贴图（砖缝、瓦垄、铺地拼缝、抹灰颗粒），同参数共享缓存、默认 256²；`?detail=off` 可做 A/B。仅作用于近景材质，保持远景纸感与移动端显存预算。
 - **README 再精简**：新增 [features.md](features.md)（功能与实现）与 [structure.md](structure.md)（完整目录）；README 收至约 55 行，只保留概览、图集、快速开始、分组文档链接与「注意事项」；目录速览与发布说明分别移入 structure.md / contributing.md；**GitHub Pages 在线地址固定放在标题下方**。
 
