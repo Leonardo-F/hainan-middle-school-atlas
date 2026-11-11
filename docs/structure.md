@@ -13,7 +13,7 @@ js/site.js                 空间层：由 OSM 轮廓整理的建筑、道路、
 js/data.js                 内容层：校区身份、地景索引、叙事文本、导览顺序与取景参数
 js/campuses.js             校区注册表、?campus= 解析/回退与数据校验
 js/campus-accurate.js      场景构建器：接受 {campus, site, landmarks, theme}，提供 dispose()
-js/campus.js               可复用材质、植被、建筑构件与程序化细节贴图
+js/scene-kit.js               可复用材质、植被、建筑构件与程序化细节贴图
 js/textures.js             程序化贴图、立面绘制、法线/粗糙度细节生成
 js/interiors.js            低模室内场景与室内机位
 js/weather.js              六种天气、粒子与天气联动

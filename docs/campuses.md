@@ -60,7 +60,7 @@
 | `js/site.js` | 空间层（每校区一份） | `SITE`：OSM 整理的校园轮廓、建筑、道路、运动场、球场、出入口 | 1 场景单位 ≈ 2 米；x = 东，z = 南 |
 | `js/campuses.js` | 注册表层（全局一份） | 导入各校区内容层 + 空间层，组装 `CAMPUSES`；`?campus=` 解析 / 回退；`defineCampus` / `validateCampus` / `validateRegistry` / `validateSceneApi` / `resolveSceneBuilder` | 新增校区只需在此加一条注册 + 一个构建器映射 |
 | `js/campus-accurate.js` | 场景层（当前唯一构建器） | `buildCampus(scene, renderer, options)` 搭建府城三维场景 | **仍硬编码府城内容**；解耦清单见 §3.7 |
-| `js/campus.js` | 场景工具库 | 材质、植被、学生、通用建筑构件（`buildMaterials` / `createPalm` / `markSpot` …） | 可跨校区复用，不建议写校区专属内容 |
+| `js/scene-kit.js` | 场景工具库 | 材质、植被、学生、通用建筑构件（`buildMaterials` / `createPalm` / `markSpot` …） | 可跨校区复用，不建议写校区专属内容 |
 | `js/textures.js` | 材质库 | 程序化 Canvas 贴图（立面、屋瓦、铺地…） | 可复用；注意校区风格差异 |
 | `js/landmarks/parts.js` | 建模构件库 | 米制建模构件 + `finalize()` + `SCENE_UNITS_PER_METER = 0.5` | 新校区重点建筑模型应复用 |
 | `js/main.js` | 页面 / 交互层 | 相机、UI、小地图、导览、昼夜、URL 参数 | 需按 §3.5 改造为「先解析 campus，再构建场景 / UI」 |

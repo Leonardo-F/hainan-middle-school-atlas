@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { makeTextures } from '../js/textures.js';
-import { buildMaterials } from '../js/campus.js';
+import { buildMaterials } from '../js/scene-kit.js';
 
 const params = new URLSearchParams(location.search);
 const modelId = (params.get('model') || 'gate').toLowerCase();

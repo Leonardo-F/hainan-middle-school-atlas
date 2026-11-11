@@ -6,7 +6,7 @@ import {
   addTreeContactShadow, createStudent, createLampPost, createGoal, createBench,
   createStatue, addPath, ribbonGeometry, markSpot, placeBox, box, plane,
   flatShapeMesh, roundedRectShape, mulberry32
-} from './campus.js';
+} from './scene-kit.js';
 // TODO(multi-campus): 以下四栋重点建筑模型是府城校区专属（js/landmarks/*，米制，front = +z）。
 // 未来其他校区应通过 buildCampus 的 options.landmarkBuilders（landmark id → build(ctx)）
 // 或 campus.scene 配置注入自己的模型，而不是在本文件里硬编码新校区内容。
