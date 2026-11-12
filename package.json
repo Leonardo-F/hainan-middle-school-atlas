@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "author": "Gaoming Fan",
-  "description": "Three.js interactive campus atlas of Hainan Middle School, Fucheng campus",
+  "description": "海南中学校园图志（府城校区）｜Three.js 交互式三维校园 · Interactive 3D campus atlas of Hainan Middle School (Fucheng campus)",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

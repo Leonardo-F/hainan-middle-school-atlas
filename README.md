@@ -2,6 +2,8 @@
 
 基于 Three.js 的海南中学府城校区（高中部）交互三维校园图志：把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访府城校区的日常。
 
+An interactive 3D campus atlas of Hainan Middle School (Fucheng campus), built with Three.js.
+
 **在线访问**：<https://leonardo-f.github.io/hainan-middle-school-atlas/>
 
 **单文件版**：`hainan-middle-school.html`
