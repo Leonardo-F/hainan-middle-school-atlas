@@ -25,6 +25,9 @@ export const SHOTS = [
   { name: 'gate', viewport: [1440, 900], query: 'spot=gate&hour=10' },
   { name: 'fengqi', viewport: [1440, 900], query: 'spot=fengqi&hour=16' },
   { name: 'library', viewport: [1440, 900], query: 'spot=library&hour=16' },
+  { name: 'classroom', viewport: [1440, 900], query: 'spot=classroom&hour=16' },
+  { name: 'stone', viewport: [1440, 900], query: 'spot=stone&hour=10' },
+  { name: 'pet', viewport: [1440, 900], query: 'hour=16&pet=on' },
   // 雨丝/雪粒 shader 由时间驱动；具体差异由 per-shot tolerance 兜底。
   {
     name: 'heavy-rain',

@@ -41,9 +41,22 @@ const { output } = await bundle.generate({
 });
 await bundle.close();
 
-const js = output[0].code
+let js = output[0].code
   .replace(/<\/script/gi, '<\\/script')
   .replace(/<!--/g, '<\\!--');
+
+// Inline the landmark photographs so the single-file build works over file://.
+const photoPattern = /assets\/photos\/([A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp))/g;
+const photoNames = [...new Set([...js.matchAll(photoPattern)].map((match) => match[1]))];
+for (const name of photoNames) {
+  const bytes = await readFile(resolve('assets/photos', name));
+  const mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+  const dataUri = `data:${mime};base64,${bytes.toString('base64')}`;
+  js = js.replaceAll(`assets/photos/${name}`, dataUri);
+}
+if (js.includes('assets/photos/')) {
+  throw new Error('Build failed to inline every landmark photograph.');
+}
 
 let css = await read('css/style.css');
 const fontPattern = /url\(['"]?\.\.\/assets\/fonts\/([^'"?]+\.woff2)['"]?\)/g;
@@ -76,4 +89,4 @@ html = html.replace('</body>', () => `  ${scriptTag}\n</body>`);
 const outPath = resolve('hainan-middle-school.html');
 await writeFile(outPath, html, 'utf8');
 const size = (await stat(outPath)).size;
-console.log(`Wrote ${path.relative(process.cwd(), outPath)} (${(size / 1024).toFixed(0)} kB, ${fontNames.length} fonts inlined)`);
+console.log(`Wrote ${path.relative(process.cwd(), outPath)} (${(size / 1024).toFixed(0)} kB, ${fontNames.length} fonts, ${photoNames.length} photos inlined)`);

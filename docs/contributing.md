@@ -1,4 +1,4 @@
-# 参与开发 · 府城校园图志
+# 参与开发 · 海南中学校园图志
 
 面向后续维护者、建模与前端协作者，以及在此仓库上工作的 AI agent。完整目录见 [structure.md](structure.md)；新增校区的完整流程见 [campuses.md](campuses.md)；模型与建筑处理见 [design-notes.md](design-notes.md)；精度声明见 [accuracy.md](accuracy.md)。
 

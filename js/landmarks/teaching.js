@@ -654,64 +654,8 @@ export function build(ctx) {
     }
   }
 
-  // 太湖石抬高草坪台座（照片中石下的深色石材花池 + 草坪 + 题字）
-  box(group, stoneDark, 0, 0.43, ISLAND_CZ, 9.0, 0.86, ISLAND_Z1 - ISLAND_Z0);
-  box(group, stoneLight, 0, 0.91, ISLAND_CZ, 9.2, 0.12, ISLAND_Z1 - ISLAND_Z0 + 0.1);
-  box(group, grassMat, 0, 1.03, ISLAND_CZ, 8.7, 0.14, ISLAND_Z1 - ISLAND_Z0 - 0.3);
-
-  // 太湖石：多块低多边形岩体横向堆叠成「虎踞龙盘」
-  {
-    let seed = 20231108;
-    const rand = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
-    const taihuDark = new THREE.MeshStandardMaterial({ color: 0x44423a, roughness: 0.97 });
-    const taihuGold = new THREE.MeshStandardMaterial({ color: 0x5f5847, roughness: 0.95 });
-    const rockGeoA = new THREE.DodecahedronGeometry(1, 0);
-    const rockGeoB = new THREE.IcosahedronGeometry(1, 0);
-    // 横向展开的峰石群：x/y 放大、z 压扁，既像照片中的巨石又不越出台座
-    const pieces = [
-      [-4.0, 0.05, 1.2, 0.95, 0], [-3.1, 0.3, 1.5, 1.35, 0], [-2.0, -0.15, 1.7, 1.5, 2],
-      [-1.1, 0.25, 1.55, 1.85, 1], [0.1, -0.2, 1.9, 1.6, 0], [1.2, 0.3, 1.7, 1.95, 0],
-      [2.35, -0.1, 1.5, 1.4, 2], [3.3, 0.1, 1.15, 0.95, 1], [4.05, -0.05, 0.75, 0.6, 0],
-      [-2.5, -0.55, 1.15, 0.8, 1], [-0.6, -0.6, 1.25, 0.85, 0], [1.0, -0.6, 1.1, 0.8, 1],
-      [2.0, -0.7, 0.9, 0.65, 0], [-1.7, 0.45, 0.85, 1.05, 0], [0.4, 0.35, 0.9, 1.25, 1],
-      [0.85, 0.1, 0.65, 0.7, 2]
-    ];
-    const ROCK_MAX_Z = ISLAND_Z1 - 0.18;
-    const ROCK_MIN_Z = ISLAND_Z0 + 0.18;
-    const rocks = [];
-    for (let i = 0; i < pieces.length; i += 1) {
-      const [px, pz, sx, sy, tone] = pieces[i];
-      const mat = tone === 1 ? taihuDark : tone === 2 ? taihuGold : taihuMat;
-      const mesh = new THREE.Mesh(i % 2 ? rockGeoB : rockGeoA, mat);
-      mesh.position.set(px * 0.92, 1.02 + sy * 0.72, ISLAND_CZ + pz * 0.3);
-      mesh.scale.set(sx * 0.95, sy * 0.95, 0.5);
-      // 只在 z 轴做小角度旋转，避免进深膨胀
-      mesh.rotation.set(0, rand() * 0.24 - 0.12, rand() * 0.9 - 0.45);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      rocks.push(mesh);
-      group.add(mesh);
-    }
-    // 保证石体不越出台座 / 进深预算
-    for (const mesh of rocks) {
-      mesh.updateMatrixWorld(true);
-      const bb = new THREE.Box3().setFromObject(mesh);
-      if (bb.max.z > ROCK_MAX_Z) mesh.position.z -= bb.max.z - ROCK_MAX_Z;
-      if (bb.min.z < ROCK_MIN_Z) mesh.position.z += ROCK_MIN_Z - bb.min.z;
-    }
-    // 题字「虎踞龙盘 · 捷报频传」
-    const inscriptionMat = M.inscription
-      || (() => {
-        const t = makeInscriptionTexture();
-        return t ? new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }) : null;
-      })();
-    if (inscriptionMat) {
-      addPlaque(group, inscriptionMat, { x: 0, y: 0.46, z: ISLAND_Z1 + 0.012, w: 3.2, h: 0.8 });
-    }
-  }
+  // 太湖石不再放在教学楼门前：按现场照片移到百年榄仁树 / 石桌石凳前方，
+  // 由 campus-accurate.js 的独立石景统一放置，避免与教学楼贴得太近。
 
   return finalize(group);
 }

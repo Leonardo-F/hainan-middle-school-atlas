@@ -495,9 +495,17 @@ export function buildCampus(scene, renderer, options = {}) {
 
   function addTaihuStone(parent, x, z) {
     const g = new THREE.Group();
+    g.name = 'taihu-stone';
     g.position.set(x, 0.1, z);
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.12, 3.2), M.leaf);
-    pad.position.y = 0.06; pad.receiveShadow = true; g.add(pad);
+    // 深色石材花池 + 草坪顶面：长方形，长边与主教学楼立面平行（与主路垂直）。
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.22, 3.4), M.stoneDark || M.stone);
+    plinth.position.y = 0.11; plinth.receiveShadow = true; g.add(plinth);
+    const soil = new THREE.Mesh(new THREE.BoxGeometry(4.18, 0.12, 2.96), M.leaf);
+    soil.position.y = 0.28; soil.receiveShadow = true; g.add(soil);
+    for (const zEdge of [-1, 1]) {
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(4.66, 0.08, 0.12), M.stoneLight);
+      cap.position.set(0, 0.24, zEdge * 1.64); cap.receiveShadow = true; g.add(cap);
+    }
     for (const [px, pz, s, sy] of [
       [-1.2, 0, 0.92, 0.8], [-0.2, 0.2, 1.15, 1], [0.85, 0.05, 0.85, 0.72],
       [1.55, -0.1, 0.55, 0.5], [-0.2, -0.55, 0.7, 0.6], [0.3, 0.4, 0.55, 0.5]
@@ -1313,15 +1321,14 @@ export function buildCampus(scene, renderer, options = {}) {
     }
     if (b.name === '主教学楼') {
       // ceremonial forecourt, Taihu stone and the famous tree are on this side
-      const plaza = new THREE.Mesh(new THREE.PlaneGeometry(30, 12), M.plaza);
+      const plaza = new THREE.Mesh(new THREE.PlaneGeometry(30, 13), M.plaza);
       plaza.rotation.x = -Math.PI / 2;
-      plaza.position.set(0, 0.075, depth / 2 + 6.4);
+      plaza.position.set(0, 0.075, depth / 2 + 6.9);
       plaza.receiveShadow = true;
       group.add(plaza);
       for (const x of [-14.8, 14.8]) {
-        placeBox(group, 0.45, 0.18, 12.2, M.stoneLight, x, 0.06, depth / 2 + 6.4);
+        placeBox(group, 0.45, 0.18, 13.2, M.stoneLight, x, 0.06, depth / 2 + 6.9);
       }
-      addTaihuStone(group, 0, depth / 2 + 9.2);
       // red-roofed entrance porch
       const pRoof = createHipRoof({ w: 8.4, d: 3.4, h: 1.05, upturn: 0.14, materials: { ...M, roof: M.terracottaRoof, roofEdge: M.terracottaEdge, roofRidge: M.terracottaEdge }, detail: false });
       pRoof.position.set(0, 0.16 + 3.1, depth / 2 + 1.5);
@@ -2167,6 +2174,19 @@ export function buildCampus(scene, renderer, options = {}) {
   ];
   addHandSculpture(21, -8, -0.55);
 
+  /* ---------------------------- 太湖石（独立石景） ------------------- */
+  const studentObstacles = [];
+  // 现场照片：太湖石在主路中轴上、主教学楼门前方，同时位于榕树石桌石凳前方；
+  // 不再贴着教学楼门廊，也不偏到树侧。
+  const taihuStone = addTaihuStone(world, -11.49, -43.24);
+  // 让石座长边与主教学楼立面平行（即与主路垂直），不再与道路斜着放。
+  const mainHallForStone = site.buildings.find((b) => b.name === '主教学楼');
+  if (mainHallForStone) taihuStone.rotation.y = deg(-mainHallForStone.obb[2]);
+  landmarkGroups.stone = taihuStone;
+  studentObstacles.push({ x: -11.49, z: -43.24, r: 1.9 });
+  studentObstacles.push({ x: -4.41, z: -45.79, r: 1.9 });
+  studentObstacles.push({ x: site.heroTree[0], z: site.heroTree[1], r: 1.8 });
+
   /* ---------------------------- trees ------------------------------- */
   const buildingPolys = site.buildings.map((b) => b.poly);
   const blockers = [...buildingPolys, site.campusOutline];
@@ -2426,11 +2446,100 @@ export function buildCampus(scene, renderer, options = {}) {
     { name: 'eastcourt', pts: [[65, 20], [73, 28], [70, 40], [62, 35], [60, 25]] }
   ];
   const walkers = [];
+  const routeAudit = [];
+  let studentPaused = false;
+
+  // 路线预检：把穿过建筑本体的路线整条剔除。运行时的「最近边推回」只能
+  // 防止贴墙穿模；如果路线本身横穿建筑，学生会在两侧边缘之间瞬移。
+  const studentRouteIsSafe = (curve) => {
+    for (let i = 0; i < 180; i += 1) {
+      const p = curve.getPoint(i / 180);
+      if (!pointInPoly(p.x, p.z, site.campusOutline)) return false;
+      for (const b of site.buildings) {
+        if (pointInPoly(p.x, p.z, b.poly)) return false;
+      }
+    }
+    return true;
+  };
+
+  // 对整条穿过建筑的路线，改为绕建筑外接矩形的安全环线；能绕开就保留学生。
+  const ringRouteForBuilding = (routeName) => {
+    const map = { hall3: '3号教学楼', science: '科学馆', gym: '体育馆', yanlin: '衍林堂' };
+    const name = map[routeName];
+    if (!name) return null;
+    const b = site.buildings.find((item) => item.name === name);
+    if (!b) return null;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const [x, z] of b.poly) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+    }
+    for (const margin of [0.55, 0.8, 1.1, 1.5, 2.0, 2.6]) {
+      const x0 = minX - margin; const x1 = maxX + margin;
+      const z0 = minZ - margin; const z1 = maxZ + margin;
+      const pts = [
+        [x0, z0], [(x0 + x1) / 2, z0], [x1, z0], [x1, (z0 + z1) / 2],
+        [x1, z1], [(x0 + x1) / 2, z1], [x0, z1], [x0, (z0 + z1) / 2]
+      ].map(([x, z]) => new THREE.Vector3(x, 0, z));
+      const candidate = new THREE.CatmullRomCurve3(pts, true);
+      if (studentRouteIsSafe(candidate)) return candidate;
+    }
+    return null;
+  };
+
+  // 对擦到建筑边角的路线，尝试整体向外偏移几档；能修好就保留学生。
+  const repairStudentRoute = (route) => {
+    for (const offset of [1.0, 1.8, 2.6, 3.4]) {
+      const pts = route.pts.map(([x, z]) => {
+        let px = x;
+        let pz = z;
+        for (const b of site.buildings) {
+          const dx = px - b.center[0];
+          const dz = pz - b.center[1];
+          const d = Math.hypot(dx, dz);
+          if (d > 1e-3 && d < 8) {
+            px += (dx / d) * offset;
+            pz += (dz / d) * offset;
+          }
+        }
+        return new THREE.Vector3(px, 0, pz);
+      });
+      const candidate = new THREE.CatmullRomCurve3(pts, true);
+      if (studentRouteIsSafe(candidate)) return candidate;
+    }
+    return null;
+  };
+  // 学生很小，用一个不可见的圆柱做点击代理，点选更稳。
+  const studentHitMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  const addStudentHitProxy = (group) => {
+    // 抵消学生 0.4 倍缩放，让点击代理保持约 0.9 单位高 / 0.3 单位半径。
+    const inv = 1 / (group.scale.x || 1);
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 6), studentHitMaterial);
+    hit.position.y = 0.45 * inv;
+    hit.scale.setScalar(inv);
+    hit.userData.studentHit = true;
+    group.add(hit);
+  };
   studentRoutes.forEach((route, routeIndex) => {
-    const curve = new THREE.CatmullRomCurve3(
+    let curve = new THREE.CatmullRomCurve3(
       route.pts.map(([x, z]) => new THREE.Vector3(x, 0, z)),
       true
     );
+    let safe = studentRouteIsSafe(curve);
+    let repaired = false;
+    if (!safe) {
+      const fixed = ringRouteForBuilding(route.name) || repairStudentRoute(route);
+      if (fixed) {
+        curve = fixed;
+        safe = true;
+        repaired = true;
+      }
+    }
+    routeAudit.push({ name: route.name, safe, repaired });
+    if (!safe) return;
     for (let i = 0; i < 3; i += 1) {
       const female = (routeIndex + i) % 2 === 1;
       const formal = (routeIndex + i) % 6 === 0;
@@ -2445,12 +2554,15 @@ export function buildCampus(scene, renderer, options = {}) {
       s.position.copy(curve.getPoint(offset));
       s.position.y = 0.06;
       s.rotation.y = rand(0, TAU);
+      s.userData.studentId = walkers.length;
+      addStudentHitProxy(s);
       world.add(s);
       walkers.push({
         group: s, curve, offset,
         speed: rand(0.014, 0.028),
         stride: rand(6.6, 8.4),
-        phase: rand(0, TAU)
+        phase: rand(0, TAU),
+        wanderCooldown: rand(4, 10)
       });
     }
   });
@@ -2488,6 +2600,8 @@ export function buildCampus(scene, renderer, options = {}) {
     s.position.copy(curve.getPoint(offset));
     s.position.y = 0.06;
     s.rotation.y = rand(0, TAU);
+    s.userData.studentId = walkers.length;
+    addStudentHitProxy(s);
     world.add(s);
     walkers.push({
       group: s, curve, offset,
@@ -2526,6 +2640,8 @@ export function buildCampus(scene, renderer, options = {}) {
     s.position.copy(nearArcCurve.getPoint(offset));
     s.position.y = 0.06;
     s.rotation.y = rand(0, TAU);
+    s.userData.studentId = walkers.length;
+    addStudentHitProxy(s);
     world.add(s);
     walkers.push({
       group: s, curve: nearArcCurve, offset,
@@ -2618,6 +2734,27 @@ export function buildCampus(scene, renderer, options = {}) {
       maxZ: maxZ + COLLISION_MARGIN + 0.2
     };
   });
+  /** 线段是否穿过任意建筑本体（用于 shelter / wander 这类直线移动）。 */
+  function segmentHitsBuilding(x1, z1, x2, z2) {
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const orient = (ax, az, bx, bz) => ax * bz - az * bx;
+    for (const cp of collisionPolys) {
+      if (pointInPoly(x1, z1, cp.poly) || pointInPoly(x2, z2, cp.poly)) return true;
+      const poly = cp.poly;
+      for (let i = 0; i < poly.length; i += 1) {
+        const [x3, z3] = poly[i];
+        const [x4, z4] = poly[(i + 1) % poly.length];
+        const d1 = orient(x4 - x3, z4 - z3, x1 - x3, z1 - z3);
+        const d2 = orient(x4 - x3, z4 - z3, x2 - x3, z2 - z3);
+        const d3 = orient(dx, dz, x3 - x1, z3 - z1);
+        const d4 = orient(dx, dz, x4 - x1, z4 - z1);
+        if (((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0))) return true;
+      }
+    }
+    return false;
+  }
+
   // 校园红线外推回用（每帧只对越界者做一次）
   function pushInsideCampus(x, z) {
     if (pointInPoly(x, z, site.campusOutline)) return [x, z];
@@ -2684,7 +2821,40 @@ export function buildCampus(scene, renderer, options = {}) {
       }
       if (!moved) break;
     }
+    // 学生绕开太湖石、石桌石凳和古树树干，不直接穿过去。
+    for (const ob of studentObstacles) {
+      const dx = px - ob.x;
+      const dz = pz - ob.z;
+      const d = Math.hypot(dx, dz);
+      if (d < ob.r) {
+        const nx = d < 1e-4 ? 1 : dx / d;
+        const nz = d < 1e-4 ? 0 : dz / d;
+        px = ob.x + nx * ob.r;
+        pz = ob.z + nz * ob.r;
+      }
+    }
     return pushInsideCampus(px, pz);
+  }
+
+  /** 随机漫游目标：在当前学生附近找一处不撞建筑/石景的可走位置。 */
+  function pickStudentWanderTarget(walker) {
+    const pos = walker.group.position;
+    for (let i = 0; i < 16; i += 1) {
+      const angle = Math.random() * TAU;
+      const dist = 2.6 + Math.random() * 4.2;
+      const tx = pos.x + Math.cos(angle) * dist;
+      const tz = pos.z + Math.sin(angle) * dist;
+      const [sx, sz] = resolveStudentPosition(tx, tz);
+      if (Math.hypot(sx - tx, sz - tz) > 0.6) continue;
+      const mx = (pos.x + tx) / 2;
+      const mz = (pos.z + tz) / 2;
+      const [msx, msz] = resolveStudentPosition(mx, mz);
+      if (Math.hypot(msx - mx, msz - mz) > 0.6) continue;
+      if (Math.hypot(sx - pos.x, sz - pos.z) < 1.2) continue;
+      if (segmentHitsBuilding(pos.x, pos.z, sx, sz)) continue;
+      return [sx, sz];
+    }
+    return null;
   }
 
   /** 采样曲线取最近 offset（雨停后回到原路线用）。 */
@@ -2925,13 +3095,29 @@ export function buildCampus(scene, renderer, options = {}) {
       if (!reducedMotion) waver.geo.computeVertexNormals();
     }
     const rainy = RAINY_WEATHERS.has(weatherId);
-    for (const walker of walkers) {
+    // 学生视角选人时暂定学生，方便点选；选中/取消后恢复行走。
+    if (!studentPaused) for (const walker of walkers) {
       const gait = Math.sin(t * walker.stride + walker.phase);
       const run = Boolean(walker.run);
       let bx;
       let bz;
       let moving = false;
       if (walker.state === 'walk') {
+        // 偶尔离开固定回路，随机走一段再回路线，避免所有人都像固定往返。
+        if (!walker.run && !rainy && !reducedMotion) {
+          walker.wanderCooldown = (walker.wanderCooldown ?? 8) - delta;
+          if (walker.wanderCooldown <= 0) {
+            walker.wanderCooldown = rand(9, 20);
+            if (Math.random() < 0.62) {
+              const target = pickStudentWanderTarget(walker);
+              if (target) {
+                walker.state = 'wander';
+                walker.wanderTarget = target;
+                walker.wanderTimer = rand(5, 9);
+              }
+            }
+          }
+        }
         walker.offset = (walker.offset + delta * walker.speed * walker.walkSpeedScale) % 1;
         const p = walker.curve.getPoint(walker.offset);
         bx = p.x;
@@ -2939,6 +3125,26 @@ export function buildCampus(scene, renderer, options = {}) {
         const tangent = walker.curve.getTangent(walker.offset);
         walker.face = Math.atan2(tangent.x, tangent.z);
         moving = true;
+      } else if (walker.state === 'wander') {
+        const target = walker.wanderTarget || [walker.group.position.x, walker.group.position.z];
+        const dx = target[0] - walker.group.position.x;
+        const dz = target[1] - walker.group.position.z;
+        const dist = Math.hypot(dx, dz);
+        walker.wanderTimer = (walker.wanderTimer ?? 0) - delta;
+        if (dist < 0.35 || walker.wanderTimer <= 0) {
+          walker.state = 'walk';
+          walker.offset = nearestCurveOffset(walker);
+          walker.wanderCooldown = rand(8, 18);
+          bx = walker.group.position.x;
+          bz = walker.group.position.z;
+          walker.face = Math.atan2(dx, dz);
+        } else {
+          const step = Math.min(dist, delta * 0.62);
+          bx = walker.group.position.x + (dx / dist) * step;
+          bz = walker.group.position.z + (dz / dist) * step;
+          walker.face = Math.atan2(dx / dist, dz / dist);
+          moving = true;
+        }
       } else if (walker.state === 'shelter') {
         const target = walker.shelterPos;
         const dx = target[0] - walker.group.position.x;
@@ -2961,6 +3167,16 @@ export function buildCampus(scene, renderer, options = {}) {
       } else {
         bx = walker.group.position.x;
         bz = walker.group.position.z;
+      }
+      // 直线移动（避雨/随机漫游）不能穿过建筑；被挡就停在墙前。
+      if (moving) {
+        const fromX = walker.group.position.x;
+        const fromZ = walker.group.position.z;
+        if (segmentHitsBuilding(fromX, fromZ, bx, bz)) {
+          bx = fromX;
+          bz = fromZ;
+          moving = false;
+        }
       }
       // 建筑碰撞：沿最近边法线推回（walk 状态每帧由曲线重算，推回不累积、不抖动）
       const [safeX, safeZ] = resolveStudentPosition(bx, bz);
@@ -2990,6 +3206,39 @@ export function buildCampus(scene, renderer, options = {}) {
       }
       // 雨伞：仅「撑着伞继续走」的学生、且在下雨类天气时可见（雪天/晴天/躲雨途中都隐藏）
       walker.umbrella.visible = rainy && walker.hasUmbrella && walker.state === 'walk';
+    }
+    // 学生之间保持最小间距，避免路线交叉或同路追赶时相互穿模。
+    if (!studentPaused && walkers.length > 1) {
+      const minGap = 0.42;
+      for (let i = 0; i < walkers.length; i += 1) {
+        const a = walkers[i].group.position;
+        for (let j = i + 1; j < walkers.length; j += 1) {
+          const b = walkers[j].group.position;
+          let dx = a.x - b.x;
+          let dz = a.z - b.z;
+          let dist = Math.hypot(dx, dz);
+          if (dist >= minGap) continue;
+          if (dist < 0.0001) {
+            const angle = i * 2.399963 + j;
+            dx = Math.cos(angle);
+            dz = Math.sin(angle);
+            dist = 1;
+          }
+          const push = (minGap - dist) * 0.5;
+          const nx = dx / dist;
+          const nz = dz / dist;
+          a.x += nx * push;
+          a.z += nz * push;
+          b.x -= nx * push;
+          b.z -= nz * push;
+        }
+      }
+      // 推开之后仍不能穿进建筑。
+      for (const walker of walkers) {
+        const [sx, sz] = resolveStudentPosition(walker.group.position.x, walker.group.position.z);
+        walker.group.position.x = sx;
+        walker.group.position.z = sz;
+      }
     }
     if (selection.visible) {
       selection.rotation.y += delta * 0.07;
@@ -3051,20 +3300,30 @@ export function buildCampus(scene, renderer, options = {}) {
     setWeather: (id) => setStudentWeather(id),
     getWeather: () => weatherId,
     /** 供自检/影片读取的学生状态快照（位置、状态、是否撑伞）。 */
-    studentStates: () => walkers.map((w) => ({
+    studentStates: () => walkers.map((w, id) => ({
+      id,
       state: w.state,
       x: +w.group.position.x.toFixed(2),
       z: +w.group.position.z.toFixed(2),
+      yaw: +w.group.rotation.y.toFixed(3),
       umbrella: !!w.umbrella.visible,
-      run: !!w.run
+      run: !!w.run,
+      wanderCooldown: +(w.wanderCooldown ?? -1).toFixed(1),
+      wanderTimer: +(w.wanderTimer ?? -1).toFixed(1)
     })),
+    debugWanderTarget: (id) => pickStudentWanderTarget(walkers[id]),
+    /** 学生视角：可拾取的学生组、按 id 取回 walker（含 group/curve/state）。 */
+    studentGroups: walkers.map((w) => w.group),
+    studentRouteAudit: () => routeAudit.map((r) => ({ ...r })),
+    studentAt: (id) => walkers[id] || null,
+    setStudentPaused: (paused) => { studentPaused = Boolean(paused); },
     tick: animate,
     updateBuildingLabels,
     setSelection,
     hideSelection: () => setSelection(null),
     landmarks: landmarkGroups,
     /** 室内机位（世界坐标）：mainHallLobby / mainHallCorridor / mainHallClassroom /
-     *  libraryReading / fengqiHall，每项 { position, target, fov }，供自动化影片使用。 */
+     *  libraryReading，每项 { position, target, fov }，供自动化影片使用。 */
     interiorCameras: interiors.cameras,
     /** 释放本场景 GPU 资源；切换校区 / 重建前调用（幂等）。 */
     dispose

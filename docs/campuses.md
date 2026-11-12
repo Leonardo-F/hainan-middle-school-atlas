@@ -512,7 +512,7 @@ async function switchCampus(nextId) {
 | 基线行号 | 元素 / 内容 | 数据来源 |
 | --- | --- | --- |
 | `:7` | `<meta name="description">` | `ACTIVE_CAMPUS.summary` + 校名 + 项目说明 |
-| `:8` | `<title>府城校园图志 · 海南中学三维校园` | `${ACTIVE_CAMPUS.shortName}校园图志 · ${ACTIVE_CAMPUS.school}三维校园` |
+| `:8` | `<title>海南中学校园图志 · 府城校区三维校园` | `${ACTIVE_CAMPUS.school}校园图志 · ${ACTIVE_CAMPUS.name}三维校园` |
 | `:32` | 加载页顶部「海南中学 · 府城校区」 | `${school} · ${name}` |
 | `:78` | loading kicker `HAINAN MIDDLE SCHOOL · FUCHENG` | `${schoolEn} · ${shortEn}` |
 | `:100` | masthead eyebrow「海南中学 · 府城校区」 | `${school} · ${name}` |

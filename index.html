@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eee5d6">
-  <meta name="description" content="海南中学府城校区交互三维校园图志（非官方、非测绘）。依据 OpenStreetMap 轮廓与公开影像写意重建：校门、凤栖堂、衍林堂、教学楼、科学馆、体育馆与运动场，支持自由漫游、地标导览与日照变化。">
-  <title>府城校园图志 · 海南中学三维校园</title>
+  <meta name="description" content="海南中学校园图志 · 府城校区交互三维校园（非官方、非测绘）。依据 OpenStreetMap 轮廓与公开影像写意重建：校门、凤栖堂、衍林堂、教学楼、科学馆、体育馆与运动场，支持自由漫游、地标导览、实景照片与日照变化。">
+  <title>海南中学校园图志 · 府城校区三维校园</title>
   <link rel="preload" href="assets/fonts/instrument-sans-normal-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/dm-mono-normal-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/bodoni-moda-normal-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -65,7 +65,7 @@
 
         <div class="loading__copy">
           <p class="loading__kicker mono" data-campus-slot="schoolEnShortEn">HAINAN MIDDLE SCHOOL · FUCHENG</p>
-          <h1 data-campus-slot="loadingTitle">府城<span>校园图志</span></h1>
+          <h1 data-campus-slot="loadingTitle">海南中学<span>校园图志</span></h1>
           <p class="loading__sub">把一座校园，读成一张可以行走的图。</p>
         </div>
 
@@ -99,7 +99,7 @@
           </svg>
         </span>
         <span class="brand__text">
-          <span class="brand__name" data-campus-slot="brandName">府城校园图志</span>
+          <span class="brand__name" data-campus-slot="brandName">海南中学校园图志</span>
           <span class="brand__sub mono" data-campus-slot="brandSub">海南中学 · 府城校区 / A CAMPUS ATLAS</span>
         </span>
       </div>
@@ -139,7 +139,7 @@
             <p class="intro__eyebrow mono"><span class="intro__rule" aria-hidden="true"></span><span data-campus-slot="introEyebrow">FUCHENG, HAIKOU · 府城</span></p>
             <div class="intro__title-row">
               <h1 class="intro__title">
-                <span class="intro__title-cn" data-campus-slot="shortName">府城</span>
+                <span class="intro__title-cn" data-campus-slot="introTitleCn">海南中学</span>
                 <span class="intro__title-sub">校园图志</span>
               </h1>
               <span class="seal" aria-hidden="true">海中</span>
@@ -164,12 +164,13 @@
 
           <div class="narrative__prompt" aria-hidden="true">
             <p class="narrative__prompt-kicker mono">CURRENT PLATE / 当前图志</p>
-            <p class="narrative__prompt-title">选择一处地景，读它的图与志。</p>
-            <p class="narrative__prompt-text">从索引、场景中的编号，或校园总平面进入。每份图志含立面示意、沿革与观察要点。</p>
+            <p class="narrative__prompt-title">点一处地景，翻一页图志。</p>
+            <p class="narrative__prompt-text">从左侧索引、场景编号或右下总平面进入。每一页含实景照片、立面示意、沿革与观察要点；也可以点控制条的「学生」，挑一位同学跟着走一段。</p>
             <ul class="narrative__prompt-keys mono">
               <li><span id="indexRange">01—…</span>地景索引</li>
               <li><span class="key-dot" aria-hidden="true"></span>场景编号</li>
               <li><span class="key-plan" aria-hidden="true"></span>总平面定位</li>
+              <li><span class="key-person" aria-hidden="true"></span>学生视角</li>
             </ul>
           </div>
 
@@ -191,6 +192,20 @@
             </div>
             <div class="info-card__drawing" id="infoDrawing" aria-hidden="true"></div>
             <p class="info-card__summary" id="infoSummary"></p>
+            <figure class="info-card__photo" id="infoPhoto" hidden>
+              <div class="info-card__photo-frame" id="infoPhotoFrame">
+                <img id="infoPhotoImg" alt="" loading="eager" decoding="async">
+                <span class="info-card__photo-tag mono" id="infoPhotoTag">实景 / SITE PHOTO</span>
+                <button class="info-card__photo-zoom" id="infoPhotoZoom" type="button" aria-label="放大照片" title="放大照片">
+                  <svg aria-hidden="true" viewBox="0 0 18 18"><circle cx="7.6" cy="7.6" r="4.6"/><path d="M11.2 11.2L15.4 15.4M7.6 5.4v4.4M5.4 7.6h4.4"/></svg>
+                  <span>放大</span>
+                </button>
+              </div>
+              <figcaption class="info-card__photo-meta">
+                <span class="info-card__photo-caption" id="infoPhotoCaption"></span>
+                <a class="info-card__photo-credit" id="infoPhotoCredit" href="#" target="_blank" rel="noreferrer noopener"></a>
+              </figcaption>
+            </figure>
             <p class="info-card__description" id="infoDescription"></p>
             <dl class="info-card__facts" id="infoFacts"></dl>
             <div class="info-card__pager">
@@ -314,6 +329,14 @@
             <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.2 8.4A6.2 6.2 0 1 1 4 12M4.2 4.6v4h4"/></svg>
             <span>复位</span>
           </button>
+          <button class="dock-button dock-button--student" id="studentButton" type="button" aria-pressed="false"
+            title="跟随一位学生，走进校园的日常">
+            <svg aria-hidden="true" viewBox="0 0 20 20">
+              <circle cx="10" cy="6.2" r="2.45"/>
+              <path d="M5.7 16.3c.35-3.05 2.1-4.65 4.3-4.65s3.95 1.6 4.3 4.65"/>
+            </svg>
+            <span>学生</span>
+          </button>
           <span class="dock-sep" aria-hidden="true"></span>
           <button class="dock-button dock-button--pet" id="petButton" type="button" aria-pressed="false"
             title="电子宠物 · 海南中学吉祥物海海">
@@ -346,8 +369,45 @@
             <button class="pet-action" id="petSleep" type="button">睡觉</button>
             <button class="pet-action pet-action--ghost" id="petHide" type="button">隐藏</button>
           </div>
-          <p class="pet-panel__hint">点画面里的海海也可以抚摸；状态会自动保存在本机，下次打开继续养。</p>
+          <div class="pet-turntable">
+            <div class="pet-turntable__head mono"><span>旋转 / ROTATE</span><b id="petRotateVal">0°</b></div>
+            <div class="pet-turntable__row">
+              <input id="petRotate" type="range" min="0" max="359" step="1" value="0" aria-label="旋转海海">
+              <button class="pet-turntable__spin" id="petSpin" type="button" aria-label="让海海转一圈" title="转一圈">↻</button>
+            </div>
+          </div>
+          <p class="pet-panel__hint">点画面里的海海可以抚摸；拖动换位置，按住 Shift（或右键）拖动可以 360° 旋转，也可以拖上面的滑块。隐藏后，点控制条里的「海海」或右下角的「召回海海」就能回来。</p>
+          <button class="pet-panel__locate" id="petLocate" type="button">把海海放回右下角</button>
         </aside>
+
+        <button class="pet-recall" id="petRecall" type="button" hidden aria-label="召回电子宠物海海">
+          <span class="pet-recall__dot" aria-hidden="true"></span>
+          <svg aria-hidden="true" viewBox="0 0 20 20">
+            <path d="M2.9 11.1c0-3 2.7-5.2 6.3-5.2 2.6 0 4.3.8 5.5 1.7l.2-2 2 .9-.8 2.6c.2 2.9-2.3 5.6-6.4 5.6-3.4 0-6.8-1.4-6.8-3.6z"/>
+            <path d="M9.4 4.2l.7-1.4.8 1.3"/>
+            <circle cx="13" cy="9.5" r=".8" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="pet-recall__text"><b>召回海海</b><i class="mono">BRING HAIBAI BACK</i></span>
+        </button>
+
+        <div class="student-pick-hint" id="studentPickHint" hidden>
+          <p class="student-pick-hint__kicker mono">PICK A STUDENT / 选择一位同学</p>
+          <p class="student-pick-hint__text">点画面里的同学，跟随他走一段。<kbd>Esc</kbd> 取消</p>
+        </div>
+
+        <section class="student-view" id="studentView" hidden aria-label="学生视角">
+          <div class="student-view__vignette" aria-hidden="true"></div>
+          <div class="student-view__top">
+            <p class="student-view__eyebrow mono">STUDENT POV / 学生视角</p>
+            <p class="student-view__title" id="studentViewTitle">同学01</p>
+            <p class="student-view__sub" id="studentViewSub">跟着这位同学，走一段校园的路。</p>
+          </div>
+          <div class="student-view__bottom">
+            <span class="student-view__esc mono">ESC</span>
+            <button class="student-view__change" id="changeStudentView" type="button">换一位同学</button>
+            <button class="student-view__exit" id="exitStudentView" type="button">退出学生视角</button>
+          </div>
+        </section>
 
         <div class="film" id="filmLayer" aria-hidden="true">
           <div class="film__bar film__bar--top" aria-hidden="true"></div>
@@ -355,7 +415,7 @@
           <div class="film__wash" id="filmWash" aria-hidden="true"></div>
           <div class="film__top">
             <div class="film__brand">
-              <p class="film__title" id="filmTitle">府城校园图志</p>
+              <p class="film__title" id="filmTitle">海南中学校园图志</p>
               <p class="film__brand-en mono">A CAMPUS ATLAS FILM / 2026</p>
             </div>
             <div class="film__top-actions">
@@ -377,8 +437,8 @@
             <div class="film__meta mono">
               <span class="film__time" id="filmTime">00:00</span>
               <span class="film__meta-sep" aria-hidden="true">/</span>
-              <span class="film__time" id="filmDuration">01:25</span>
-              <span class="film__meta-title" id="filmMetaTitle">府城校园图志 · 校园巡游</span>
+              <span class="film__time" id="filmDuration">01:17</span>
+              <span class="film__meta-title" id="filmMetaTitle">海南中学校园图志 · 校园巡游</span>
             </div>
           </div>
         </div>
@@ -414,6 +474,19 @@
     <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
     <div class="cursor" id="cursor" aria-hidden="true"><i></i></div>
 
+    <div class="photo-viewer" id="photoViewer" hidden>
+      <button class="photo-viewer__close" id="photoViewerClose" type="button" aria-label="关闭大图">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16"/></svg>
+      </button>
+      <figure class="photo-viewer__figure">
+        <img id="photoViewerImg" alt="">
+        <figcaption class="photo-viewer__caption">
+          <span class="photo-viewer__text" id="photoViewerCaption"></span>
+          <a class="photo-viewer__credit" id="photoViewerCredit" href="#" target="_blank" rel="noreferrer noopener"></a>
+        </figcaption>
+      </figure>
+    </div>
+
     <dialog class="about-dialog" id="aboutDialog" aria-labelledby="aboutTitle">
       <div class="about-dialog__inner">
         <button class="about-dialog__close" id="closeAbout" type="button" aria-label="关闭说明">
@@ -436,7 +509,7 @@
           <h3 class="mono">文献线索 / SOURCES</h3>
           <ul id="sourceList"></ul>
         </section>
-        <p class="about-dialog__disclaimer"><span data-campus-slot="campusScope">本图志仅绘制高中部（府城校区）；初中部校区尚未绘制。</span><br>本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。</p>
+        <p class="about-dialog__disclaimer"><span data-campus-slot="campusScope">本图志仅绘制高中部（府城校区）；初中部校区尚未绘制。</span><br>本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。图志中的实景照片来自海南中学官网公开图集与公开校庆影像，仅作校园阅读与史实对照；版权归原作者与学校所有，如涉版权请联系删除。</p>
         <div class="about-dialog__footer mono">
           <span data-campus-slot="fullEn">HAINAN MIDDLE SCHOOL · FUCHENG CAMPUS</span>
           <span>THREE.JS / WEBGL / 2026</span>

@@ -1,5 +1,5 @@
 /* ==================================================================
-   府城校园图志 · 样式表
+   海南中学校园图志 · 样式表
    ------------------------------------------------------------------
    版式参考「建筑图鉴」：顶部品牌栏 → 左侧叙事栏（标题 / 索引 / 当前图志）
    → 有边界的场景卡片（四角控件）→ 页脚。
@@ -709,6 +709,18 @@ svg {
   text-overflow: ellipsis;
 }
 
+.index__tag {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 1px 3px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--accent);
+  font-size: 5.4px;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  opacity: 0.82;
+}
+
 .index__item.is-active {
   color: var(--accent);
 }
@@ -960,6 +972,290 @@ svg {
   line-height: 1.55;
   letter-spacing: 0.04em;
   color: var(--ink);
+}
+
+/* Real photograph paired with the plate --------------------------- */
+
+.info-card__photo {
+  margin: 4px 0 14px;
+  padding: 0;
+}
+
+.info-card__photo[hidden] {
+  display: none;
+}
+
+.info-card__photo-frame {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: 1px solid var(--hairline-soft);
+  background:
+    linear-gradient(110deg, var(--ui-sunken) 8%, color-mix(in srgb, var(--ui-sunken) 55%, var(--paper)) 18%, var(--ui-sunken) 33%);
+  background-size: 220% 100%;
+}
+
+.info-card__photo.is-loading .info-card__photo-frame {
+  animation: photo-shimmer 1.1s linear infinite;
+}
+
+@keyframes photo-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+.info-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.94) contrast(1.02);
+  opacity: 1;
+  transition: opacity 0.45s ease, transform 0.7s var(--ease);
+}
+
+.info-card__photo.is-loading img {
+  opacity: 0;
+}
+
+.info-card__photo:hover img {
+  transform: scale(1.015);
+}
+
+.info-card__photo-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--paper) 60%, transparent);
+  background: color-mix(in srgb, var(--ink) 72%, transparent);
+  color: color-mix(in srgb, var(--paper) 88%, transparent);
+  font-size: 5.8px;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  backdrop-filter: blur(6px);
+}
+
+.info-card__photo-tag.is-reference {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  border-color: color-mix(in srgb, var(--paper) 45%, transparent);
+}
+
+.info-card__photo-meta {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.info-card__photo-caption {
+  font-size: 9.5px;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+}
+
+.info-card__photo-credit {
+  width: fit-content;
+  font-family: var(--ui-mono);
+  font-size: 6.2px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dotted color-mix(in srgb, var(--muted) 48%, transparent);
+}
+
+.info-card__photo-credit:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.info-card__photo-zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px 0 5px;
+  border: 1px solid color-mix(in srgb, var(--paper) 50%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 62%, transparent);
+  color: color-mix(in srgb, var(--paper) 90%, transparent);
+  font-family: var(--ui-sans);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  cursor: zoom-in;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+
+.info-card__photo-frame:hover .info-card__photo-zoom,
+.info-card__photo-zoom:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.info-card__photo-zoom:hover {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+}
+
+.info-card__photo-zoom svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+/* Full-screen photo viewer ----------------------------------------- */
+
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 34px;
+  background: color-mix(in srgb, #141b18 88%, transparent);
+  backdrop-filter: blur(18px);
+  animation: photo-viewer-in 0.28s var(--ease) both;
+}
+
+.photo-viewer[hidden] {
+  display: none;
+}
+
+@keyframes photo-viewer-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.photo-viewer__close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(248, 241, 227, 0.36);
+  border-radius: 50%;
+  background: rgba(20, 27, 24, 0.45);
+  color: #f8f1e3;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.photo-viewer__close:hover {
+  border-color: #f8f1e3;
+  background: rgba(20, 27, 24, 0.75);
+}
+
+.photo-viewer__close svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.photo-viewer__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: min(1180px, 92vw);
+  max-height: 92vh;
+  margin: 0;
+  pointer-events: none;
+}
+
+.photo-viewer__figure img {
+  display: block;
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border: 1px solid rgba(248, 241, 227, 0.18);
+  background: #1b2420;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.photo-viewer__caption {
+  display: grid;
+  gap: 4px;
+  max-width: 76ch;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.photo-viewer__text {
+  color: rgba(248, 241, 227, 0.9);
+  font-size: 12px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+
+.photo-viewer__credit {
+  width: fit-content;
+  margin: 0 auto;
+  color: rgba(248, 241, 227, 0.55);
+  font-family: var(--ui-mono);
+  font-size: 7px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(248, 241, 227, 0.32);
+}
+
+.photo-viewer__credit[hidden] {
+  display: none;
+}
+
+.photo-viewer__credit:hover {
+  color: #f8f1e3;
+  border-bottom-color: #f8f1e3;
+}
+
+/* Upright viewing on phones: allow the image to fill more height. */
+@media (max-width: 680px) {
+  .photo-viewer {
+    padding: 18px 12px;
+  }
+
+  .photo-viewer__close {
+    top: 10px;
+    right: 10px;
+  }
+
+  .photo-viewer__figure {
+    max-width: 100%;
+    max-height: 88vh;
+  }
+
+  .photo-viewer__figure img {
+    max-height: 78vh;
+  }
+
+  .photo-viewer__text {
+    font-size: 10.5px;
+  }
+
+  .info-card__photo-zoom {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .info-card__description {
@@ -3876,6 +4172,256 @@ html.show-native-cursor .cursor {
 }
 
 /* ------------------------------------------------------------------ */
+/*  学生视角 · 跟随一位同学走一段                                      */
+/* ------------------------------------------------------------------ */
+
+.student-pick-hint {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  z-index: 18;
+  width: min(340px, calc(100% - 32px));
+  padding: 10px 13px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ui-paper) 94%, transparent);
+  box-shadow: 0 12px 34px rgba(18, 31, 24, 0.16);
+  backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+  animation: student-hint-in 0.3s var(--ease) both;
+}
+
+.student-pick-hint[hidden] {
+  display: none;
+}
+
+.student-pick-hint__kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 6px;
+  letter-spacing: 0.12em;
+}
+
+.student-pick-hint__text {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.student-pick-hint kbd {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 0 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--ui-sunken);
+  font-family: var(--ui-mono);
+  font-size: 7px;
+}
+
+.app.is-picking-student #scene {
+  cursor: crosshair;
+}
+
+@keyframes student-hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.student-view {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  color: #f8f1e3;
+  animation: student-view-in 0.45s var(--ease) both;
+}
+
+.student-view[hidden] {
+  display: none;
+}
+
+@keyframes student-view-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.student-view__vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(15, 21, 18, 0.5) 0%, transparent 20%, transparent 72%, rgba(15, 21, 18, 0.58) 100%),
+    radial-gradient(ellipse at center, transparent 38%, rgba(15, 21, 18, 0.28) 100%);
+}
+
+.student-view__top {
+  position: relative;
+  z-index: 1;
+  padding: 20px 24px 0;
+  text-shadow: 0 1px 10px rgba(10, 15, 12, 0.55);
+}
+
+.student-view__eyebrow {
+  margin: 0;
+  color: rgba(248, 241, 227, 0.72);
+  font-size: 6.5px;
+  letter-spacing: 0.16em;
+}
+
+.student-view__title {
+  margin: 6px 0 0;
+  font-family: var(--cn-serif);
+  font-size: clamp(20px, 2.2vw, 30px);
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+}
+
+.student-view__sub {
+  margin: 5px 0 0;
+  color: rgba(248, 241, 227, 0.72);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.student-view__bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 20px calc(18px + var(--safe-bottom));
+  pointer-events: none;
+}
+
+.student-view__change {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(248, 241, 227, 0.28);
+  border-radius: 999px;
+  background: rgba(16, 24, 20, 0.34);
+  color: rgba(248, 241, 227, 0.86);
+  font-family: var(--ui-sans);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.student-view__change:hover {
+  border-color: rgba(248, 241, 227, 0.68);
+  background: rgba(16, 24, 20, 0.6);
+}
+
+.student-view__exit {
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid rgba(248, 241, 227, 0.5);
+  border-radius: 999px;
+  background: rgba(16, 24, 20, 0.58);
+  color: #f8f1e3;
+  font-family: var(--ui-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.student-view__exit:hover {
+  border-color: #f8f1e3;
+  background: rgba(16, 24, 20, 0.78);
+}
+
+.student-view__esc {
+  color: rgba(248, 241, 227, 0.62);
+  font-size: 6.5px;
+  letter-spacing: 0.12em;
+}
+
+/* While following a student, the stage chrome steps back. */
+.app.is-student-view .stage-title,
+.app.is-student-view .stage-meta,
+.app.is-student-view .stage-rail,
+.app.is-student-view .light-panel,
+.app.is-student-view .command-dock,
+.app.is-student-view .map-panel,
+.app.is-student-view .stage-foot,
+.app.is-student-view .markers,
+.app.is-student-view .pet-panel,
+.app.is-student-view .pet-recall,
+.app.is-student-view .student-pick-hint {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease;
+}
+
+.dock-button--student.is-on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.dock-button--student svg {
+  fill: none;
+  stroke: currentColor;
+}
+
+.key-person {
+  position: relative;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.key-person::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 1px;
+  height: 3px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+@media (max-width: 760px) {
+  .student-pick-hint {
+    top: 58px;
+  }
+
+  .student-view__top {
+    padding: 14px 16px 0;
+  }
+
+  .student-view__sub {
+    font-size: 9px;
+  }
+
+  .student-view__bottom {
+    padding-bottom: calc(12px + var(--safe-bottom));
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  电子宠物 · 海海                                                    */
 /*  A paper-card pet panel that sits beside the scene, plus the dock    */
 /*  toggle. The mascot itself is rendered in 3D (js/pet.js), so this   */
@@ -4071,6 +4617,67 @@ html.show-native-cursor .cursor {
   cursor: default;
 }
 
+/* 360° turntable */
+.pet-turntable {
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.pet-turntable__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.pet-turntable__head b {
+  color: var(--accent);
+  font-weight: 400;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+}
+
+.pet-turntable__row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+}
+
+.pet-turntable__row input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.pet-turntable__spin {
+  flex: 0 0 auto;
+  width: 27px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pet-turntable__spin:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+
 .pet-panel__hint {
   margin: 9px 0 0;
   color: var(--ink-soft);
@@ -4079,7 +4686,153 @@ html.show-native-cursor .cursor {
   opacity: 0.64;
 }
 
+/* Persistent recall chip · appears whenever the mascot is hidden ----- */
+
+.pet-recall {
+  position: absolute;
+  right: 18px;
+  bottom: 72px;
+  z-index: 18;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px 7px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-paper) 94%, transparent);
+  box-shadow: 0 10px 30px rgba(18, 31, 24, 0.16);
+  color: var(--ink);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  animation: pet-recall-in 0.36s var(--ease) both;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.pet-recall[hidden] {
+  display: none;
+}
+
+.pet-recall:hover {
+  border-color: var(--accent);
+  background: var(--ui-paper);
+  transform: translateY(-1px);
+}
+
+.pet-recall svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: var(--accent);
+  stroke: none;
+}
+
+.pet-recall__dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+  animation: pet-dot 2.2s ease-in-out infinite;
+}
+
+.pet-recall__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+
+.pet-recall__text b {
+  font-family: var(--cn-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.pet-recall__text i {
+  font-style: normal;
+  font-size: 5.6px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+@keyframes pet-recall-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pet-dot {
+  0%, 100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+}
+
+.dock-button--pet.is-off,
+.dock-button--pet.is-recall {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.dock-button--pet.is-off::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pet-dot 2.2s ease-in-out infinite;
+}
+
+/* Put the mascot back in the corner without dragging ----------------- */
+
+.pet-panel__locate {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-family: var(--ui-sans);
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  opacity: 0.86;
+}
+
+.pet-panel__locate:hover {
+  opacity: 1;
+}
+
 @media (max-width: 760px) {
+  .pet-recall {
+    right: 10px;
+    bottom: 66px;
+    padding: 6px 10px 6px 9px;
+  }
+
+  .pet-recall__text b {
+    font-size: 10px;
+  }
+
+  .pet-recall__text i {
+    display: none;
+  }
+
   .pet-panel {
     left: 8px;
     right: 8px;
@@ -4124,4 +4877,39 @@ html.show-native-cursor .cursor {
   .pet-panel__actions {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Responsive · narrow header                                         */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 680px) {
+  .brand__name {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .campus-switcher {
+    flex: 0 0 auto;
+  }
+
+  .campus-tab.is-planned {
+    display: none;
+  }
+
+  .campus-tab {
+    padding: 4px 7px;
+  }
+
+  .campus-tab__name {
+    font-size: 10px;
+  }
+}
+
+body.is-photo-viewer {
+  overflow: hidden;
+}
+
+body.is-photo-viewer .cursor {
+  display: none;
 }

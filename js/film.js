@@ -2,7 +2,7 @@
  * 校园巡游影片（自动化运镜 + 录制）
  * ---------------------------------------------------------------------------
  * 为一个「会动的图志」写一条 60–90 秒的电影式巡游：高空俯冲入校 → 北门 →
- * 凤栖堂（外景 → 室内）→ 主教学楼（外景 → 门厅 → 走廊 → 教室）→ 科学馆/
+ * 凤栖堂（外景）→ 主教学楼（外景 → 门厅 → 走廊 → 教室）→ 科学馆/
  * 艺术楼掠过 → 图书馆（外景 → 阅览室）→ 体育馆/看台 → 运动场 → 升空收尾。
  *
  * 设计原则
@@ -41,8 +41,8 @@ const RECORD_MIME_CANDIDATES = [
   'video/webm'
 ];
 
-export const FILM_TITLE = '府城校园图志 · 巡游';
-export const FILM_FILENAME = '府城校园图志-巡游.webm';
+export const FILM_TITLE = '海南中学校园图志 · 巡游';
+export const FILM_FILENAME = '海南中学校园图志-巡游.webm';
 
 /* ------------------------------------------------------------------ */
 /*  外景机位（与 js/data.js LANDMARKS.camera 同值）                     */
@@ -75,16 +75,14 @@ const TRANSIT = {
  * 室内机位 fallback（仅当 campus.interiorCameras 缺失时使用）。
  * 由 site.js 的 center/obb 与建筑模块旋转约定估算：
  *   主教学楼 center(-0.37,-30.66) obb 57.24×9.77 angle138.5，前面(+z 局部)朝西北；
- *   图书馆    center(24,-72)     obb 19×10     angle138.5，入口朝东南；
- *   凤栖堂    center(-46.32,-50.19) obb 13.36×8.58 angle140.25，门朝东南。
+ *   图书馆    center(24,-72)     obb 19×10     angle138.5，入口朝东南。
  * 高度约 1.2–1.3（≈2.5 m 人眼），fov 偏广以容纳室内。数值是写意估计，
  * 正式机位以 js/interiors.js 的 interiorCameras 为准。
  */
 const FALLBACK_INTERIORS = {
-  fengqiHall: { position: [-44.27, 1.25, -47.73], target: [-48.62, 1.05, -52.96], fov: 55 },
   mainHallLobby: { position: [-2.62, 1.25, -33.21], target: [-10.86, 1.3, -39.94], fov: 54 },
   mainHallCorridor: { position: [-8.66, 1.3, -38.19], target: [7.12, 1.3, -24.03], fov: 56 },
-  mainHallClassroom: { position: [-4.37, 1.3, -33.71], target: [-7.02, 1.2, -36.71], fov: 52 },
+  mainHallClassroom: { position: [10.03, 7.93, -40.32], target: [13.24, 7.73, -41.23], fov: 62 },
   libraryReading: { position: [25.66, 1.25, -70.13], target: [22.01, 1.2, -74.25], fov: 55 }
 };
 
@@ -200,16 +198,14 @@ function pickRecordMimeType() {
 /**
  * 段落定义：每个 shot 是「到站机位」；duration = 从上一站飞来的时间（秒），
  * hold = 到站后定格时间（秒）。首站的 hold 是开场定格。
- * 总时长约 85 s（落在 60–90 s 区间），交代：入校 → 北门 → 凤栖堂(内外)
+ * 总时长约 77 s（落在 60–90 s 区间），交代：入校 → 北门 → 凤栖堂(外)
  * → 主教学楼(外内) → 图书馆(外内) → 体育馆/看台/运动场 → 升空。
  */
 function buildShotPlan(campus) {
-  const fengqiIn = resolveInterior(campus, 'fengqiHall');
   const lobby = resolveInterior(campus, 'mainHallLobby');
   const corridor = resolveInterior(campus, 'mainHallCorridor');
   const classroom = resolveInterior(campus, 'mainHallClassroom');
   const reading = resolveInterior(campus, 'libraryReading');
-  const fengqiDoor = approachView(fengqiIn);
   const hall1Door = approachView(lobby);
   const libraryDoor = approachView(reading);
 
@@ -243,22 +239,6 @@ function buildShotPlan(campus) {
       en: 'FENGQI HALL',
       view: EXTERIOR.fengqi,
       duration: 4.2
-    },
-    {
-      id: 'fengqi-door',
-      caption: '走近凤栖堂',
-      en: 'APPROACHING FENGQI HALL',
-      view: fengqiDoor,
-      duration: 3.2
-    },
-    {
-      id: 'fengqi-in',
-      interior: true,
-      caption: '凤栖堂 · 厅堂',
-      en: 'FENGQI HALL · INTERIOR',
-      view: fengqiIn,
-      duration: 3.6,
-      hold: 1.2
     },
     {
       id: 'fengqi-exit',

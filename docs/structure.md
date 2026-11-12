@@ -1,4 +1,4 @@
-# 目录结构 · 府城校园图志
+# 目录结构 · 海南中学校园图志
 
 > README 只保留速览；这里是完整清单。各层职责与改动约束见 [contributing.md](contributing.md)，新增校区见 [campuses.md](campuses.md)。
 
@@ -6,16 +6,16 @@
 index.html                 开发入口：页面结构、图志内容容器、ES Modules + import map
 hainan-middle-school.html  完全自包含单文件版（构建产物，可直接双击打开）
 css/style.css              版式、响应式与主题
-build.mjs                  单文件版构建脚本（Rollup 打包 + 内联字体/CSS）
+build.mjs                  单文件版构建脚本（Rollup 打包 + 内联字体/CSS/实景照片）
 
-js/main.js                 相机、UI、交互、昼夜、导览与视觉回归单帧模式
+js/main.js                 相机、UI、交互、学生视角、昼夜、导览与视觉回归单帧模式
 js/site.js                 空间层：由 OSM 轮廓整理的建筑、道路、运动场、球场与出入口坐标
 js/data.js                 内容层：校区身份、地景索引、叙事文本、导览顺序与取景参数
 js/campuses.js             校区注册表、?campus= 解析/回退与数据校验
 js/campus-accurate.js      场景构建器：接受 {campus, site, landmarks, theme}，提供 dispose()
 js/scene-kit.js               可复用材质、植被、建筑构件与程序化细节贴图
 js/textures.js             程序化贴图、立面绘制、法线/粗糙度细节生成
-js/interiors.js            低模室内场景与室内机位
+js/interiors.js            低模室内场景与室内机位（门厅/走廊/高三拾伍班/阅览室）
 js/weather.js              六种天气、粒子与天气联动
 js/film.js                 自动巡游影片脚本与 WebM 录制
 js/pet.js                  电子宠物「海海」：程序化建模、状态机、持久化与音效
@@ -37,6 +37,7 @@ tools/imagediff.mjs        逐像素对比与 diff 图
 vendor/                    Three.js r169 与 OrbitControls（本地依赖）
 assets/fonts/              拉丁 UI 字体（SIL OFL 1.1）
 assets/preview/            预览图与巡游样片（构建产物，随 MIT 分发）
+assets/photos/             21 处地景的实景照片（JPG；单文件构建时内联）
 
 docs/changelog.md          按日期的变更记录与 2026-11 修正证据表
 docs/design-notes.md       建筑处理、系统设计与已知写意项
@@ -61,4 +62,4 @@ LICENSE                    MIT（代码与页面）；OSM 数据 ODbL、字体 O
 
 - `hainan-middle-school.html` 由 `npm run build` 生成，**不要手改**。
 - `node_modules/`、`tools/shots/{baseline,current,diff}/` 不入库（视觉回归基准按机器本地生成）。
-- `assets/preview/` 是公开预览图/样片，入库。
+- `assets/preview/` 是公开预览图与巡游样片，入库。

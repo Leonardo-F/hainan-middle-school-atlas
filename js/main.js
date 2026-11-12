@@ -65,6 +65,18 @@ const infoSummary = $('#infoSummary');
 const infoDescription = $('#infoDescription');
 const infoFacts = $('#infoFacts');
 const infoDrawing = $('#infoDrawing');
+const infoPhoto = $('#infoPhoto');
+const infoPhotoImg = $('#infoPhotoImg');
+const infoPhotoTag = $('#infoPhotoTag');
+const infoPhotoCaption = $('#infoPhotoCaption');
+const infoPhotoCredit = $('#infoPhotoCredit');
+const infoPhotoFrame = $('#infoPhotoFrame');
+const infoPhotoZoom = $('#infoPhotoZoom');
+const photoViewer = $('#photoViewer');
+const photoViewerImg = $('#photoViewerImg');
+const photoViewerCaption = $('#photoViewerCaption');
+const photoViewerCredit = $('#photoViewerCredit');
+const photoViewerClose = $('#photoViewerClose');
 const indexNav = $('#index');
 const indexList = $('#indexList');
 const markerLayer = $('#markers');
@@ -108,6 +120,12 @@ const sceneEnEl = $('#sceneEn');
 const sceneKindEl = $('#sceneKind');
 const introSpotCount = $('#introSpotCount');
 const indexRange = $('#indexRange');
+const studentButton = $('#studentButton');
+const studentPickHint = $('#studentPickHint');
+const studentView = $('#studentView');
+const studentViewTitle = $('#studentViewTitle');
+const studentViewSub = $('#studentViewSub');
+const exitStudentViewButton = $('#exitStudentView');
 
 const state = {
   campusId: ACTIVE_CAMPUS.id,
@@ -126,7 +144,11 @@ const state = {
   mapTick: 0,
   hoveredSpot: null,
   modalOpen: false,
-  revealTimer: null
+  revealTimer: null,
+  studentPickMode: false,
+  studentFollow: null,
+  photoViewerOpen: false,
+  lookMode: null
 };
 
 let scene;
@@ -138,6 +160,10 @@ let weather;
 let film;
 let pet;
 let petPanelOpen = false;
+let petDrag = null;
+let lookDrag = null;
+let petPanelAnchorSaved = null;
+let petPanelMoved = false;
 let petHudTick = 0;
 let filmUiCache = { index: -1, seconds: -1, duration: -1, recording: null };
 let raycaster;
@@ -155,6 +181,8 @@ let lastHoverRay = 0;
 let cursorTarget = { x: 0, y: 0 };
 let cursorPos = { x: 0, y: 0 };
 let hasCustomCursor = false;
+const studentEye = new THREE.Vector3();
+const studentLook = new THREE.Vector3();
 
 /** 当前 active 校区的桌面端总览取景；相机数据以 js/data.js 定稿值为准。 */
 function buildDesktopOverview(campusEntry) {
@@ -269,6 +297,19 @@ function getTopView() {
 /** Fit a landmark to the scene card, widening the frame when it is tall/narrow. */
 function getSpotView(spot) {
   const aspect = viewAspect();
+  // 室内机位由 js/interiors.js 按建筑局部坐标给出，直接使用，不再按画幅重构图。
+  if (spot.cameraKey) {
+    const interior =
+      campus?.interiorCameras?.[spot.cameraKey] ??
+      (spot.id === 'classroom' ? campus?.interiorCameras?.mainHallClassroom : null);
+    if (interior) {
+      return {
+        position: interior.position,
+        target: interior.target,
+        fov: aspect >= 1.15 ? interior.fov : Math.max(interior.fov, 68)
+      };
+    }
+  }
   if (aspect >= 1.15) {
     return {
       position: spot.camera.position,
@@ -339,9 +380,13 @@ async function boot() {
     if (hasCustomCursor) document.documentElement.classList.add('has-custom-cursor');
     setupUI();
     setupEvents();
-    setupPetUI();
     if (params.get('pet') === 'off') pet?.setVisible(false);
-    if (params.get('pet') === 'reset') pet?.reset();
+    if (params.get('pet') === 'on') pet?.setVisible(true);
+    if (params.get('pet') === 'reset') {
+      pet?.reset();
+      pet?.resetAnchor?.();
+    }
+    setupPetUI();
     setupIntroCamera();
     resize();
     applyHour(resolveInitialHour(), { silent: true });
@@ -358,6 +403,12 @@ async function boot() {
       get weatherId() { return state.weatherId; },
       get film() { return film; },
       get pet() { return pet; },
+      get studentFollow() { return state.studentFollow; },
+      startStudentView,
+      exitStudentView,
+      updateStudentView,
+      pickStudent,
+      get lookMode() { return state.lookMode; },
       setWeather: (id) => applyWeather(id),
       startFilm: (options = {}) => startFilm(options),
       stopFilm: (options = {}) => stopFilm(options),
@@ -491,6 +542,8 @@ function finishBoot() {
   const view = params.get('view');
   const delay = reducedMotion || params.get('nointro') ? 0 : 500;
   window.setTimeout(() => {
+    // 若启动延迟期间用户已经进入学生视角，不要再用总览机位覆盖。
+    if (state.studentFollow) return;
     if (targetSpot && LANDMARKS.some((item) => item.id === targetSpot)) {
       openSpot(targetSpot, { fromTour: false, duration: reducedMotion ? 0 : 1700, source: 'query' });
       return;
@@ -535,6 +588,7 @@ function setupUI() {
     button.innerHTML = `
       <span class="index__idx">${spot.index}</span>
       <span class="index__name">${spot.name}</span>
+      ${spot.indoor ? '<span class="index__tag mono">室内</span>' : ''}
     `;
     button.addEventListener('click', () => {
       stopTour();
@@ -543,38 +597,41 @@ function setupUI() {
     li.appendChild(button);
     indexList.appendChild(li);
 
-    const marker = document.createElement('button');
-    marker.type = 'button';
-    marker.className = 'marker';
-    marker.dataset.spot = spot.id;
-    marker.setAttribute('aria-label', `查看${spot.name}图志`);
-    marker.innerHTML = `
-      <span class="marker__pin" aria-hidden="true"><i>${spot.index}</i></span>
-      <span class="marker__leader" aria-hidden="true"></span>
-      <span class="marker__label">
-        <span class="marker__num">${spot.index}</span>
-        <span class="marker__name">${spot.name}</span>
-        <span class="marker__en">${spot.en}</span>
-      </span>
-    `;
-    marker.addEventListener('click', () => {
-      stopTour();
-      openSpot(spot.id, { source: 'marker' });
-    });
-    marker.addEventListener('pointerenter', () => {
-      if (hasCustomCursor) cursorEl.classList.add('is-hover');
-    });
-    marker.addEventListener('pointerleave', () => {
-      cursorEl.classList.remove('is-hover');
-    });
-    markerLayer.appendChild(marker);
+    // 室内图志（如高三拾伍班）没有室外落点，不生成场景编号。
+    if (spot.marker !== false) {
+      const marker = document.createElement('button');
+      marker.type = 'button';
+      marker.className = 'marker';
+      marker.dataset.spot = spot.id;
+      marker.setAttribute('aria-label', `查看${spot.name}图志`);
+      marker.innerHTML = `
+        <span class="marker__pin" aria-hidden="true"><i>${spot.index}</i></span>
+        <span class="marker__leader" aria-hidden="true"></span>
+        <span class="marker__label">
+          <span class="marker__num">${spot.index}</span>
+          <span class="marker__name">${spot.name}</span>
+          <span class="marker__en">${spot.en}</span>
+        </span>
+      `;
+      marker.addEventListener('click', () => {
+        stopTour();
+        openSpot(spot.id, { source: 'marker' });
+      });
+      marker.addEventListener('pointerenter', () => {
+        if (hasCustomCursor) cursorEl.classList.add('is-hover');
+      });
+      marker.addEventListener('pointerleave', () => {
+        cursorEl.classList.remove('is-hover');
+      });
+      markerLayer.appendChild(marker);
 
-    markerEntries.push({
-      el: marker,
-      anchor: new THREE.Vector3(...spot.anchor),
-      id: spot.id,
-      priority: LANDMARKS.length - i
-    });
+      markerEntries.push({
+        el: marker,
+        anchor: new THREE.Vector3(...spot.anchor),
+        id: spot.id,
+        priority: LANDMARKS.length - i
+      });
+    }
   });
 
   const countEl = $('.index__count');
@@ -623,6 +680,7 @@ function setupPetUI() {
     markInteracted();
     if (!pet.getSnapshot().visible) {
       pet.setVisible(true);
+      updatePetVisibilityUI();
       showToast('海海又游回来啦');
     }
     setPetPanel(!petPanelOpen);
@@ -643,20 +701,90 @@ function setupPetUI() {
   $('#petHide')?.addEventListener('click', () => {
     pet.setVisible(false);
     setPetPanel(false);
-    showToast('海海潜入水底了');
+    updatePetVisibilityUI();
+    showToast('海海潜入水底了 · 点右下角「召回海海」叫它回来');
+  });
+  const rotate = $('#petRotate');
+  const rotateVal = $('#petRotateVal');
+  const syncRotateUI = (deg) => {
+    const normalized = ((Math.round(deg) % 360) + 360) % 360;
+    if (rotate) rotate.value = String(normalized);
+    if (rotateVal) rotateVal.textContent = `${normalized}°`;
+  };
+  rotate?.addEventListener('input', () => {
+    const deg = Number(rotate.value) || 0;
+    pet.setRotation?.(deg);
+    syncRotateUI(deg);
+  });
+  $('#petSpin')?.addEventListener('click', () => {
+    if (pet.spin360?.()) {
+      showToast('海海转了一圈');
+      refreshPetHud();
+    }
+  });
+  $('#petRecall')?.addEventListener('click', () => {
+    markInteracted();
+    pet.setVisible(true);
+    updatePetVisibilityUI();
+    setPetPanel(true);
+    refreshPetHud();
+    showToast('海海又游回来啦');
+  });
+  $('#petLocate')?.addEventListener('click', () => {
+    pet.resetAnchor?.();
+    showToast('海海回到右下角了');
   });
   setPetPanel(false);
   refreshPetHud();
+  updatePetVisibilityUI();
+}
+
+/** 宠物显示 / 隐藏后的入口状态：控制条按钮、召回浮标、提示文案一起更新。 */
+function updatePetVisibilityUI(snapshot = pet?.getSnapshot()) {
+  if (!snapshot) return;
+  const visible = Boolean(snapshot.visible);
+  const hiddenByUser = !visible && Boolean(snapshot.engaged);
+  const recall = $('#petRecall');
+  if (recall) recall.hidden = !hiddenByUser;
+  const button = $('#petButton');
+  if (!button) return;
+  const label = button.querySelector('span');
+  if (label) label.textContent = hiddenByUser ? '召回' : '海海';
+  button.classList.toggle('is-off', hiddenByUser);
+  button.classList.toggle('is-recall', hiddenByUser);
+  button.setAttribute('aria-pressed', String(petPanelOpen));
+  button.setAttribute(
+    'aria-label',
+    hiddenByUser ? '召回电子宠物 海海' : visible ? '电子宠物 海海' : '开启电子宠物 海海'
+  );
+  button.setAttribute(
+    'title',
+    hiddenByUser ? '海海藏起来了，点这里召回' : visible ? '电子宠物 · 海南中学吉祥物海海' : '点这里请海海出来'
+  );
 }
 
 function setPetPanel(open) {
   const panel = $('#petPanel');
   const button = $('#petButton');
   if (!panel) return;
+  const wasOpen = petPanelOpen;
   petPanelOpen = Boolean(open);
   panel.hidden = !petPanelOpen;
   button?.classList.toggle('is-on', petPanelOpen);
   button?.setAttribute('aria-pressed', String(petPanelOpen));
+  // 手机上宠物面板是整宽底部抽屉，打开时把海海临时移到抽屉上方，关掉再放回。
+  if (pet) {
+    if (petPanelOpen && !wasOpen && isPhoneLayout()) {
+      petPanelAnchorSaved = pet.getAnchor();
+      petPanelMoved = false;
+      pet.setAnchor(0.55, 0.26, { save: false });
+    } else if (!petPanelOpen && wasOpen && petPanelAnchorSaved) {
+      if (!petPanelMoved) {
+        pet.setAnchor(petPanelAnchorSaved.x, petPanelAnchorSaved.y, { save: false });
+      }
+      petPanelAnchorSaved = null;
+    }
+  }
   if (petPanelOpen) refreshPetHud();
 }
 
@@ -674,11 +802,13 @@ function refreshPetHud() {
   if (touch) touch.disabled = snapshot.cooldowns.pet > 0;
   const feed = $('#petFeed');
   if (feed) feed.disabled = snapshot.cooldowns.feed > 0;
-  const button = $('#petButton');
-  if (button) {
-    button.classList.toggle('is-off', !snapshot.visible);
-    button.setAttribute('aria-label', snapshot.visible ? '电子宠物 海海' : '电子宠物 海海（已隐藏）');
+  const rotate = $('#petRotate');
+  if (rotate && document.activeElement !== rotate) {
+    rotate.value = String(snapshot.rotation ?? 0);
   }
+  const rotateVal = $('#petRotateVal');
+  if (rotateVal) rotateVal.textContent = `${snapshot.rotation ?? 0}°`;
+  updatePetVisibilityUI(snapshot);
 }
 
 function setPetBar(barSelector, valueSelector, value) {
@@ -686,6 +816,407 @@ function setPetBar(barSelector, valueSelector, value) {
   if (bar) bar.style.width = `${value}%`;
   const label = $(valueSelector);
   if (label) label.textContent = String(value);
+}
+
+/**
+ * 海海可拖动：在画布上按住宠物即可换位置。
+ * 捕获阶段拦截 pointerdown，避免同一拖拽同时触发 OrbitControls 旋转与点击选点；
+ * 拖动距离小于 4px 仍视为「点一下抚摸」。位置由 pet.js 写入 localStorage。
+ */
+function setupPetDrag() {
+  if (!pet || !canvas) return;
+
+  const onDown = (event) => {
+    if (event.button !== undefined && event.button !== 0 && event.button !== 2) return;
+    if (!pet.getSnapshot().visible) return;
+    setPointerNdc(event.clientX, event.clientY);
+    if (!pet.hitTest(null, pointerNdc)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const anchor = pet.getAnchor?.() || { x: 0.58, y: -0.06 };
+    const rotateMode = Boolean(event.shiftKey) || event.button === 2;
+    petDrag = {
+      pointerId: event.pointerId,
+      mode: rotateMode ? 'rotate' : 'move',
+      startX: event.clientX,
+      startY: event.clientY,
+      baseX: anchor.x,
+      baseY: anchor.y,
+      baseRotation: pet.getRotation?.() || 0,
+      moved: false,
+      controlsWasEnabled: controls?.enabled !== false
+    };
+    pet.setDragging?.(true);
+    if (controls) controls.enabled = false;
+    cursorEl.classList.add('is-down');
+    markInteracted();
+  };
+
+  const onMove = (event) => {
+    if (!petDrag || event.pointerId !== petDrag.pointerId) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dx = event.clientX - petDrag.startX;
+    const dy = event.clientY - petDrag.startY;
+    if (!petDrag.moved && Math.hypot(dx, dy) > 4) petDrag.moved = true;
+    if (!petDrag.moved) return;
+    event.preventDefault();
+    if (petDrag.mode === 'rotate') {
+      const deg = petDrag.baseRotation + dx * 1.2;
+      pet.setRotation?.(deg, { save: false });
+      const normalized = ((Math.round(deg) % 360) + 360) % 360;
+      const slider = $('#petRotate');
+      if (slider) slider.value = String(normalized);
+      const label = $('#petRotateVal');
+      if (label) label.textContent = `${normalized}°`;
+      return;
+    }
+    pet.setAnchor?.(
+      petDrag.baseX + dx / (rect.width / 2),
+      petDrag.baseY - dy / (rect.height / 2),
+      { save: false }
+    );
+  };
+
+  const finish = (event, cancelled = false) => {
+    if (!petDrag || event.pointerId !== petDrag.pointerId) return;
+    const drag = petDrag;
+    petDrag = null;
+    pet.setDragging?.(false);
+    if (controls) controls.enabled = drag.controlsWasEnabled;
+    cursorEl.classList.remove('is-down');
+    if (drag.mode === 'rotate') {
+      if (drag.moved) {
+        pet.setRotation?.(pet.getRotation?.() || 0, { save: true });
+        if (!cancelled) showToast('海海转过来了 · 拖滑块可以停在任意角度');
+      }
+      return;
+    }
+    if (drag.moved) {
+      if (petPanelOpen) petPanelMoved = true;
+      const anchor = pet.getAnchor?.();
+      if (anchor) pet.setAnchor?.(anchor.x, anchor.y, { save: true });
+      if (!cancelled) showToast('海海换好位置了 · 双击它可以复位');
+      return;
+    }
+    if (!cancelled && pet.pet()) {
+      showToast('海海很喜欢被摸头');
+      if (!petPanelOpen) setPetPanel(true);
+      refreshPetHud();
+    }
+  };
+
+  canvas.addEventListener('pointerdown', onDown, true);
+  window.addEventListener('pointermove', onMove, { passive: false });
+  window.addEventListener('pointerup', (event) => finish(event, false));
+  window.addEventListener('pointercancel', (event) => finish(event, true));
+
+  canvas.addEventListener('dblclick', (event) => {
+    if (!pet.getSnapshot().visible) return;
+    setPointerNdc(event.clientX, event.clientY);
+    if (!pet.hitTest(null, pointerNdc)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.shiftKey) {
+      pet.setRotation?.(0);
+      $('#petRotate') && ($('#petRotate').value = '0');
+      const label = $('#petRotateVal');
+      if (label) label.textContent = '0°';
+      showToast('海海转回正面了');
+      return;
+    }
+    pet.resetAnchor?.();
+    showToast('海海回到右下角了');
+  });
+
+  // 右键拖动旋转时不要弹出浏览器菜单。
+  canvas.addEventListener('contextmenu', (event) => {
+    setPointerNdc(event.clientX, event.clientY);
+    if (pet.getSnapshot().visible && pet.hitTest(null, pointerNdc)) event.preventDefault();
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Student POV · 跟随一位学生走一段                                    */
+/* ------------------------------------------------------------------ */
+
+/** 射线拾取学生：先做建筑遮挡判断，避免隔着墙点中同学。 */
+function pickStudent(clientX, clientY, maxPx = 44) {
+  if (!campus?.studentGroups?.length) return null;
+  setPointerNdc(clientX, clientY);
+  raycaster.setFromCamera(pointerNdc, camera);
+  const studentHits = raycaster.intersectObjects(campus.studentGroups, true);
+  const buildingHits = raycaster.intersectObjects(campus.pickables, false);
+  if (studentHits.length) {
+    if (buildingHits.length && buildingHits[0].distance < studentHits[0].distance) return null;
+    for (const hit of studentHits) {
+      let node = hit.object;
+      while (node) {
+        if (node.userData?.studentId !== undefined) return node.userData.studentId;
+        node = node.parent;
+      }
+    }
+  }
+  // 点击容差：同学很小，取屏幕距离点击射线最近的一个人（默认约 44px 内）；
+  // maxPx=0 时只用真实射线命中，用于普通模式下的「直接单击同学」。
+  if (maxPx <= 0) return null;
+  const rect = canvas.getBoundingClientRect();
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  let best = null;
+  const point = new THREE.Vector3();
+  for (const group of campus.studentGroups) {
+    group.getWorldPosition(point);
+    point.y += 0.42;
+    const camDist = camera.position.distanceTo(point);
+    if (camDist < 0.2) continue;
+    if (buildingHits.length && buildingHits[0].distance < camDist) continue;
+    const rayDist = raycaster.ray.distanceToPoint(point);
+    const screenPx = (rayDist / camDist / tanHalf) * (rect.height / 2);
+    if (screenPx > maxPx) continue;
+    if (!best || screenPx < best.screenPx) best = { id: group.userData.studentId, screenPx };
+  }
+  return best?.id ?? null;
+}
+
+function setStudentPickMode(on) {
+  const next = Boolean(on);
+  state.studentPickMode = next;
+  app.classList.toggle('is-picking-student', next);
+  if (studentPickHint) studentPickHint.hidden = !next;
+  if (studentButton) {
+    studentButton.classList.toggle('is-on', next);
+    studentButton.setAttribute('aria-pressed', String(next));
+    const label = studentButton.querySelector('span');
+    if (label) label.textContent = next ? '点选' : '学生';
+  }
+  campus?.setStudentPaused?.(next);
+  if (next) {
+    stopTour();
+    closeSpot({ stop: true });
+    setPetPanel(false);
+  }
+  markInteracted();
+}
+
+/** 随机换一位同学：排除当前这位，避免按钮点了没变化。 */
+function randomStudentId(excludeId = null) {
+  const groups = campus?.studentGroups || [];
+  const pool = [];
+  for (let id = 0; id < groups.length; id += 1) {
+    if (id !== excludeId) pool.push(id);
+  }
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function startStudentView(studentId) {
+  if (!campus?.studentAt) return;
+  const walker = campus.studentAt(studentId);
+  if (!walker) return;
+  if (film?.isPlaying?.()) stopFilm({ silent: true });
+  if (state.studentFollow) exitStudentView();
+  setStudentPickMode(false);
+  campus?.setStudentPaused?.(false);
+  stopTour();
+  closeSpot({ stop: true });
+  setPetPanel(false);
+  cancelCameraTween();
+  const saved = {
+    position: camera.position.clone(),
+    target: controls.target.clone(),
+    fov: camera.fov,
+    controlsEnabled: controls.enabled,
+    studentVisible: walker.group.visible
+  };
+  state.studentFollow = { id: studentId, walker, saved, ready: false };
+  walker.group.visible = false;
+  pet?.setSuppressed(true);
+  controls.enabled = false;
+  camera.fov = 64;
+  camera.updateProjectionMatrix();
+  // 立即把相机放到学生眼位，避免第一帧从上一个机位缓慢拉近。
+  updateStudentView();
+  app.classList.add('is-student-view');
+  document.body.classList.add('is-student-view');
+  if (studentView) studentView.hidden = false;
+  if (studentViewTitle) {
+    studentViewTitle.textContent = `同学${String(studentId + 1).padStart(2, '0')}`;
+  }
+  if (studentViewSub) {
+    studentViewSub.textContent = '跟着这位同学，走一段校园的路。';
+  }
+  markInteracted();
+}
+
+function updateStudentView() {
+  const follow = state.studentFollow;
+  if (!follow) return;
+  const walker = follow.walker;
+  const p = walker.group.position;
+  const yaw = walker.group.rotation.y;
+  const eye = 0.86;
+  const fx = Math.sin(yaw);
+  const fz = Math.cos(yaw);
+  studentEye.set(p.x, p.y + eye, p.z);
+  if (!follow.ready) {
+    camera.position.copy(studentEye);
+    follow.ready = true;
+  } else {
+    camera.position.lerp(studentEye, 0.42);
+  }
+  studentLook.set(
+    camera.position.x + fx * 12,
+    camera.position.y - 0.58,
+    camera.position.z + fz * 12
+  );
+  camera.lookAt(studentLook);
+  if (camera.fov !== 64) {
+    camera.fov = 64;
+    camera.updateProjectionMatrix();
+  }
+}
+
+function exitStudentView({ silent = false } = {}) {
+  const follow = state.studentFollow;
+  if (!follow) return;
+  state.studentFollow = null;
+  follow.walker.group.visible = follow.saved.studentVisible;
+  pet?.setSuppressed(false);
+  controls.enabled = follow.saved.controlsEnabled;
+  camera.position.copy(follow.saved.position);
+  camera.fov = follow.saved.fov;
+  controls.target.copy(follow.saved.target);
+  camera.updateProjectionMatrix();
+  controls.update();
+  app.classList.remove('is-student-view');
+  document.body.classList.remove('is-student-view');
+  if (studentView) studentView.hidden = true;
+  if (!silent) showToast('已退出学生视角');
+  markInteracted();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Photo viewer · 双击 / 放大按钮看大图                               */
+/* ------------------------------------------------------------------ */
+
+function openPhotoViewer() {
+  if (!photoViewer || !infoPhotoImg?.src || infoPhoto?.hidden) return;
+  photoViewerImg.src = infoPhotoImg.src;
+  photoViewerImg.alt = infoPhotoImg.alt || '实景照片';
+  photoViewerCaption.textContent = infoPhotoCaption?.textContent || '';
+  const href = infoPhotoCredit?.getAttribute('href');
+  if (href) {
+    photoViewerCredit.href = href;
+    photoViewerCredit.textContent = infoPhotoCredit.textContent;
+    photoViewerCredit.hidden = false;
+  } else {
+    photoViewerCredit.removeAttribute('href');
+    photoViewerCredit.textContent = infoPhotoCredit?.textContent || '';
+    photoViewerCredit.hidden = !photoViewerCredit.textContent;
+  }
+  photoViewer.hidden = false;
+  state.photoViewerOpen = true;
+  document.body.classList.add('is-photo-viewer');
+  photoViewerClose?.focus();
+}
+
+function closePhotoViewer() {
+  if (!photoViewer || !state.photoViewerOpen) return;
+  photoViewer.hidden = true;
+  state.photoViewerOpen = false;
+  document.body.classList.remove('is-photo-viewer');
+  infoPhotoZoom?.focus();
+}
+
+/* ------------------------------------------------------------------ */
+/*  室内定点环视 · 360° 看四周，不穿墙                                */
+/* ------------------------------------------------------------------ */
+
+function enterLookMode(spotId, view) {
+  if (!camera) return;
+  cancelCameraTween();
+  camera.position.fromArray(view.position);
+  camera.fov = view.fov;
+  camera.updateProjectionMatrix();
+  const target = new THREE.Vector3(...view.target);
+  camera.lookAt(target);
+  const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+  state.lookMode = {
+    spotId,
+    base: camera.position.clone(),
+    yaw: euler.y,
+    pitch: euler.x,
+    fov: view.fov
+  };
+  if (controls) controls.enabled = false;
+  app.classList.add('is-look-mode');
+  interactionHint.textContent = coarsePointer
+    ? '室内定点环视 · 单指拖动看四周'
+    : '室内定点环视 · 拖动看四周（不穿墙）';
+  showToast('室内定点环视 · 拖动画面可 360° 观察');
+  markInteracted();
+}
+
+function updateLookMode() {
+  const look = state.lookMode;
+  if (!look || !camera) return;
+  camera.position.copy(look.base);
+  camera.quaternion.setFromEuler(new THREE.Euler(look.pitch, look.yaw, 0, 'YXZ'));
+  if (camera.fov !== look.fov) {
+    camera.fov = look.fov;
+    camera.updateProjectionMatrix();
+  }
+}
+
+function exitLookMode() {
+  if (!state.lookMode) return;
+  state.lookMode = null;
+  app.classList.remove('is-look-mode');
+  if (controls) {
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    controls.target.copy(camera.position).addScaledVector(forward, 10);
+    controls.enabled = true;
+    controls.update();
+  }
+  interactionHint.textContent = coarsePointer
+    ? '单指旋转 · 双指缩放 · 轻触建筑'
+    : '拖动旋转 · 滚轮缩放 · 点击建筑';
+}
+
+function setupLookDrag() {
+  if (!canvas) return;
+  const onDown = (event) => {
+    if (!state.lookMode) return;
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    lookDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      baseYaw: state.lookMode.yaw,
+      basePitch: state.lookMode.pitch
+    };
+    cursorEl.classList.add('is-down');
+    markInteracted();
+  };
+  const onMove = (event) => {
+    if (!lookDrag || !state.lookMode || event.pointerId !== lookDrag.pointerId) return;
+    event.preventDefault();
+    const dx = event.clientX - lookDrag.startX;
+    const dy = event.clientY - lookDrag.startY;
+    state.lookMode.yaw = lookDrag.baseYaw - dx * 0.005;
+    state.lookMode.pitch = Math.max(-1.25, Math.min(1.25, lookDrag.basePitch - dy * 0.005));
+  };
+  const onUp = (event) => {
+    if (!lookDrag || event.pointerId !== lookDrag.pointerId) return;
+    lookDrag = null;
+    cursorEl.classList.remove('is-down');
+  };
+  canvas.addEventListener('pointerdown', onDown, true);
+  window.addEventListener('pointermove', onMove, { passive: false });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
 }
 
 function setupEvents() {
@@ -736,7 +1267,8 @@ function setupEvents() {
       state.hoveredSpot = spot;
     }
     const overPet = Boolean(pet?.hitTest(null, pointerNdc));
-    cursorEl.classList.toggle('is-hover', Boolean(spot) || overPet);
+    const overStudent = pickStudent(event.clientX, event.clientY, state.studentPickMode ? 44 : 0) !== null;
+    cursorEl.classList.toggle('is-hover', Boolean(spot) || overPet || overStudent);
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -848,6 +1380,39 @@ function setupEvents() {
       switchCampus(id);
     });
   }
+
+  if (studentButton) {
+    studentButton.title = '学生视角：直接单击画面里的同学，或按此按钮进入点选模式';
+    studentButton.addEventListener('click', () => {
+      if (state.studentFollow) exitStudentView();
+      else setStudentPickMode(!state.studentPickMode);
+    });
+  }
+  exitStudentViewButton?.addEventListener('click', () => exitStudentView());
+  infoPhotoZoom?.addEventListener('click', openPhotoViewer);
+  infoPhotoFrame?.addEventListener('dblclick', (event) => {
+    event.preventDefault();
+    openPhotoViewer();
+  });
+  photoViewerClose?.addEventListener('click', closePhotoViewer);
+  photoViewer?.addEventListener('click', (event) => {
+    if (event.target === photoViewer) closePhotoViewer();
+  });
+  $('#changeStudentView')?.addEventListener('click', () => {
+    const current = state.studentFollow?.id ?? null;
+    const next = randomStudentId(current);
+    if (next === null) {
+      setStudentPickMode(true);
+      showToast('没有其他同学了，点画面里的人');
+      return;
+    }
+    const title = `同学${String(next + 1).padStart(2, '0')}`;
+    startStudentView(next);
+    showToast(`换到${title} · 跟着走一段`);
+  });
+
+  setupLookDrag();
+  setupPetDrag();
 }
 
 function markInteracted() {
@@ -869,6 +1434,20 @@ function handleCustomCursor(event) {
 
 function handleKeyDown(event) {
   if (state.modalOpen) return;
+  if (state.photoViewerOpen) {
+    if (event.key === 'Escape') closePhotoViewer();
+    return;
+  }
+  if (event.key === 'Escape') {
+    if (state.studentFollow) {
+      exitStudentView();
+      return;
+    }
+    if (state.studentPickMode) {
+      setStudentPickMode(false);
+      return;
+    }
+  }
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -919,7 +1498,49 @@ function toggleFullscreen() {
 /*  Selection, info, tour                                              */
 /* ------------------------------------------------------------------ */
 
+/** 图志里的实景照片：与立面示意并置，尺寸不足时以 cover 裁切。 */
+function renderSpotPhoto(spot) {
+  if (!infoPhoto) return;
+  const photo = spot.photo;
+  if (!photo?.src) {
+    infoPhoto.hidden = true;
+    infoPhoto.classList.remove('is-loading');
+    infoPhotoImg.removeAttribute('src');
+    infoPhotoImg.alt = '';
+    return;
+  }
+  infoPhoto.hidden = false;
+  infoPhotoImg.alt = photo.caption || `${spot.name} 实景照片`;
+  const changed = infoPhotoImg.dataset.src !== photo.src;
+  infoPhoto.classList.toggle('is-loading', changed);
+  if (changed) {
+    infoPhotoImg.dataset.src = photo.src;
+    infoPhotoImg.src = photo.src;
+  }
+  infoPhotoTag.textContent = photo.kind === 'reference' ? '参考 / REFERENCE' : '实景 / SITE PHOTO';
+  infoPhotoTag.classList.toggle('is-reference', photo.kind === 'reference');
+  infoPhotoCaption.textContent = photo.caption || '';
+  if (photo.credit) {
+    infoPhotoCredit.textContent = photo.credit;
+    if (photo.source) infoPhotoCredit.href = photo.source;
+    else infoPhotoCredit.removeAttribute('href');
+    infoPhotoCredit.hidden = false;
+  } else {
+    infoPhotoCredit.textContent = '';
+    infoPhotoCredit.hidden = true;
+  }
+}
+
+if (infoPhotoImg) {
+  const settle = () => infoPhoto?.classList.remove('is-loading');
+  infoPhotoImg.addEventListener('load', settle);
+  infoPhotoImg.addEventListener('error', settle);
+}
+
 function openSpot(id, options = {}) {
+  closePhotoViewer();
+  if (state.studentFollow) exitStudentView();
+  exitLookMode();
   const spot = LANDMARKS.find((item) => item.id === id);
   if (!spot) return;
   if (film?.isPlaying?.()) stopFilm({ silent: true });
@@ -937,6 +1558,7 @@ function openSpot(id, options = {}) {
     .map(([label, value]) => `<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`)
     .join('');
   infoDrawing.innerHTML = diagramSVG(spot.diagram);
+  renderSpotPhoto(spot);
   infoCard.scrollTop = 0;
 
   app.classList.add('is-panel-open');
@@ -944,9 +1566,15 @@ function openSpot(id, options = {}) {
   updateSceneHeading(spot);
   updateActiveUI(id);
   campus.setSelection(id);
+  // 室内图志空间狭小，先把相机前的海海收起来，退出时再放回。
+  pet?.setSuppressed(Boolean(spot.indoor));
   queueRevealSpot({ fromTour: Boolean(options.fromTour) });
 
-  if (options.fly !== false) {
+  if (spot.cameraKey) {
+    // 室内：固定站位 + 自由环视，避免 OrbitControls 绕到墙外。
+    const view = getSpotView(spot);
+    if (view) enterLookMode(spot.id, view);
+  } else if (options.fly !== false) {
     const duration =
       options.duration !== undefined ? options.duration : reducedMotion ? 0 : 1850;
     flyTo(getSpotView(spot), duration);
@@ -954,6 +1582,8 @@ function openSpot(id, options = {}) {
 }
 
 function closeSpot({ stop = true } = {}) {
+  closePhotoViewer();
+  exitLookMode();
   if (stop) stopTour();
   state.activeId = null;
   app.classList.remove('is-panel-open');
@@ -961,6 +1591,7 @@ function closeSpot({ stop = true } = {}) {
   updateSceneHeading(null);
   updateActiveUI(null);
   campus.hideSelection();
+  pet?.setSuppressed(false);
   window.clearTimeout(state.revealTimer);
   if (isPhoneLayout()) {
     if (stageEl) {
@@ -1028,6 +1659,8 @@ function stepSpot(direction) {
 }
 
 function startTour() {
+  if (state.studentFollow) exitStudentView();
+  exitLookMode();
   if (state.tourActive) return;
   if (film?.isPlaying?.()) stopFilm({ silent: true });
   state.tourActive = true;
@@ -1134,10 +1767,11 @@ function applyCampusBranding() {
     fullName: [school, campusEntry.name].filter(Boolean).join(' · '),
     loadingYears: `三维校园图志 / ${yearRange}`,
     schoolEnShortEn: [campusEntry.schoolEn || school, campusEntry.shortEn].filter(Boolean).join(' · '),
-    loadingTitle: `${escapeHtml(shortName)}<span>校园图志</span>`,
-    brandName: `${shortName}校园图志`,
+    loadingTitle: `${escapeHtml(school || shortName)}<span>校园图志</span>`,
+    brandName: `${school || shortName}校园图志`,
     brandSub: `${school} · ${campusEntry.name}${division ? `（${division}）` : ''} / A CAMPUS ATLAS`,
     introEyebrow: [campusEntry.shortEn, cityEn].filter(Boolean).join(', ') + ` · ${shortName}`,
+    introTitleCn: school || shortName,
     shortName,
     introLead: `把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访${
       division ? `${school}${division}` : campusEntry.name
@@ -1163,10 +1797,10 @@ function applyCampusBranding() {
   if (metaDescription) {
     metaDescription.setAttribute(
       'content',
-      `${school}${campusEntry.name}${division ? `（${division}）` : ''}交互三维校园图志。${campusEntry.summary || ''}`
+      `${school}校园图志 · ${campusEntry.name}${division ? `（${division}）` : ''}交互三维校园（非官方、非测绘）。${campusEntry.summary || ''}`
     );
   }
-  document.title = `${shortName}校园图志 · ${school}三维校园`;
+  document.title = `${school}校园图志 · ${campusEntry.name}三维校园`;
 }
 
 /** 能力位：features 全为 true 的府城校区不产生任何视觉变化。 */
@@ -1253,6 +1887,8 @@ function announceCampusFallback(resolvedRoute) {
  * 构建新场景 → 重置相机与日照 → 规范化 URL → toast。
  */
 function switchCampus(nextId) {
+  if (state.studentFollow) exitStudentView();
+  exitLookMode();
   if (state.switching) return;
   const resolved = resolveCampus(nextId);
   if (resolved.fallback) {
@@ -1395,6 +2031,18 @@ function handleCanvasClick(clientX, clientY) {
     if (pet.pet()) showToast('海海很喜欢被摸头');
     if (!petPanelOpen) setPetPanel(true);
     refreshPetHud();
+    return;
+  }
+  if (state.studentPickMode) {
+    const studentId = pickStudent(clientX, clientY);
+    if (studentId !== null) startStudentView(studentId);
+    else showToast('再点近一点，选中一位同学');
+    return;
+  }
+  // 普通模式下也可以直接单击画面里的同学进入他的视角，不必先按「学生」。
+  const directStudent = pickStudent(clientX, clientY, 0);
+  if (directStudent !== null) {
+    startStudentView(directStudent);
     return;
   }
   const spot = pickSpot(clientX, clientY);
@@ -1665,13 +2313,13 @@ function downloadFilmBlob(blob) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = '府城校园图志-巡游.webm';
+    link.download = '海南中学校园图志-巡游.webm';
     link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-    showToast('影片已开始下载 · 府城校园图志-巡游.webm');
+    showToast('影片已开始下载 · 海南中学校园图志-巡游.webm');
     return true;
   } catch (error) {
     console.warn('Film download failed:', error);
@@ -1702,6 +2350,8 @@ function finishRecording({ autoDownload = true } = {}) {
 }
 
 function startFilm(options = {}) {
+  if (state.studentFollow) exitStudentView();
+  exitLookMode();
   if (!campus) return false;
   if (!film) film = createFilmLayer();
   if (!film) {
@@ -2447,6 +3097,7 @@ function diagramSVG(type) {
 /* ------------------------------------------------------------------ */
 
 function openAbout() {
+  closePhotoViewer();
   state.modalOpen = true;
   stopTour();
   setModalCursor(true);
@@ -2514,8 +3165,13 @@ function renderFrame(now) {
   campus.tick(delta);
   weather?.tick?.(delta);
   campus.updateBuildingLabels(camera);
-  // 影片期间相机由 js/film.js 驱动：跳过补间、OrbitControls 回写与边界钳制。
-  if (!film?.isPlaying?.()) {
+  // 影片期间相机由 js/film.js 驱动；学生视角期间相机跟随学生；
+  // 两者都跳过补间、OrbitControls 回写与边界钳制。
+  if (state.studentFollow) {
+    updateStudentView();
+  } else if (state.lookMode) {
+    updateLookMode();
+  } else if (!film?.isPlaying?.()) {
     updateCameraTween(now);
     controls.update();
 
