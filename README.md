@@ -1,5 +1,7 @@
 # 海南中学校园图志 · 府城校区
 
+**中文** | [English](README_EN.md)
+
 基于 Three.js 的海南中学府城校区（高中部）交互三维校园图志：把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访府城校区的日常。
 
 **在线访问**：<https://leonardo-f.github.io/hainan-middle-school-atlas/>
