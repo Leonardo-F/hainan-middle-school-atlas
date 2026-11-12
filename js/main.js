@@ -55,6 +55,8 @@ const loading = $('#loading');
 const loadingBar = $('#loadingBar');
 const loadingPct = $('#loadingPct');
 const loadingStage = $('#loadingStage');
+const loadingClose = $('#loadingClose');
+const loadingPreviewButton = $('#loadingPreviewButton');
 const canvas = $('#scene');
 const infoCard = $('#infoCard');
 const infoNumber = $('#infoNumber');
@@ -148,6 +150,7 @@ const state = {
   studentPickMode: false,
   studentFollow: null,
   photoViewerOpen: false,
+  loadingPreview: false,
   lookMode: null
 };
 
@@ -1381,6 +1384,8 @@ function setupEvents() {
     });
   }
 
+  loadingPreviewButton?.addEventListener('click', showLoadingPreview);
+  loadingClose?.addEventListener('click', hideLoadingPreview);
   if (studentButton) {
     studentButton.title = '学生视角：直接单击画面里的同学，或按此按钮进入点选模式';
     studentButton.addEventListener('click', () => {
@@ -1433,6 +1438,10 @@ function handleCustomCursor(event) {
 }
 
 function handleKeyDown(event) {
+  if (state.loadingPreview) {
+    if (event.key === 'Escape') hideLoadingPreview();
+    return;
+  }
   if (state.modalOpen) return;
   if (state.photoViewerOpen) {
     if (event.key === 'Escape') closePhotoViewer();
@@ -2421,6 +2430,35 @@ function toggleFilmRecording() {
  * ?film=1 → 自动放映；?record=1 → 自动放映并录制，结束时自动下载。
  * 与 ?hour / ?spot / ?weather / ?campus 兼容（其余参数照旧生效）。
  */
+function showLoadingPreview() {
+  if (!loading) return;
+  if (film?.isPlaying?.()) stopFilm({ silent: true });
+  if (state.studentFollow) exitStudentView({ silent: true });
+  if (state.studentPickMode) setStudentPickMode(false);
+  stopTour();
+  closeSpot({ stop: true });
+  state.loadingPreview = true;
+  loading.hidden = false;
+  loading.classList.remove('is-leaving');
+  loading.classList.add('is-preview');
+  if (loadingBar) loadingBar.style.width = '100%';
+  if (loadingPct) loadingPct.textContent = '100';
+  if (loadingStage) loadingStage.textContent = '加载页预览 · 海南中学校园图志';
+  loadingClose?.focus();
+  markInteracted();
+}
+
+function hideLoadingPreview() {
+  if (!state.loadingPreview || !loading) return;
+  state.loadingPreview = false;
+  loading.classList.remove('is-preview');
+  loading.classList.add('is-leaving');
+  window.setTimeout(() => {
+    loading.hidden = true;
+  }, 980);
+  loadingPreviewButton?.focus();
+}
+
 function maybeAutoStartFilm() {
   const wantsRecord = params.get('record') === '1' || params.get('record') === 'true';
   const wantsFilm = wantsRecord || params.get('film') === '1' || params.get('film') === 'true';

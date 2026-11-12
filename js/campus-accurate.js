@@ -497,18 +497,20 @@ export function buildCampus(scene, renderer, options = {}) {
     const g = new THREE.Group();
     g.name = 'taihu-stone';
     g.position.set(x, 0.1, z);
-    // 深色石材花池 + 草坪顶面：长方形，长边与主教学楼立面平行（与主路垂直）。
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.22, 3.4), M.stoneDark || M.stone);
+    // 深色石材花池 + 草坪顶面：横向铺满整条主路，行人从两侧绕行。
+    // 长边（局部 x）与主路方向垂直，宽度 6.4 覆盖 4.3 宽的主路并向两边各多出约 1 单位。
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.22, 3.8), M.stoneDark || M.stone);
     plinth.position.y = 0.11; plinth.receiveShadow = true; g.add(plinth);
-    const soil = new THREE.Mesh(new THREE.BoxGeometry(4.18, 0.12, 2.96), M.leaf);
+    const soil = new THREE.Mesh(new THREE.BoxGeometry(5.95, 0.12, 3.34), M.leaf);
     soil.position.y = 0.28; soil.receiveShadow = true; g.add(soil);
     for (const zEdge of [-1, 1]) {
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(4.66, 0.08, 0.12), M.stoneLight);
-      cap.position.set(0, 0.24, zEdge * 1.64); cap.receiveShadow = true; g.add(cap);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(6.46, 0.08, 0.14), M.stoneLight);
+      cap.position.set(0, 0.24, zEdge * 1.84); cap.receiveShadow = true; g.add(cap);
     }
     for (const [px, pz, s, sy] of [
-      [-1.2, 0, 0.92, 0.8], [-0.2, 0.2, 1.15, 1], [0.85, 0.05, 0.85, 0.72],
-      [1.55, -0.1, 0.55, 0.5], [-0.2, -0.55, 0.7, 0.6], [0.3, 0.4, 0.55, 0.5]
+      [-1.55, 0, 0.95, 0.8], [-0.45, 0.2, 1.18, 1], [0.75, 0.05, 0.9, 0.72],
+      [1.75, -0.1, 0.62, 0.52], [-0.25, -0.58, 0.72, 0.6], [0.35, 0.42, 0.58, 0.5],
+      [-2.25, 0.1, 0.48, 0.4], [2.3, 0.05, 0.45, 0.38]
     ]) {
       const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), M.taihu);
       rock.position.set(px, 0.75 + sy * 0.55, pz);
@@ -2183,7 +2185,7 @@ export function buildCampus(scene, renderer, options = {}) {
   const mainHallForStone = site.buildings.find((b) => b.name === '主教学楼');
   if (mainHallForStone) taihuStone.rotation.y = deg(-mainHallForStone.obb[2]);
   landmarkGroups.stone = taihuStone;
-  studentObstacles.push({ x: -11.49, z: -43.24, r: 1.9 });
+  studentObstacles.push({ x: -11.49, z: -43.24, r: 3.2 });
   studentObstacles.push({ x: -4.41, z: -45.79, r: 1.9 });
   studentObstacles.push({ x: site.heroTree[0], z: site.heroTree[1], r: 1.8 });
 

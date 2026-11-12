@@ -567,6 +567,33 @@ svg {
   color: var(--ink-soft);
 }
 
+.intro__replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--cn-serif);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.intro__replay .mono {
+  font-size: 6.5px;
+  letter-spacing: 0.14em;
+  opacity: 0.68;
+}
+
+.intro__replay:hover,
+.intro__replay:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .intro__note {
   display: inline-flex;
   align-items: center;
@@ -2533,6 +2560,70 @@ body[data-night='true'] .rail-button .icon-moon {
   padding-bottom: clamp(20px, 3.5vh, 44px);
 }
 
+.loading__badge {
+  width: clamp(64px, 6vw, 84px);
+  aspect-ratio: 1;
+  margin: 0 0 clamp(18px, 3vh, 34px);
+  color: #214536;
+  opacity: 0.88;
+}
+
+.loading__badge svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.loading__badge-mono {
+  font-family: var(--mono);
+  font-size: 5px;
+  letter-spacing: 0.14em;
+  fill: currentColor;
+}
+
+.loading__badge-seal {
+  font-family: var(--cn-serif);
+  font-size: 6.5px;
+  letter-spacing: 0.08em;
+  fill: #aa4c32;
+}
+
+.loading__close {
+  position: absolute;
+  top: clamp(52px, 5.6vw, 76px);
+  right: clamp(18px, 2.6vw, 34px);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(23, 48, 39, 0.28);
+  background: rgba(239, 230, 215, 0.78);
+  color: #173027;
+  font-family: var(--cn-serif);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.loading__close .mono {
+  font-size: 6.5px;
+  letter-spacing: 0.12em;
+  opacity: 0.62;
+}
+
+.loading__close:hover,
+.loading__close:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(250, 244, 234, 0.96);
+}
+
+.loading.is-preview .loading__close {
+  display: inline-flex;
+}
+
 .loading__kicker {
   margin: 0 0 clamp(16px, 3vh, 38px);
   font-size: 9.5px;
@@ -4067,6 +4158,11 @@ html.show-native-cursor .cursor {
     grid-row: 2;
     align-self: end;
     padding-bottom: 20px;
+  }
+
+  .loading__badge {
+    width: 58px;
+    margin-bottom: 16px;
   }
 
   .loading__kicker {

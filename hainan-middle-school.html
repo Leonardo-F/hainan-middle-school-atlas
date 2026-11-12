@@ -582,6 +582,33 @@ svg {
   color: var(--ink-soft);
 }
 
+.intro__replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--cn-serif);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.intro__replay .mono {
+  font-size: 6.5px;
+  letter-spacing: 0.14em;
+  opacity: 0.68;
+}
+
+.intro__replay:hover,
+.intro__replay:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .intro__note {
   display: inline-flex;
   align-items: center;
@@ -2548,6 +2575,70 @@ body[data-night='true'] .rail-button .icon-moon {
   padding-bottom: clamp(20px, 3.5vh, 44px);
 }
 
+.loading__badge {
+  width: clamp(64px, 6vw, 84px);
+  aspect-ratio: 1;
+  margin: 0 0 clamp(18px, 3vh, 34px);
+  color: #214536;
+  opacity: 0.88;
+}
+
+.loading__badge svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.loading__badge-mono {
+  font-family: var(--mono);
+  font-size: 5px;
+  letter-spacing: 0.14em;
+  fill: currentColor;
+}
+
+.loading__badge-seal {
+  font-family: var(--cn-serif);
+  font-size: 6.5px;
+  letter-spacing: 0.08em;
+  fill: #aa4c32;
+}
+
+.loading__close {
+  position: absolute;
+  top: clamp(52px, 5.6vw, 76px);
+  right: clamp(18px, 2.6vw, 34px);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(23, 48, 39, 0.28);
+  background: rgba(239, 230, 215, 0.78);
+  color: #173027;
+  font-family: var(--cn-serif);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.loading__close .mono {
+  font-size: 6.5px;
+  letter-spacing: 0.12em;
+  opacity: 0.62;
+}
+
+.loading__close:hover,
+.loading__close:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(250, 244, 234, 0.96);
+}
+
+.loading.is-preview .loading__close {
+  display: inline-flex;
+}
+
 .loading__kicker {
   margin: 0 0 clamp(16px, 3vh, 38px);
   font-size: 9.5px;
@@ -4084,6 +4175,11 @@ html.show-native-cursor .cursor {
     padding-bottom: 20px;
   }
 
+  .loading__badge {
+    width: 58px;
+    margin-bottom: 16px;
+  }
+
   .loading__kicker {
     font-size: 7.5px;
     margin-bottom: 16px;
@@ -4934,6 +5030,7 @@ body.is-photo-viewer .cursor {
 <body data-night="false">
   <div id="app" class="app is-loading">
     <div class="loading" id="loading">
+      <button class="loading__close" id="loadingClose" type="button">返回图志 <span class="mono">ESC</span></button>
       <div class="loading__grid" aria-hidden="true"></div>
       <div class="loading__frame">
         <div class="loading__top mono">
@@ -4983,6 +5080,22 @@ body.is-photo-viewer .cursor {
         </div>
 
         <div class="loading__copy">
+          <div class="loading__badge" role="img" aria-label="海南中学校徽（校门与 1923 线稿标记）">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="1"/>
+              <circle cx="32" cy="32" r="25.5" stroke="currentColor" stroke-width="0.65" stroke-dasharray="1.4 4"/>
+              <text class="loading__badge-mono" x="32" y="11" text-anchor="middle">1923</text>
+              <g transform="translate(10 15) scale(0.9)" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 33h38"/>
+                <path d="M8 33V19M16 33V21M28 33V21M36 33V19"/>
+                <path d="M4 19c6.8-1 11.4-5.4 14.6-7.2C21.6 10.4 25 9.8 27.4 9.8h2.4c3 0 5.8.7 8.4 2.2 3.8 2.2 7.8 5.1 12.8 6.1"/>
+                <path d="M5.6 22.6c6.7-1 11.2-5.2 14.3-6.9 3-1.4 6.3-2 8.6-2h2.2c2.8 0 5.5.7 8 2.1 3.7 2.1 7.6 4.9 12.4 5.9"/>
+                <path d="M15.2 12.2c2.8-1.4 5.7-2 8.2-2h3.4c2.5 0 5.4.7 8.2 2.1"/>
+                <path d="M22 33v-4.6h5V33"/>
+              </g>
+              <text class="loading__badge-seal" x="32" y="58.5" text-anchor="middle">海中</text>
+            </svg>
+          </div>
           <p class="loading__kicker mono" data-campus-slot="schoolEnShortEn">HAINAN MIDDLE SCHOOL · FUCHENG</p>
           <h1 data-campus-slot="loadingTitle">海南中学<span>校园图志</span></h1>
           <p class="loading__sub">把一座校园，读成一张可以行走的图。</p>
@@ -5070,6 +5183,9 @@ body.is-photo-viewer .cursor {
               <span id="introSpotCount">— 处地景</span>
               <span data-campus-slot="cityShortName">海口 · 府城</span>
             </p>
+            <button class="intro__replay" id="loadingPreviewButton" type="button">
+              <span>重看开场</span><span class="mono">LOADING</span>
+            </button>
           </section>
 
           <nav class="index" id="index" aria-label="校园地标索引">
@@ -55956,18 +56072,20 @@ void main() {
 	    const g = new Group();
 	    g.name = 'taihu-stone';
 	    g.position.set(x, 0.1, z);
-	    // 深色石材花池 + 草坪顶面：长方形，长边与主教学楼立面平行（与主路垂直）。
-	    const plinth = new Mesh(new BoxGeometry(4.6, 0.22, 3.4), M.stoneDark || M.stone);
+	    // 深色石材花池 + 草坪顶面：横向铺满整条主路，行人从两侧绕行。
+	    // 长边（局部 x）与主路方向垂直，宽度 6.4 覆盖 4.3 宽的主路并向两边各多出约 1 单位。
+	    const plinth = new Mesh(new BoxGeometry(6.4, 0.22, 3.8), M.stoneDark || M.stone);
 	    plinth.position.y = 0.11; plinth.receiveShadow = true; g.add(plinth);
-	    const soil = new Mesh(new BoxGeometry(4.18, 0.12, 2.96), M.leaf);
+	    const soil = new Mesh(new BoxGeometry(5.95, 0.12, 3.34), M.leaf);
 	    soil.position.y = 0.28; soil.receiveShadow = true; g.add(soil);
 	    for (const zEdge of [-1, 1]) {
-	      const cap = new Mesh(new BoxGeometry(4.66, 0.08, 0.12), M.stoneLight);
-	      cap.position.set(0, 0.24, zEdge * 1.64); cap.receiveShadow = true; g.add(cap);
+	      const cap = new Mesh(new BoxGeometry(6.46, 0.08, 0.14), M.stoneLight);
+	      cap.position.set(0, 0.24, zEdge * 1.84); cap.receiveShadow = true; g.add(cap);
 	    }
 	    for (const [px, pz, s, sy] of [
-	      [-1.2, 0, 0.92, 0.8], [-0.2, 0.2, 1.15, 1], [0.85, 0.05, 0.85, 0.72],
-	      [1.55, -0.1, 0.55, 0.5], [-0.2, -0.55, 0.7, 0.6], [0.3, 0.4, 0.55, 0.5]
+	      [-1.55, 0, 0.95, 0.8], [-0.45, 0.2, 1.18, 1], [0.75, 0.05, 0.9, 0.72],
+	      [1.75, -0.1, 0.62, 0.52], [-0.25, -0.58, 0.72, 0.6], [0.35, 0.42, 0.58, 0.5],
+	      [-2.25, 0.1, 0.48, 0.4], [2.3, 0.05, 0.45, 0.38]
 	    ]) {
 	      const rock = new Mesh(new DodecahedronGeometry(1, 0), M.taihu);
 	      rock.position.set(px, 0.75 + sy * 0.55, pz);
@@ -57565,7 +57683,7 @@ void main() {
 	  const mainHallForStone = site.buildings.find((b) => b.name === '主教学楼');
 	  if (mainHallForStone) taihuStone.rotation.y = deg(-mainHallForStone.obb[2]);
 	  landmarkGroups.stone = taihuStone;
-	  studentObstacles.push({ x: -11.49, z: -43.24, r: 1.9 });
+	  studentObstacles.push({ x: -11.49, z: -43.24, r: 3.2 });
 	  studentObstacles.push({ x: -4.41, z: -45.79, r: 1.9 });
 	  studentObstacles.push({ x: site.heroTree[0], z: site.heroTree[1], r: 1.8 });
 
@@ -63255,6 +63373,8 @@ void main() {
 	const loadingBar = $('#loadingBar');
 	const loadingPct = $('#loadingPct');
 	const loadingStage = $('#loadingStage');
+	const loadingClose = $('#loadingClose');
+	const loadingPreviewButton = $('#loadingPreviewButton');
 	const canvas = $('#scene');
 	const infoCard = $('#infoCard');
 	const infoNumber = $('#infoNumber');
@@ -63348,6 +63468,7 @@ void main() {
 	  studentPickMode: false,
 	  studentFollow: null,
 	  photoViewerOpen: false,
+	  loadingPreview: false,
 	  lookMode: null
 	};
 
@@ -64580,6 +64701,8 @@ void main() {
 	    });
 	  }
 
+	  loadingPreviewButton?.addEventListener('click', showLoadingPreview);
+	  loadingClose?.addEventListener('click', hideLoadingPreview);
 	  if (studentButton) {
 	    studentButton.title = '学生视角：直接单击画面里的同学，或按此按钮进入点选模式';
 	    studentButton.addEventListener('click', () => {
@@ -64632,6 +64755,10 @@ void main() {
 	}
 
 	function handleKeyDown(event) {
+	  if (state.loadingPreview) {
+	    if (event.key === 'Escape') hideLoadingPreview();
+	    return;
+	  }
 	  if (state.modalOpen) return;
 	  if (state.photoViewerOpen) {
 	    if (event.key === 'Escape') closePhotoViewer();
@@ -65620,6 +65747,35 @@ void main() {
 	 * ?film=1 → 自动放映；?record=1 → 自动放映并录制，结束时自动下载。
 	 * 与 ?hour / ?spot / ?weather / ?campus 兼容（其余参数照旧生效）。
 	 */
+	function showLoadingPreview() {
+	  if (!loading) return;
+	  if (film?.isPlaying?.()) stopFilm({ silent: true });
+	  if (state.studentFollow) exitStudentView({ silent: true });
+	  if (state.studentPickMode) setStudentPickMode(false);
+	  stopTour();
+	  closeSpot({ stop: true });
+	  state.loadingPreview = true;
+	  loading.hidden = false;
+	  loading.classList.remove('is-leaving');
+	  loading.classList.add('is-preview');
+	  if (loadingBar) loadingBar.style.width = '100%';
+	  if (loadingPct) loadingPct.textContent = '100';
+	  if (loadingStage) loadingStage.textContent = '加载页预览 · 海南中学校园图志';
+	  loadingClose?.focus();
+	  markInteracted();
+	}
+
+	function hideLoadingPreview() {
+	  if (!state.loadingPreview || !loading) return;
+	  state.loadingPreview = false;
+	  loading.classList.remove('is-preview');
+	  loading.classList.add('is-leaving');
+	  window.setTimeout(() => {
+	    loading.hidden = true;
+	  }, 980);
+	  loadingPreviewButton?.focus();
+	}
+
 	function maybeAutoStartFilm() {
 	  const wantsRecord = params.get('record') === '1' || params.get('record') === 'true';
 	  const wantsFilm = wantsRecord || params.get('film') === '1' || params.get('film') === 'true';
