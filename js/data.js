@@ -4,7 +4,7 @@
  *
  * 数据分层（多校区扩展约定）：
  *   1. 本文件 = 某个校区的叙事与元信息（校区身份、地标、导览顺序、文献来源、取景与主题）。
- *      不 import 任何空间数据或 Three.js，保持可在 Node 中直接 import 做校验。
+ *      可从纯数据的空间层读取地标锚点，仍可在 Node 中直接 import 做校验。
  *   2. js/site.js = 同一校区的空间数据（OSM 轮廓、建筑、道路、运动场；1 场景单位 ≈ 2 米，北 = -z）。
  *   3. js/campuses.js = 校区注册表：把内容层 + 空间层 + 场景声明组装成 campus 条目，
  *      并负责 ?campus=<id> 解析、默认回退与 validateCampus 校验。
@@ -17,6 +17,7 @@
  * 这些旧导出保持不变；新增的 FUCHENG_CAMPUS 是「campus 条目」数据（缺 site / scene，
  * 由 js/campuses.js 注入），CAMPUS_META 是校区身份字段的单一来源。
  */
+import { ART_BUILDING } from './site.js';
 
 /* ------------------------------------------------------------------ */
 /*  校区身份（campus identity）                                        */
@@ -168,18 +169,18 @@ export const LANDMARKS = [
     kind: '教学主楼 · 连廊',
     year: '校园中部',
     anchor: [-0.4, 8.1, -30.7],
-    camera: { position: [-27, 37, -86], target: [-4, 7, -36], fov: 46.1 },
+    camera: { position: [-46, 29, -79], target: [-0.4, 5.8, -34.1], fov: 47 },
     map: [-0.4, -30.7],
-    diagram: 'main',
+    diagram: 'teaching',
     photo: {
       src: 'assets/photos/hall1-aerial.jpg',
       kind: 'photo',
       caption: '主教学楼与楼前广场俯拍 · 太湖石位于中轴前场。',
       credit: '图：用户提供的航拍照片，2026'
     },
-    summary: '校园主楼；楼前太湖石与百年大叶榄仁，楼后是「学园」。',
+    summary: '五段红瓦屋面、三间石柱门廊。前有太湖石与榄仁树，后接学园。',
     description:
-      '主教学楼（原 1 号教学楼）位于教学组团中部。楼前广场以太湖石「虎踞龙盘，捷报频传」和一棵著名的大叶榄仁树为标志；楼后与「学园」的「学」字铺地相连，构成从北门进入校园后最具方向感的一栋教学建筑。长排教室、连续外廊和楼梯间构成日常教学的秩序。',
+      '主教学楼（一号教学楼）朝向北门，前立面由白墙、深色石材基座和两座带拱窗的竖塔组成。中央红瓦门廊前是宽阶和嵌红砖边线的广场。沿校门至主楼的轴线可看到「虎踞龙盘」太湖石，旁边是百年大叶榄仁。楼后两侧连廊通往办公楼，之间围出学园。',
     facts: [
       ['类型', '教学主楼'],
       ['层数', '五层'],
@@ -191,25 +192,25 @@ export const LANDMARKS = [
     index: '05',
     name: '科学馆',
     en: 'SCIENCE HALL',
-    kind: '科学馆 · 艺术楼在后',
+    kind: '教学实验 · 弧形窗带',
     year: '教学组团',
-    anchor: [27, 8.7, -5.4],
-    camera: { position: [-12, 28, -62], target: [27, 4, -2], fov: 43.8 },
-    map: [27, -5.4],
-    diagram: 'main',
+    anchor: [37.3, 11.2, -15.8],
+    camera: { position: [32.6, 12.4, -32.7], target: [35, 4.3, -13.8], fov: 59 },
+    map: [37.3, -15.8],
+    diagram: 'footprint',
     photo: {
       src: 'assets/photos/science.jpg',
-      kind: 'reference',
-      caption: '科学馆一带的教学楼实景；照片摄于 2013 年，立面细节以现场为准。',
+      kind: 'photo',
+      caption: '科学馆弧面与绿色入口雨棚，摄于 2013 年。',
       credit: '图：海南中学官网校园风景图集，2013（陈小雄 摄）',
       source: 'https://www.haizhong.edu.cn/eportal/ui?pageId=db1485012de84281993fd96f0c31e340&articleKey=db7aa27feeb74681a19dd966317744d3&columnId=8e153c4caa2f4f03b152da17e025da81'
     },
-    summary: '科学馆在后，艺术楼相连。',
+    summary: '弧形横窗、贯通的玻璃楼梯间和绿色雨棚。',
     description:
-      '科学馆位于教学组团中部，科学馆后侧是艺术楼。科学馆是浅色多层实验楼，艺术楼则是六层白色水平饰带、红瓦坡顶的体量；两者前后错落，形成校园东侧一组有明显层次的教学建筑。午后阳光越过红瓦与白色檐口，落在连廊、实验窗和艺术教室上，是府城校园里安静而清晰的一段日常。',
+      '科学馆位于办公楼东南侧，可由连廊到达。弧形立面由浅色横带与深色窗带交替组成，正面玻璃楼梯间上方有凸出的梯房，入口有低矮的绿色雨棚。艺术楼在东南侧，三号教学楼在南侧。',
     facts: [
-      ['功能', '实验教学 + 艺术教育'],
-      ['艺术楼', '2015 · 约 7000 m²'],
+      ['功能', '实验教学'],
+      ['立面', '弧形横窗 · 玻璃楼梯间'],
       ['位置', '教学组团中部']
     ]
   },
@@ -302,15 +303,15 @@ export const LANDMARKS = [
     kind: '教师办公 · 原2号教学楼',
     year: '校园中部',
     anchor: [11.3, 7.0, -15.5],
-    camera: { position: [33, 10, 4], target: [9, 2.2, -16], fov: 41.6 },
+    camera: { position: [-14, 29, 15], target: [9, 3.2, -17], fov: 49 },
     map: [11.3, -15.5],
-    diagram: 'main',
+    diagram: 'footprint',
     photo: {
       src: 'assets/photos/hall2.jpg',
-      kind: 'reference',
-      caption: '教学组团实景参考；办公楼（原 2 号教学楼）位于主楼东南侧。',
-      credit: '图：海南中学官网校园风景图集，2013（陈小雄 摄）',
-      source: 'https://www.haizhong.edu.cn/eportal/ui?pageId=db1485012de84281993fd96f0c31e340&articleKey=db7aa27feeb74681a19dd966317744d3&columnId=8e153c4caa2f4f03b152da17e025da81'
+      kind: 'photo',
+      caption: '办公楼在画面右侧。白色连廊横跨庭院，通往主教学楼。',
+      credit: '图：B站《海南中学！！来自上帝视角》，2018，00:34',
+      source: 'https://www.bilibili.com/video/BV16W411N7iR/?t=34'
     },
     summary: '主教学楼东南侧的长条建筑，现作教师办公楼。',
     description:
@@ -326,25 +327,25 @@ export const LANDMARKS = [
     index: '10',
     name: '3号教学楼',
     en: 'TEACHING HALL 03',
-    kind: '教学组团 · H形平面',
+    kind: '教学组团 · 三列横翼',
     year: '校园南侧',
-    anchor: [29.4, 9.5, 31.4],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
-    map: [29.4, 31.4],
-    diagram: 'main',
+    anchor: [38.2, 7.6, 29.4],
+    camera: { position: [17, 43, 68], target: [27, 3.2, 30], fov: 47 },
+    map: [38.2, 29.4],
+    diagram: 'footprint',
     photo: {
       src: 'assets/photos/hall3.jpg',
       kind: 'reference',
-      caption: '教学组团东侧实景参考；3 号教学楼为 H 形平面。',
+      caption: '教学区旧照。三号教学楼的平面见上方轮廓图。',
       credit: '图：海南中学官网校园风景图集，2013（陈小雄 摄）',
       source: 'https://www.haizhong.edu.cn/eportal/ui?pageId=db1485012de84281993fd96f0c31e340&articleKey=db7aa27feeb74681a19dd966317744d3&columnId=8e153c4caa2f4f03b152da17e025da81'
     },
-    summary: '教学组团南端的 H 形体量。',
+    summary: '长廊串起三列横翼，三面屋顶俯瞰可辨。',
     description:
-      '3号教学楼（原第3教学楼）位于科学馆南侧，以 H 形平面组织教室与连廊。红瓦屋面、横向窗带和几处楼梯间构成它清晰的节奏；从主教学楼穿过科学馆一侧走到这里，也正好完成了教学组团从北到南的一段序列。',
+      '三号教学楼位于科学馆南侧、艺术楼西侧。OpenStreetMap 和卫星图上可见一条纵向长廊连着三个向西伸出的横翼。模型采用浅色平屋面，外窗与层高为近似表现。',
     facts: [
-      ['类型', 'H形教学楼'],
-      ['层数', '四层'],
+      ['布局', '三列横翼 · 一条长廊'],
+      ['屋面', '浅色平屋面'],
       ['位置', '科学馆南侧']
     ]
   },
@@ -353,26 +354,26 @@ export const LANDMARKS = [
     index: '11',
     name: '艺术楼',
     en: 'ART BUILDING',
-    kind: '艺术教育 · 2015',
-    year: '2015',
-    anchor: [52.8, 12.7, 7.9],
-    camera: { position: [26, 20, -22], target: [52.8, 7, 7.9], fov: 46 },
-    map: [52.8, 7.9],
-    diagram: 'main',
+    kind: '艺术教育 · 多翼建筑',
+    year: '2015 / 设计',
+    anchor: [ART_BUILDING.center[0], 11.9, ART_BUILDING.center[1]],
+    camera: { position: [43, 31, -29], target: [61.2, 4.1, 18.7], fov: 49 },
+    map: ART_BUILDING.center,
+    diagram: 'footprint',
     photo: {
       src: 'assets/photos/art.jpg',
-      kind: 'reference',
-      caption: '艺术楼一带航拍；白色水平饰带与红瓦坡顶在教学组团东侧。',
-      credit: '图：B站《海南中学！！来自上帝视角》航拍截图，2018',
-      source: 'https://www.bilibili.com/video/BV16W411N7iR'
+      kind: 'photo',
+      caption: '艺术楼航拍。红瓦环绕平顶，多翼围出凹入的前庭。',
+      credit: '图：B站《海南中学！！来自上帝视角》，2018，01:39',
+      source: 'https://www.bilibili.com/video/BV16W411N7iR/?t=99'
     },
-    summary: '六层白色饰带与红瓦坡顶。',
+    summary: '高低错落的浅色楼翼，红瓦沿平屋面收边。',
     description:
-      '艺术楼位于教学组团东侧，2015 年设计，建筑高度约 23.5 米，建筑面积约 7000 平方米。白色水平饰带、红瓦坡顶和门廊，使它从周边教学楼中清晰地分辨出来；正门朝向西北的北门一侧。另有公开招标资料记为地上 3 层、地下 1 层、最高 22.85 米，不同公开资料对层数与高度有出入，模型按写意呈现。音乐、美术与艺术课程在这里展开，也是校园东侧一组有层次的建筑收束。',
+      '艺术楼位于科学馆东南侧、三号教学楼东侧。卫星图与航拍可辨认四段屋面和凹入的前庭。三维模型据此组织体量，再参考设计方案表现浅色饰面、挑高竖窗和红瓦入口。设计单位公布的建筑面积约 7000 平方米、高约 23.5 米，现状具体层数与细部尺寸有待核实。',
     facts: [
       ['设计', '2015'],
-      ['尺度', '约 7000 m² · 高约 23.5 m'],
-      ['层数', '公开资料有出入 · 模型写意']
+      ['设计指标', '约 7000 m² · 高约 23.5 m'],
+      ['平面', '航拍与卫星图估绘']
     ]
   },
   {
@@ -382,9 +383,9 @@ export const LANDMARKS = [
     en: 'WINDING STREAM',
     kind: '水庭 · 艺术楼侧',
     year: '艺术楼旁',
-    anchor: [61.1, 2.6, -6.1],
-    camera: { position: [75, 60, 80], target: [20, 0, 10], fov: 50.5 },
-    map: [61.1, -6.1],
+    anchor: [ART_BUILDING.garden.center[0], 2.6, ART_BUILDING.garden.center[1]],
+    camera: { position: [73, 13, -23], target: [59.3, 1.5, -8.1], fov: 43 },
+    map: ART_BUILDING.garden.center,
     diagram: 'water',
     photo: {
       src: 'assets/photos/stream.jpg',
@@ -652,15 +653,19 @@ export const LANDMARKS = [
   }
 ];
 
-export const TOUR_ORDER = ['gate', 'fengqi', 'yanlin', 'hall1', 'science', 'gym', 'field', 'tree'];
+export const TOUR_ORDER = ['gate', 'fengqi', 'yanlin', 'hall1', 'science', 'art', 'hall3', 'gym', 'field', 'tree'];
 
 export const SOURCES = [
+  {
+    label: '海南中学校徽原图：海南日报《百年海中恰芳华》（学校供图）',
+    url: 'https://news.hndaily.cn/h5/html5/2023-10/30/content_58477_16668430.htm'
+  },
   {
     label: '海南中学官网《[多图]校园美景》校园风景图集（2013，实景照片来源之一）',
     url: 'https://www.haizhong.edu.cn/eportal/ui?pageId=db1485012de84281993fd96f0c31e340&articleKey=db7aa27feeb74681a19dd966317744d3&columnId=8e153c4caa2f4f03b152da17e025da81'
   },
   {
-    label: 'Bilibili：《海南中学！！来自上帝视角》航拍（2018，实景照片来源之一）',
+    label: '2018 航拍：00:08–00:25 主楼正面，00:29–00:37 教学楼连廊，01:39 艺术楼',
     url: 'https://www.bilibili.com/video/BV16W411N7iR'
   },
   {
@@ -680,12 +685,12 @@ export const SOURCES = [
     url: 'https://www.haizhong.cn/haizhong/2022-12/19/article_2022121915013633139.html'
   },
   {
-    label: '海南中学校园景观简介：一池两馆三园、学园与虎踞龙盘太湖石',
-    url: 'https://www.haizhong.edu.cn/eportal/ui?pageId=8e153c4caa2f4f03b152da17e025da81&articleKey=817888f979f34a5db0a495727198d42d&columnId=8e153c4caa2f4f03b152da17e025da81'
+    label: '海南中学校园景观简介：一池两馆三园、榄仁树与太湖石',
+    url: 'https://www.haizhong.edu.cn/haizhong/2024-03/12/article_2024031210465816950.html'
   },
   {
-    label: '中国建筑标准设计研究院：海南中学艺术楼（2015，7000 m²，23.5 m）',
-    url: 'http://www.cbs.com.cn/case/202004241761.html'
+    label: '艺术楼公开设计图及指标：中国标准院项目资料，2015 设计',
+    url: 'https://www.thepaper.cn/newsDetail_forward_7416470'
   },
   {
     label: 'Bilibili：海南中学百年校庆宣传片《赓续百年初心，逐梦教育新程》，2023',
@@ -700,8 +705,8 @@ export const SOURCES = [
     url: 'https://www.bilibili.com/video/BV13z4y1N7EH'
   },
   {
-    label: 'OpenStreetMap：校园东侧建筑群轮廓（ODbL）',
-    url: 'https://www.openstreetmap.org/way/1127981105'
+    label: 'Esri World Imagery：人工对照艺术楼屋面和周边关系',
+    url: 'https://doc.arcgis.com/en/data-appliance/latest/imagery-elevation/world-imagery.htm'
   }
 ];
 
@@ -734,13 +739,13 @@ const FUCHENG_MOBILE = {
     fengqi: 21,
     yanlin: 21,
     hall1: 65,
-    science: 65,
+    science: 26,
     gym: 44,
     field: 115,
     tree: 23,
     hall2: 56,
     hall3: 52,
-    art: 30,
+    art: 53,
     stream: 38,
     hand: 16,
     study: 16,
