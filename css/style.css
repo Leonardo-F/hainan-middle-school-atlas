@@ -2574,18 +2574,29 @@ body[data-night='true'] .rail-button .icon-moon {
   overflow: visible;
 }
 
-.loading__badge-mono {
-  font-family: var(--mono);
-  font-size: 5px;
-  letter-spacing: 0.14em;
+.loading__badge-ring {
+  font-family: var(--ui-mono);
+  font-size: 2.2px;
   fill: currentColor;
+  opacity: 0.72;
 }
 
-.loading__badge-seal {
+.loading__badge-date {
+  font-family: var(--ui-mono);
+  font-size: 2.7px;
+  fill: currentColor;
+  opacity: 0.82;
+}
+
+.loading__badge-gate {
+  opacity: 0.92;
+}
+
+.loading__badge-name {
   font-family: var(--cn-serif);
-  font-size: 6.5px;
-  letter-spacing: 0.08em;
-  fill: #aa4c32;
+  font-size: 5.4px;
+  letter-spacing: 0.06em;
+  fill: currentColor;
 }
 
 .loading__close {
