@@ -50989,29 +50989,60 @@ void main() {
 	  return group;
 	}
 
-	// 航拍中的红瓦围着平屋面收边，四个体块各自有不同大小的平顶。
-	function rimRoof(parent, M, x, z, width, depth, eave) {
+	// 航拍中的红瓦围着平屋面收边，瓦坡高于内侧屋面，屋面边缘有浅色压顶。
+	const ROOF_RISE = 0.64;
+
+	function rimRoof(parent, M, tiles, deck, x, z, width, depth, eave) {
 	  const inset = 1.1;
-	  const rise = 0.92;
 	  const corners = (w, d, y) => [
 	    [x - w / 2, y, z - d / 2], [x - w / 2, y, z + d / 2],
 	    [x + w / 2, y, z + d / 2], [x + w / 2, y, z - d / 2]
 	  ];
 	  const outer = corners(width + 0.45, depth + 0.45, eave);
-	  const inner = corners(width - inset * 2, depth - inset * 2, eave + rise);
+	  const deckWidth = width - inset * 2;
+	  const deckDepth = depth - inset * 2;
+	  const inner = corners(deckWidth, deckDepth, eave + ROOF_RISE);
 	  const vertices = [];
+	  const uv = [];
 	  for (let i = 0; i < outer.length; i += 1) {
 	    const j = (i + 1) % outer.length;
 	    vertices.push(...outer[i], ...outer[j], ...inner[j], ...outer[i], ...inner[j], ...inner[i]);
+	    const span = (i % 2 === 0 ? depth : width) / 0.42;
+	    uv.push(0, 0, span, 0, span, 4, 0, 0, span, 4, 0, 4);
 	  }
 	  const geometry = new BufferGeometry();
 	  geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+	  geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2));
 	  geometry.computeVertexNormals();
-	  const rim = new Mesh(geometry, M.terracottaRoof);
+	  const rim = new Mesh(geometry, tiles);
 	  rim.castShadow = true;
 	  rim.receiveShadow = true;
 	  parent.add(rim);
-	  placeBox(parent, width - inset * 2, rise, depth - inset * 2, M.roofDeckLight, x, eave, z);
+	  placeBox(parent, deckWidth, ROOF_RISE - 0.16, deckDepth, deck, x, eave, z);
+	  for (const side of [-1, 1]) {
+	    placeBox(parent, deckWidth + 0.12, 0.16, 0.16, M.whiteBand,
+	      x, eave + ROOF_RISE - 0.1, z + side * deckDepth / 2);
+	    placeBox(parent, 0.16, 0.16, deckDepth, M.whiteBand,
+	      x + side * deckWidth / 2, eave + ROOF_RISE - 0.1, z);
+	  }
+	}
+
+	function roofTileMaterial(fallback) {
+	  if (typeof document === 'undefined') return fallback;
+	  const canvas = document.createElement('canvas');
+	  canvas.width = canvas.height = 32;
+	  const ctx = canvas.getContext('2d');
+	  ctx.fillStyle = '#973f36';
+	  ctx.fillRect(0, 0, 32, 32);
+	  ctx.fillStyle = '#ad5546';
+	  ctx.fillRect(5, 3, 20, 26);
+	  ctx.fillStyle = '#76352d';
+	  ctx.fillRect(0, 29, 32, 3);
+	  const map = new CanvasTexture(canvas);
+	  map.colorSpace = SRGBColorSpace;
+	  map.wrapS = map.wrapT = RepeatWrapping;
+	  map.anisotropy = 4;
+	  return new MeshStandardMaterial({ map, roughness: 0.8 });
 	}
 
 	// 府城艺术楼。平面来自卫星图和 2018 年航拍，立面节奏参考设计单位公开方案。
@@ -51022,6 +51053,8 @@ void main() {
 	  group.rotation.y = -MathUtils.degToRad(building.obb[2]);
 
 	  const wall = new MeshStandardMaterial({ color: 0xe2e2d9, roughness: 0.82 });
+	  const tiles = roofTileMaterial(M.terracottaRoof);
+	  const deck = new MeshStandardMaterial({ color: 0xb8b3a8, roughness: 0.92 });
 	  const warmPanels = new MeshStandardMaterial({ color: 0x946e59, roughness: 0.82 });
 	  const entranceGlass = new MeshStandardMaterial({ color: 0x3c5657, roughness: 0.27, metalness: 0.14 });
 	  for (const [key, wing] of Object.entries(building.wings)) {
@@ -51039,11 +51072,12 @@ void main() {
 	    placeBox(group, width, height, depth,
 	      [side, side, M.roofDeck, wall, key === 'front' ? wall : long, long], x, 0.14, z);
 	    placeBox(group, width + 0.18, 0.19, depth + 0.18, M.whiteBand, x, height + 0.14, z);
-	    rimRoof(group, M, x, z, width, depth, wing.eave);
+	    rimRoof(group, M, tiles, deck, x, z, width, depth, wing.eave);
 	  }
 	  // 航拍可见后翼有一个高出红瓦边的浅色平顶体量。
-	  placeBox(group, 13.9, 1.92, 8.9, wall, 4.8, building.wings.rear.eave + 0.92, -5.85);
-	  placeBox(group, 14.1, 0.18, 9.1, M.whiteBand, 4.8, 11.44, -5.85);
+	  const rearDeck = building.wings.rear.eave + ROOF_RISE - 0.16;
+	  placeBox(group, 13.9, 2.04, 8.9, wall, 4.8, rearDeck, -5.85);
+	  placeBox(group, 14.1, 0.18, 9.1, deck, 4.8, rearDeck + 2.04, -5.85);
 
 	  // 高翼正立面：上部窗带，下部一组挑高窄窗和浅色竖向壁柱。
 	  const front = building.wings.front.z[1];
@@ -51052,6 +51086,9 @@ void main() {
 	  for (let i = -3; i <= 3; i += 1) {
 	    const x = gallery + i * 1.92;
 	    placeBox(group, 0.9, 4.6, 0.09, entranceGlass, x, 1.12, front + 0.05);
+	    placeBox(group, 1.08, 0.14, 0.3, M.whiteBand, x, 0.99, front + 0.09);
+	    placeBox(group, 0.055, 4.6, 0.085, M.darkMetal, x, 1.12, front + 0.12);
+	    placeBox(group, 0.9, 0.07, 0.09, M.darkMetal, x, 3.22, front + 0.12);
 	    placeBox(group, 0.16, 1.05, 0.08, M.whiteBand, x, 7.25, front + 0.12);
 	  }
 	  placeBox(group, 15.2, 0.24, 0.22, M.whiteBand, gallery, 6.22, front + 0.1);
@@ -51072,9 +51109,16 @@ void main() {
 	  });
 	  porch.position.set(entryX, 3.78, entryZ - 0.3);
 	  group.add(porch);
-	  placeBox(group, 4.6, 0.19, 6, M.whiteBand, entryX, 3.12, entryZ - 4.36);
+	  // 航拍中，红瓦入口与楼翼之间能看到带浅色横肋的窄顶。
+	  const linkZ = entryZ - 4.36;
+	  placeBox(group, 4.4, 0.12, 6, entranceGlass, entryX, 3.12, linkZ);
 	  for (const side of [-1, 1]) {
-	    placeBox(group, 0.23, 3.03, 0.24, M.darkMetal, entryX + side * 2.06, 0.09, entryZ - 6.75);
+	    const edgeX = entryX + side * 2.22;
+	    placeBox(group, 0.19, 0.24, 6, M.whiteBand, edgeX, 3.12, linkZ);
+	    placeBox(group, 0.23, 3.03, 0.24, M.darkMetal, edgeX, 0.09, entryZ - 6.75);
+	  }
+	  for (let rib = -4; rib <= 4; rib += 1) {
+	    placeBox(group, 4.55, 0.15, 0.13, M.whiteBand, entryX, 3.21, linkZ + rib * 0.65);
 	  }
 	  const sign = new Mesh(new PlaneGeometry(2.6, 0.6), M.artSign);
 	  sign.position.set(entryX, 3.22, entryZ + 1.64);
@@ -52329,11 +52373,11 @@ void main() {
 	    /* 正立面窗阵 + 壁柱 + 楼板线脚 */
 	    for (const x of bayCenters) {
 	      for (const y of rowsWing) {
-	        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.55, 2.3, 4);
+	        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.28, 2.05, 3);
 	      }
 	    }
 	    for (let i = 1; i < WING_BAYS; i += 1) {
-	      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT);
+	      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT, 0.66);
 	    }
 	    for (let f = 1; f < WING_FLOORS; f += 1) {
 	      floorBand(group, cx, WING_GROUND_TOP + f * FLOOR_H, WING_FRONT, WING_LEN - 0.2);
@@ -52463,7 +52507,7 @@ void main() {
 	  for (const bx of centerBays) {
 	    centerRows.forEach((y, f) => {
 	      const top = f === WING_FLOORS - 1;
-	      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.6, top ? 2.6 : 2.3, 5);
+	      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.15, top ? 2.42 : 2.14, 4);
 	    });
 	  }
 	  for (const px of [-3.35, 3.35]) pilasterAt(group, px, CENTER_GROUND_TOP, CENTER_TOP, CENTER_FRONT, 1.1, 0.3);
@@ -52513,6 +52557,17 @@ void main() {
 	    arch.lineTo(0.93, 2.02);
 	    arch.absarc(0, 2.02, 0.93, 0, Math.PI, false);
 	    arch.closePath();
+	    const surround = new Shape();
+	    const radius = 1.08;
+	    surround.moveTo(-radius, -0.12);
+	    surround.lineTo(radius, -0.12);
+	    surround.lineTo(radius, 2.02);
+	    surround.absarc(0, 2.02, radius, 0, Math.PI, false);
+	    surround.closePath();
+	    surround.holes.push(arch);
+	    const windowTrim = new Mesh(new ShapeGeometry(surround, 16), trim);
+	    windowTrim.position.set(cx, 13.23, 9.36);
+	    group.add(windowTrim);
 	    const archedWindow = new Mesh(new ShapeGeometry(arch), recess);
 	    archedWindow.position.set(cx, 13.23, 9.31);
 	    group.add(archedWindow);
@@ -52570,13 +52625,13 @@ void main() {
 	    }
 
 	    // 门洞后的深色玻璃与白框门扇
-	    box(group, recess, 0, (PLINTH$1 + GATE_TOP) / 2, 8.7, GATE_HALF * 2, GATE_TOP - PLINTH$1, 0.12);
+	    box(group, recess, 0, (PLINTH$1 + GATE_TOP) / 2, 8.91, GATE_HALF * 2, GATE_TOP - PLINTH$1, 0.12);
 	    for (const dx of [-1.5, 1.5]) {
-	      box(group, trim, dx, (PLINTH$1 + 3.9) / 2, 8.78, 0.16, 3.9 - PLINTH$1, 0.08);
+	      box(group, frame, dx, (PLINTH$1 + 3.9) / 2, 9.02, 0.16, 3.9 - PLINTH$1, 0.08);
 	    }
-	    box(group, trim, 0, 3.8, 8.78, 6.2, 0.16, 0.08);
+	    box(group, frame, 0, 3.8, 9.02, 6.2, 0.16, 0.08);
 	    for (const side of [-1, 1]) {
-	      box(group, trim, side * 6.5, (PLINTH$1 + 3.8) / 2, 8.78, 2.6, 3.8 - PLINTH$1, 0.1);
+	      box(group, frame, side * 6.5, (PLINTH$1 + 3.8) / 2, 9.02, 0.12, 3.8 - PLINTH$1, 0.1);
 	    }
 	  }
 
@@ -56341,7 +56396,7 @@ void main() {
 	  }
 
 	  function addEdgeWindows(points, floors, floorH, baseY, {
-	    parent = world, glass = M.glassBand, height = 0.28, dense = false
+	    parent = world, glass = M.glassBand, height = 0.28, dense = false, ribbon = false
 	  } = {}) {
 	    // 由多边形绕向求外法线，凹角和圆弧上的玻璃也会落在墙外。
 	    const outer = Math.sign(points.reduce((area, [x, z], i) => {
@@ -56358,13 +56413,14 @@ void main() {
 	      const nx = outer * dz / len, nz = -outer * dx / len;
 	      const mx = (x1 + x2) / 2 + nx * 0.065, mz = (z1 + z2) / 2 + nz * 0.065;
 	      const yaw = -Math.atan2(dz, dx);
-	      const count = dense ? Math.max(1, Math.round(len / 1.05)) : 1;
+	      const count = dense ? Math.max(1, Math.round(len / (ribbon ? 0.62 : 1.05))) : 1;
 	      const bay = len / count;
+	      const paneWidth = ribbon ? bay - 0.025 : bay * (dense ? 0.91 : 0.78);
 	      for (let f = 0; f < floors; f += 1) {
 	        const bottom = baseY + (f + 0.31) * floorH;
 	        for (let j = 0; j < count; j += 1) {
 	          const offset = ((j + 0.5) * bay - len / 2) / len;
-	          panes.push([mx + dx * offset, bottom + height / 2, mz + dz * offset, yaw, bay * (dense ? 0.91 : 0.78)]);
+	          panes.push([mx + dx * offset, bottom + height / 2, mz + dz * offset, yaw, paneWidth]);
 	        }
 	      }
 	    }
@@ -56875,8 +56931,12 @@ void main() {
 	    const coping = extrudePolygon(poly, 0.18, M.roofDeck, M.whiteBand);
 	    coping.position.y = height + 0.06;
 	    group.add(coping);
-	    const glass = new MeshStandardMaterial({ color: 0x4b4239, roughness: 0.3, metalness: 0.22 });
-	    addEdgeWindows(poly, floors, spacing, 0.12, { parent: group, glass, height: 0.76, dense: true });
+	    const glass = new MeshStandardMaterial({ color: 0x544238, roughness: 0.33, metalness: 0.24 });
+	    // 首层入口在雨棚下，二层起才有照片中的深色连续窗带。
+	    addEdgeWindows(poly, floors - 1, spacing, spacing + 0.12, {
+	      parent: group, glass, height: 0.66, dense: true, ribbon: true
+	    });
+	    addEdgeWindows(poly, 1, spacing, -0.2, { parent: group, glass, height: 0.9, dense: true });
 
 	    // 玻璃楼梯间、向前挑出的绿雨棚和屋顶小梯房是弧面教学楼的辨识点。
 	    const entrance = new Group();
@@ -56885,21 +56945,33 @@ void main() {
 	    group.add(entrance);
 	    const x = -14.65;
 	    const facadeZ = 3.43;
-	    placeBox(entrance, 3.82, height - 0.38, 0.42, M.whiteBand, x, 0.2, facadeZ - 0.02);
-	    placeBox(entrance, 2.81, height - 0.52, 0.16, glass, x, 0.27, facadeZ + 0.25);
-	    for (const dx of [-0.92, 0, 0.92]) {
-	      placeBox(entrance, 0.07, height - 0.56, 0.07, M.darkMetal, x + dx, 0.28, facadeZ + 0.36);
+	    const towerGlass = new MeshStandardMaterial({
+	      color: 0x553d2d, roughness: 0.28, metalness: 0.28
+	    });
+	    placeBox(entrance, 3.44, height - 0.32, 0.42, M.whiteBand, x, 0.2, facadeZ - 0.02);
+	    placeBox(entrance, 2.48, height - 0.52, 0.16, towerGlass, x, 0.27, facadeZ + 0.25);
+	    for (const dx of [-0.82, -0.41, 0, 0.41, 0.82]) {
+	      placeBox(entrance, 0.035, height - 0.56, 0.045, M.darkMetal, x + dx, 0.28, facadeZ + 0.36);
 	    }
-	    for (let i = 1; i < floors; i += 1) {
-	      placeBox(entrance, 2.85, 0.12, 0.06, M.stoneLight, x, i * spacing, facadeZ + 0.36);
+	    for (let i = 1; i < floors * 2; i += 1) {
+	      placeBox(entrance, 2.48, 0.055, 0.06, M.darkMetal, x, i * spacing / 2, facadeZ + 0.36);
 	    }
-	    placeBox(entrance, 4.55, 1.25, 2.3, M.plasterPale, x, height + 0.18, 1.48);
-	    placeBox(entrance, 5.08, 0.24, 2.8, M.whiteBand, x, height + 1.43, 1.48);
-	    placeBox(entrance, 8.7, 0.22, 4.7, M.stoneLight, x, 0, 2.15);
+	    // 屋顶梯房在正面露出一横二竖的暗色开口和略斜的白色挑檐。
+	    placeBox(entrance, 3.62, 1.05, 2.22, M.plasterPale, x, height + 0.18, 1.6);
+	    for (const dx of [-1.37, 1.37]) {
+	      placeBox(entrance, 0.22, 0.76, 0.08, M.darkMetal, x + dx, height + 0.39, 2.74);
+	    }
+	    placeBox(entrance, 2.92, 0.19, 0.085, towerGlass, x, height + 0.42, 2.75);
+	    const cap = placeBox(entrance, 4.28, 0.23, 2.72, M.whiteBand, x, height + 1.26, 1.6);
+	    cap.rotation.z = 0.075;
+
+	    const canopyWidth = 14.25;
+	    placeBox(entrance, canopyWidth + 0.45, 0.12, 3.65, M.stoneLight, x, 0, 2.53);
 	    const canopy = new MeshStandardMaterial({ color: 0x63887a, roughness: 0.79 });
-	    placeBox(entrance, 14.25, 0.22, 2.95, canopy, x, 1.38, 2.83);
-	    for (const dx of [-5.4, -2.7, 2.7, 5.4]) {
-	      placeBox(entrance, 0.22, 1.36, 0.27, M.stone, x + dx, 0.06, 4.07);
+	    placeBox(entrance, canopyWidth, 0.13, 2.95, canopy, x, 1.42, 2.83);
+	    placeBox(entrance, canopyWidth, 0.17, 0.15, canopy, x, 1.37, 4.29);
+	    for (const dx of [-6.1, -4.1, -2.1, 2.1, 4.1, 6.1]) {
+	      placeBox(entrance, 0.18, 1.3, 0.23, M.plasterPale, x + dx, 0.12, 4.09);
 	    }
 
 	    world.add(group);
