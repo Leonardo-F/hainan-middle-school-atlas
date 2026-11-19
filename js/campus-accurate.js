@@ -1177,14 +1177,30 @@ export function buildCampus(scene, renderer, options = {}) {
   function buildThird(b) {
     const group = new THREE.Group();
     group.name = b.name;
+    const baseY = 0.06;
     const height = FLOOR * 4;
+    const roofY = baseY + height;
     // OSM 与卫星图显示三列横翼和一条连续长廊，屋面为浅色平顶。
-    const body = extrudePolygon(b.poly, height, M.plasterWarm, M.plasterPale);
-    body.position.y = 0.06;
+    const body = extrudePolygon(b.poly, height, M.plasterPale, M.plasterPale);
+    body.position.y = baseY;
     group.add(body);
-    addEdgeWindows(b.poly, 4, FLOOR, 0.18, { parent: group, height: 0.44 });
-    const parapet = new THREE.LineBasicMaterial({ color: 0xe9e6de });
-    group.add(footprintOutline(b.poly, 0.06 + height, parapet));
+    addEdgeWindows(b.poly, 4, FLOOR, 0.18, { parent: group, height: 0.54, dense: true });
+    const roofRim = new THREE.Group();
+    roofRim.name = 'hall3 roof parapet';
+    for (let i = 1; i < b.poly.length; i += 1) {
+      const [x, z] = b.poly[i - 1];
+      const [nextX, nextZ] = b.poly[i];
+      const dx = nextX - x;
+      const dz = nextZ - z;
+      const length = Math.hypot(dx, dz);
+      if (length === 0) continue;
+      const yaw = -Math.atan2(dz, dx);
+      const midX = (x + nextX) / 2;
+      const midZ = (z + nextZ) / 2;
+      placeBox(roofRim, length, 0.26, 0.14, M.plasterPale, midX, roofY, midZ, yaw);
+      placeBox(roofRim, length, 0.075, 0.2, M.whiteBand, midX, roofY + 0.26, midZ, yaw);
+    }
+    group.add(roofRim);
     world.add(group);
     landmarkGroups.hall3 = markSpot(group, 'hall3', pickables);
   }
