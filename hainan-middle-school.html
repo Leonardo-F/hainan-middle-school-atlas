@@ -56936,14 +56936,30 @@ void main() {
 	  function buildThird(b) {
 	    const group = new Group();
 	    group.name = b.name;
+	    const baseY = 0.06;
 	    const height = FLOOR * 4;
+	    const roofY = baseY + height;
 	    // OSM 与卫星图显示三列横翼和一条连续长廊，屋面为浅色平顶。
-	    const body = extrudePolygon(b.poly, height, M.plasterWarm, M.plasterPale);
-	    body.position.y = 0.06;
+	    const body = extrudePolygon(b.poly, height, M.plasterPale, M.plasterPale);
+	    body.position.y = baseY;
 	    group.add(body);
-	    addEdgeWindows(b.poly, 4, FLOOR, 0.18, { parent: group, height: 0.44 });
-	    const parapet = new LineBasicMaterial({ color: 0xe9e6de });
-	    group.add(footprintOutline(b.poly, 0.06 + height, parapet));
+	    addEdgeWindows(b.poly, 4, FLOOR, 0.18, { parent: group, height: 0.54, dense: true });
+	    const roofRim = new Group();
+	    roofRim.name = 'hall3 roof parapet';
+	    for (let i = 1; i < b.poly.length; i += 1) {
+	      const [x, z] = b.poly[i - 1];
+	      const [nextX, nextZ] = b.poly[i];
+	      const dx = nextX - x;
+	      const dz = nextZ - z;
+	      const length = Math.hypot(dx, dz);
+	      if (length === 0) continue;
+	      const yaw = -Math.atan2(dz, dx);
+	      const midX = (x + nextX) / 2;
+	      const midZ = (z + nextZ) / 2;
+	      placeBox(roofRim, length, 0.26, 0.14, M.plasterPale, midX, roofY, midZ, yaw);
+	      placeBox(roofRim, length, 0.075, 0.2, M.whiteBand, midX, roofY + 0.26, midZ, yaw);
+	    }
+	    group.add(roofRim);
 	    world.add(group);
 	    landmarkGroups.hall3 = markSpot(group, 'hall3', pickables);
 	  }
@@ -62369,7 +62385,7 @@ void main() {
 	 * - 零外部素材：绒毛身体、棒球帽、校徽、满月白肚印花、书包全部用 Three.js
 	 *   基础几何 + Canvas 贴图拼成，和整站「程序当美术」的做法一致；
 	 * - 不抢主场景：宠物挂在相机前方右下角，可拖到屏幕边缘的九个安全位，
-	 *   不参与主场景布局；屏幕尺度约为舞台高度的 12%，不遮挡视觉中心；
+	 *   不参与主场景布局；屏幕高度约占舞台高度的 8%，宽屏下也不盖住建筑；
 	 * - 轻量状态机：饱腹/精力/亲密度按真实时间衰减，可抚摸、喂食、睡觉、隐藏；
 	 *   状态存 localStorage，下次打开继续养；
 	 * - 确定性：视觉回归（?still=1）下不读存档、不衰减、不使用用户拖动位置，
@@ -62391,9 +62407,10 @@ void main() {
 	const NARROW_LIMITS = Object.freeze({ x: 0.65, yMin: -0.62, yMax: 0.5 });
 	const NARROW_ASPECT = 0.9;
 
-	// 相机前方 2.55 处；相对 halfH 的 0.25 让 1.0 高的模型约占舞台高度 12%。
+	// 模型高度约 1.06；相对 halfH 的 0.145 约对应舞台高度的 8%。
 	const PET_DISTANCE = 2.55;
-	const PET_SCALE = 0.25;
+	const PET_SCALE = 0.145;
+	const PET_HEIGHT_CAP_PX = 80;
 
 	const BODY_BLUE = 0x35a6d8;
 	const BODY_DEEP = 0x2b93c6;
@@ -63443,7 +63460,9 @@ void main() {
 	    tmpVec.set(halfW * anchor.x, halfH * anchor.y, -distance).applyQuaternion(camera.quaternion);
 	    group.position.copy(camera.position).add(tmpVec);
 	    group.quaternion.copy(camera.quaternion);
-	    group.scale.setScalar(PET_SCALE * halfH);
+	    const height = renderer?.domElement?.clientHeight;
+	    const scale = height > 0 ? Math.min(PET_SCALE, 2 * PET_HEIGHT_CAP_PX / height) : PET_SCALE;
+	    group.scale.setScalar(scale * halfH);
 	  }
 
 	  function getAnchor() {
