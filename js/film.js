@@ -55,7 +55,7 @@ const EXTERIOR = {
   // 巡游要同时看清科学馆和艺术楼，所以沿教学组团稍高掠过。
   teachingQuarter: { position: [13, 46, -53], target: [45, 5, 7], fov: 47 },
   library: { position: [2, 7, -56], target: [24, 5, -72], fov: 40 },
-  gym: { position: [-30, 20, 76], target: [-52, 4, 26], fov: 38 },
+  gym: { position: [-16, 13, 5], target: [-42, 2.6, 19], fov: 48 },
   stand: { position: [-70, 14, -18], target: [-62, 2, 2], fov: 42 },
   field: { position: [-124, 10, -26], target: [-92, 0.8, -11], fov: 48.3 }
 };
