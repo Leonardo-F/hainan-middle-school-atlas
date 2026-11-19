@@ -590,7 +590,7 @@ export function buildCampus(scene, renderer, options = {}) {
   }
 
   function addEdgeWindows(points, floors, floorH, baseY, {
-    parent = world, glass = M.glassBand, height = 0.28, dense = false
+    parent = world, glass = M.glassBand, height = 0.28, dense = false, ribbon = false
   } = {}) {
     // 由多边形绕向求外法线，凹角和圆弧上的玻璃也会落在墙外。
     const outer = Math.sign(points.reduce((area, [x, z], i) => {
@@ -607,13 +607,14 @@ export function buildCampus(scene, renderer, options = {}) {
       const nx = outer * dz / len, nz = -outer * dx / len;
       const mx = (x1 + x2) / 2 + nx * 0.065, mz = (z1 + z2) / 2 + nz * 0.065;
       const yaw = -Math.atan2(dz, dx);
-      const count = dense ? Math.max(1, Math.round(len / 1.05)) : 1;
+      const count = dense ? Math.max(1, Math.round(len / (ribbon ? 0.62 : 1.05))) : 1;
       const bay = len / count;
+      const paneWidth = ribbon ? bay - 0.025 : bay * (dense ? 0.91 : 0.78);
       for (let f = 0; f < floors; f += 1) {
         const bottom = baseY + (f + 0.31) * floorH;
         for (let j = 0; j < count; j += 1) {
           const offset = ((j + 0.5) * bay - len / 2) / len;
-          panes.push([mx + dx * offset, bottom + height / 2, mz + dz * offset, yaw, bay * (dense ? 0.91 : 0.78)]);
+          panes.push([mx + dx * offset, bottom + height / 2, mz + dz * offset, yaw, paneWidth]);
         }
       }
     }
@@ -1171,8 +1172,12 @@ export function buildCampus(scene, renderer, options = {}) {
     const coping = extrudePolygon(poly, 0.18, M.roofDeck, M.whiteBand);
     coping.position.y = height + 0.06;
     group.add(coping);
-    const glass = new THREE.MeshStandardMaterial({ color: 0x4b4239, roughness: 0.3, metalness: 0.22 });
-    addEdgeWindows(poly, floors, spacing, 0.12, { parent: group, glass, height: 0.76, dense: true });
+    const glass = new THREE.MeshStandardMaterial({ color: 0x544238, roughness: 0.33, metalness: 0.24 });
+    // 首层入口在雨棚下，二层起才有照片中的深色连续窗带。
+    addEdgeWindows(poly, floors - 1, spacing, spacing + 0.12, {
+      parent: group, glass, height: 0.66, dense: true, ribbon: true
+    });
+    addEdgeWindows(poly, 1, spacing, -0.2, { parent: group, glass, height: 0.9, dense: true });
 
     // 玻璃楼梯间、向前挑出的绿雨棚和屋顶小梯房是弧面教学楼的辨识点。
     const entrance = new THREE.Group();
@@ -1181,21 +1186,33 @@ export function buildCampus(scene, renderer, options = {}) {
     group.add(entrance);
     const x = -14.65;
     const facadeZ = 3.43;
-    placeBox(entrance, 3.82, height - 0.38, 0.42, M.whiteBand, x, 0.2, facadeZ - 0.02);
-    placeBox(entrance, 2.81, height - 0.52, 0.16, glass, x, 0.27, facadeZ + 0.25);
-    for (const dx of [-0.92, 0, 0.92]) {
-      placeBox(entrance, 0.07, height - 0.56, 0.07, M.darkMetal, x + dx, 0.28, facadeZ + 0.36);
+    const towerGlass = new THREE.MeshStandardMaterial({
+      color: 0x553d2d, roughness: 0.28, metalness: 0.28
+    });
+    placeBox(entrance, 3.44, height - 0.32, 0.42, M.whiteBand, x, 0.2, facadeZ - 0.02);
+    placeBox(entrance, 2.48, height - 0.52, 0.16, towerGlass, x, 0.27, facadeZ + 0.25);
+    for (const dx of [-0.82, -0.41, 0, 0.41, 0.82]) {
+      placeBox(entrance, 0.035, height - 0.56, 0.045, M.darkMetal, x + dx, 0.28, facadeZ + 0.36);
     }
-    for (let i = 1; i < floors; i += 1) {
-      placeBox(entrance, 2.85, 0.12, 0.06, M.stoneLight, x, i * spacing, facadeZ + 0.36);
+    for (let i = 1; i < floors * 2; i += 1) {
+      placeBox(entrance, 2.48, 0.055, 0.06, M.darkMetal, x, i * spacing / 2, facadeZ + 0.36);
     }
-    placeBox(entrance, 4.55, 1.25, 2.3, M.plasterPale, x, height + 0.18, 1.48);
-    placeBox(entrance, 5.08, 0.24, 2.8, M.whiteBand, x, height + 1.43, 1.48);
-    placeBox(entrance, 8.7, 0.22, 4.7, M.stoneLight, x, 0, 2.15);
+    // 屋顶梯房在正面露出一横二竖的暗色开口和略斜的白色挑檐。
+    placeBox(entrance, 3.62, 1.05, 2.22, M.plasterPale, x, height + 0.18, 1.6);
+    for (const dx of [-1.37, 1.37]) {
+      placeBox(entrance, 0.22, 0.76, 0.08, M.darkMetal, x + dx, height + 0.39, 2.74);
+    }
+    placeBox(entrance, 2.92, 0.19, 0.085, towerGlass, x, height + 0.42, 2.75);
+    const cap = placeBox(entrance, 4.28, 0.23, 2.72, M.whiteBand, x, height + 1.26, 1.6);
+    cap.rotation.z = 0.075;
+
+    const canopyWidth = 14.25;
+    placeBox(entrance, canopyWidth + 0.45, 0.12, 3.65, M.stoneLight, x, 0, 2.53);
     const canopy = new THREE.MeshStandardMaterial({ color: 0x63887a, roughness: 0.79 });
-    placeBox(entrance, 14.25, 0.22, 2.95, canopy, x, 1.38, 2.83);
-    for (const dx of [-5.4, -2.7, 2.7, 5.4]) {
-      placeBox(entrance, 0.22, 1.36, 0.27, M.stone, x + dx, 0.06, 4.07);
+    placeBox(entrance, canopyWidth, 0.13, 2.95, canopy, x, 1.42, 2.83);
+    placeBox(entrance, canopyWidth, 0.17, 0.15, canopy, x, 1.37, 4.29);
+    for (const dx of [-6.1, -4.1, -2.1, 2.1, 4.1, 6.1]) {
+      placeBox(entrance, 0.18, 1.3, 0.23, M.plasterPale, x + dx, 0.12, 4.09);
     }
 
     world.add(group);
