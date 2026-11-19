@@ -10,15 +10,19 @@ An interactive 3D campus atlas of Hainan Middle School (Fucheng campus, senior h
 
 ![Hainan Middle School Campus Atlas overview](assets/preview/overview.jpg)
 
+[Preview the campus plan](assets/preview/campus-plan.jpg)
+
 > The campus plan is based on the OpenStreetMap outline and public imagery. Four key buildings — the North Gate, Main Teaching Building, Fengqi Hall, and Yanlin Hall — are reconstructed from public photographs and official materials using their architectural form and metric scale; other volumes and façades are design inferences. **This is not a survey product and must not be used for navigation, measurement, or campus planning decisions.** See [docs/accuracy.md](docs/accuracy.md) for the evidence boundaries. This is an unofficial digital culture project and is not affiliated with Hainan Middle School. The Fucheng campus includes both senior high and junior high sections; this atlas covers the **senior high section only**.
 
-**What's new in this round**: every landmark now has a real photograph (double-click to enlarge); the "Senior 3, Class 15" classroom on the top floor of the left wing is a standalone entry with a fixed-position 360° interior view that does not clip through walls; single-click any student (or use the "Students" mode in the dock) to enter first-person follow; "Change student" now picks a different student at random, and students occasionally leave their fixed route for a short random walk; Haibai the mascot has been rebuilt and scaled down, is off by default, turns on from the dock, can be dragged, and rotates 360°; the loading page now includes a school-badge mark, and "Replay opening" on the home page reopens the loading page.
+**Latest update:** The home and opening screens use the green emblem supplied by the school. Updated models of the Main Teaching Building, Science Hall, Art Building, and Teaching Building 3 use public photos, aerial footage, and building outlines. Open the map from the scene toolbar to go directly to a building. See the [source and accuracy notes](docs/accuracy.md) for details.
 
 ## Gallery
 
 | North Gate | Main Teaching Building |
 | --- | --- |
 | ![North Gate](assets/preview/north-gate.jpg) | ![Main Teaching Building](assets/preview/teaching-hall.jpg) |
+| **Science Hall** | **Art Building** |
+| ![Science Hall](assets/preview/science-hall.jpg) | ![Art Building](assets/preview/art-building.jpg) |
 | **Fengqi Hall** | **Yanlin Hall** |
 | ![Fengqi Hall](assets/preview/fengqi-hall.jpg) | ![Yanlin Hall](assets/preview/yanlin-hall.jpg) |
 | **Senior 3, Class 15 (interior)** | **Student POV** |

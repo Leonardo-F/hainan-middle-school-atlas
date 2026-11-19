@@ -249,18 +249,16 @@ svg {
   min-width: 0;
 }
 
-.brand__mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 36px;
-  color: var(--forest);
+.school-emblem {
+  display: block;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 50%;
   flex: 0 0 auto;
 }
 
-.brand__mark svg {
-  width: 100%;
-  height: 100%;
+.brand__mark {
+  width: 38px;
 }
 
 .brand__text {
@@ -536,25 +534,9 @@ svg {
   color: var(--ink);
 }
 
-.seal {
-  display: grid;
-  place-items: center;
-  width: clamp(34px, 2.6vw, 42px);
-  aspect-ratio: 1;
+.intro__emblem {
+  width: clamp(45px, 4vw, 60px);
   margin-top: 2px;
-  border: 1px solid rgba(248, 239, 224, 0.32);
-  outline: 1px solid var(--accent);
-  outline-offset: 3px;
-  background: var(--accent);
-  color: #f7eedf;
-  font-family: var(--cn-brush);
-  font-size: clamp(14px, 1.2vw, 17px);
-  letter-spacing: 0.02em;
-  line-height: 1;
-  transform: rotate(-3.5deg);
-  box-shadow: inset 0 0 0 2px rgba(255, 244, 227, 0.1);
-  user-select: none;
-  flex: 0 0 auto;
 }
 
 .intro__lead {
@@ -2292,10 +2274,14 @@ body[data-night='true'] .rail-button .icon-moon {
   color: var(--ink);
 }
 
-.map-panel__head .mono {
-  font-size: 5.8px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+.map-panel__head button {
+  padding: 0 1px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 9px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .map-panel__canvas-wrap {
@@ -2306,7 +2292,8 @@ body[data-night='true'] .rail-button .icon-moon {
   background: color-mix(in srgb, var(--paper) 32%, transparent);
 }
 
-#minimap {
+#minimap,
+#planMap {
   display: block;
   width: 100%;
   height: 100%;
@@ -2366,6 +2353,113 @@ body[data-night='true'] .rail-button .icon-moon {
   height: 4px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+.plan-dialog {
+  box-sizing: border-box;
+  width: min(588px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: clamp(14px, 4vw, 24px);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--paper-deep);
+  color: var(--ink);
+  box-shadow: 0 18px 68px rgba(18, 31, 24, 0.24);
+}
+
+.plan-dialog::backdrop {
+  background: rgba(17, 32, 24, 0.46);
+}
+
+.plan-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.plan-dialog h2 {
+  margin: 0 0 4px;
+  font: 500 clamp(20px, 4vw, 28px) / 1.2 var(--cn-serif);
+}
+
+.plan-dialog p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.plan-dialog__close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 23px;
+  line-height: 1;
+}
+
+.plan-dialog__map {
+  position: relative;
+  height: clamp(192px, 43dvh, 350px);
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+}
+
+.plan-dialog__map .map-panel__north {
+  top: 10px;
+  right: 12px;
+  font-size: 11px;
+}
+
+.plan-dialog__landmarks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 13px 0 9px;
+}
+
+.plan-dialog__landmarks button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 5px 9px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+}
+
+.plan-dialog__landmarks button:hover {
+  background: color-mix(in srgb, var(--plan-color) 12%, transparent);
+}
+
+.plan-dialog__landmarks button:focus-visible,
+.plan-dialog__close:focus-visible,
+.map-panel__head button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.plan-dialog__landmarks .mono {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--plan-color);
+  color: #fff;
+  font-size: 10px;
+}
+
+.plan-dialog .plan-dialog__note {
+  font-size: 11px;
 }
 
 /* Scene footer · bottom right ------------------------------------- */
@@ -2561,42 +2655,8 @@ body[data-night='true'] .rail-button .icon-moon {
 }
 
 .loading__badge {
-  width: clamp(64px, 6vw, 84px);
-  aspect-ratio: 1;
-  margin: 0 0 clamp(18px, 3vh, 34px);
-  color: #214536;
-  opacity: 0.88;
-}
-
-.loading__badge svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.loading__badge-ring {
-  font-family: var(--ui-mono);
-  font-size: 2.2px;
-  fill: currentColor;
-  opacity: 0.72;
-}
-
-.loading__badge-date {
-  font-family: var(--ui-mono);
-  font-size: 2.7px;
-  fill: currentColor;
-  opacity: 0.82;
-}
-
-.loading__badge-gate {
-  opacity: 0.92;
-}
-
-.loading__badge-name {
-  font-family: var(--cn-serif);
-  font-size: 5.4px;
-  letter-spacing: 0.06em;
-  fill: currentColor;
+  width: clamp(80px, 8vw, 112px);
+  margin: 0 0 clamp(16px, 2.6vh, 28px);
 }
 
 .loading__close {
@@ -3255,15 +3315,8 @@ html.show-native-cursor .cursor {
 }
 
 .fatal__seal {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 52px;
   margin: 0 auto 20px;
-  background: var(--accent);
-  color: var(--paper);
-  font-family: var(--cn-brush);
-  font-size: 17px;
 }
 
 .fatal h2 {
@@ -3379,8 +3432,7 @@ html.show-native-cursor .cursor {
   }
 
   .brand__mark {
-    width: 36px;
-    height: 31px;
+    width: 34px;
   }
 
   .campus-tab {
@@ -3470,7 +3522,6 @@ html.show-native-cursor .cursor {
 
   .brand__mark {
     width: 30px;
-    height: 27px;
   }
 
   .brand__name {
@@ -3567,10 +3618,8 @@ html.show-native-cursor .cursor {
     letter-spacing: 0.26em;
   }
 
-  .seal {
-    width: 30px;
-    font-size: 12px;
-    outline-offset: 2px;
+  .intro__emblem {
+    width: 43px;
   }
 
   .intro__lead {
@@ -4172,7 +4221,7 @@ html.show-native-cursor .cursor {
   }
 
   .loading__badge {
-    width: 58px;
+    width: 64px;
     margin-bottom: 16px;
   }
 

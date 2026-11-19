@@ -31,8 +31,7 @@
  *   film.pause(); film.resume(); film.seek(seconds);
  *
  * 场景坐标约定：1 单位 ≈ 2 m，x 东、z 南、北 = -z；相机 y 为场景高度。
- * 外景机位与 js/data.js 中 LANDMARKS 的 camera 数据保持一致（此处硬编码，
- * 避免 film 反向依赖数据层；若 data.js 机位调整，这里同步即可）。
+ * 单栋建筑的外景参考 js/data.js 的取景。教学组团巡游用独立的高位镜头。
  */
 
 const RECORD_MIME_CANDIDATES = [
@@ -52,11 +51,11 @@ const EXTERIOR = {
   overview: { position: [-150, 260, -230], target: [0, 0, -12], fov: 34 },
   gate: { position: [-50.9, 9.3, -91.8], target: [-39, 2.4, -74], fov: 38 },
   fengqi: { position: [-34, 8.8, -32.1], target: [-46.2, 2.2, -50.5], fov: 38 },
-  hall1: { position: [-27, 37, -86], target: [-4, 7, -36], fov: 46.1 },
-  science: { position: [-12, 28, -62], target: [27, 4, -2], fov: 43.8 },
-  art: { position: [26, 20, -22], target: [52.8, 7, 7.9], fov: 46 },
+  hall1: { position: [-46, 29, -79], target: [-0.4, 5.8, -34.1], fov: 47 },
+  // 巡游要同时看清科学馆和艺术楼，所以沿教学组团稍高掠过。
+  teachingQuarter: { position: [13, 46, -53], target: [45, 5, 7], fov: 47 },
   library: { position: [2, 7, -56], target: [24, 5, -72], fov: 40 },
-  gym: { position: [-30, 20, 76], target: [-52, 4, 26], fov: 38 },
+  gym: { position: [-16, 13, 5], target: [-42, 2.6, 19], fov: 48 },
   stand: { position: [-70, 14, -18], target: [-62, 2, 2], fov: 42 },
   field: { position: [-124, 10, -26], target: [-92, 0.8, -11], fov: 48.3 }
 };
@@ -318,7 +317,7 @@ function buildShotPlan(campus) {
       id: 'art-pass',
       caption: '科学馆与艺术楼',
       en: 'SCIENCE HALL & ART BUILDING',
-      view: EXTERIOR.art,
+      view: EXTERIOR.teachingQuarter,
       duration: 3.0
     },
     {

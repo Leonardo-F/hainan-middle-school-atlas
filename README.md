@@ -12,15 +12,19 @@ An interactive 3D campus atlas of Hainan Middle School (Fucheng campus), built w
 
 ![海南中学校园图志总览](assets/preview/overview.jpg)
 
+[查看校园总平面预览](assets/preview/campus-plan.jpg)
+
 > 校园总平面参考 OpenStreetMap 轮廓与公开影像整理；校门、主教学楼、凤栖堂、衍林堂四座重点建筑依据公开照片与官方资料按形制与米制尺度复原，其余建筑的体量与立面为设计推演。**非测绘成果，不用于导航、测量或校园空间决策**，逐条边界见 [docs/accuracy.md](docs/accuracy.md)。本项目为非官方数字文化项目，与海南中学无隶属关系；府城校区含高中部与初中部，本图志**仅绘制高中部**。
 
-**本期新增**：每处地景配一张实景照片（双击放大）；主教学楼顶楼左翼的「高三拾伍班」教室独立成页，室内定点环视不穿墙；直接单击画面里的同学（或按控制条「学生」进入点选模式）即可切到第一人称视角；「换一位同学」会随机换人，学生也会偶尔离开固定路线随机走一段；「海海」按实体玩偶重做并缩小，默认关闭、点控制条开启，可拖动换位、360° 旋转；加载页新增校徽标记，首页「重看开场」可再次打开加载页。
+**最近更新**：首页与开场使用学校供图的绿色校徽。主教学楼、科学馆、艺术楼和三号教学楼依据实拍、航拍与轮廓数据更新。点场景右侧的地图按钮可展开平面并定位建筑。来源和估绘范围见 [精度与证据](docs/accuracy.md)。
 
 ## 图集
 
 | 校门 | 主教学楼 |
 | --- | --- |
 | ![校门](assets/preview/north-gate.jpg) | ![主教学楼](assets/preview/teaching-hall.jpg) |
+| **科学馆** | **艺术楼** |
+| ![科学馆](assets/preview/science-hall.jpg) | ![艺术楼](assets/preview/art-building.jpg) |
 | **凤栖堂** | **衍林堂** |
 | ![凤栖堂](assets/preview/fengqi-hall.jpg) | ![衍林堂](assets/preview/yanlin-hall.jpg) |
 | **高三拾伍班（室内）** | **学生视角** |

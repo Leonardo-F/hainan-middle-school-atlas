@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { makeTextures, applyDetailMaps } from './textures.js';
-import { SITE as SITE_FALLBACK } from './site.js';
+import { ART_BUILDING, SITE as SITE_FALLBACK } from './site.js';
 import {
   buildMaterials, createHipRoof, createPalm, createCanopyTree, addHedge,
   addTreeContactShadow, createStudent, createLampPost, createGoal, createBench,
@@ -10,6 +10,7 @@ import {
 // TODO(multi-campus): 以下四栋重点建筑模型是府城校区专属（js/landmarks/*，米制，front = +z）。
 // 未来其他校区应通过 buildCampus 的 options.landmarkBuilders（landmark id → build(ctx)）
 // 或 campus.scene 配置注入自己的模型，而不是在本文件里硬编码新校区内容。
+import { buildArt } from './landmarks/art.js';
 import { build as buildGateLandmark } from './landmarks/gate.js';
 import { build as buildTeachingLandmark } from './landmarks/teaching.js';
 import { build as buildFengqiLandmark } from './landmarks/fengqi.js';
@@ -588,25 +589,47 @@ export function buildCampus(scene, renderer, options = {}) {
     }
   }
 
-  function addEdgeWindows(points, floors, floorH, baseY) {
-    let cx = 0, cz = 0;
-    points.forEach(([x, z]) => { cx += x / points.length; cz += z / points.length; });
-    for (let i = 0; i < points.length; i += 1) {
+  function addEdgeWindows(points, floors, floorH, baseY, {
+    parent = world, glass = M.glassBand, height = 0.28, dense = false, ribbon = false
+  } = {}) {
+    // 由多边形绕向求外法线，凹角和圆弧上的玻璃也会落在墙外。
+    const outer = Math.sign(points.reduce((area, [x, z], i) => {
+      const [nextX, nextZ] = points[(i + 1) % points.length];
+      return area + x * nextZ - nextX * z;
+    }, 0));
+    const panes = [];
+    for (let i = 0; i < points.length - 1; i += 1) {
       const [x1, z1] = points[i];
-      const [x2, z2] = points[(i + 1) % points.length];
+      const [x2, z2] = points[i + 1];
       const dx = x2 - x1, dz = z2 - z1;
       const len = Math.hypot(dx, dz);
-      if (len < 2.1) continue;
-      let nx = -dz / len, nz = dx / len;
-      const mx = (x1 + x2) / 2, mz = (z1 + z2) / 2;
-      if (nx * (mx - cx) + nz * (mz - cz) < 0) { nx = -nx; nz = -nz; }
+      if (len < (dense ? 0.65 : 2.1)) continue;
+      const nx = outer * dz / len, nz = -outer * dx / len;
+      const mx = (x1 + x2) / 2 + nx * 0.065, mz = (z1 + z2) / 2 + nz * 0.065;
       const yaw = -Math.atan2(dz, dx);
+      const count = dense ? Math.max(1, Math.round(len / (ribbon ? 0.62 : 1.05))) : 1;
+      const bay = len / count;
+      const paneWidth = ribbon ? bay - 0.025 : bay * (dense ? 0.91 : 0.78);
       for (let f = 0; f < floors; f += 1) {
-        const glass = placeBox(world, len * 0.78, 0.28, 0.075, M.glassBand,
-          mx + nx * 0.09, baseY + (f + 0.58) * floorH, mz + nz * 0.09, yaw);
-        glass.castShadow = false;
+        const bottom = baseY + (f + 0.31) * floorH;
+        for (let j = 0; j < count; j += 1) {
+          const offset = ((j + 0.5) * bay - len / 2) / len;
+          panes.push([mx + dx * offset, bottom + height / 2, mz + dz * offset, yaw, paneWidth]);
+        }
       }
     }
+    const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), glass, panes.length);
+    const transform = new THREE.Object3D();
+    panes.forEach(([x, y, z, yaw, width], i) => {
+      transform.position.set(x, y, z);
+      transform.rotation.y = yaw;
+      transform.scale.set(width, height, 0.075);
+      transform.updateMatrix();
+      windows.setMatrixAt(i, transform.matrix);
+    });
+    windows.receiveShadow = true;
+    windows.computeBoundingSphere();
+    parent.add(windows);
   }
 
   function addHandSculpture(x, z, rot = 0) {
@@ -1092,127 +1115,142 @@ export function buildCampus(scene, renderer, options = {}) {
   markSpot(southGate, 'southgate', pickables);
   landmarkGroups.southgate = southGate;
 
-  /* ---------------------------- Third teaching building (actual outline) */
-  function buildThird(b) {
-    const h = FLOOR * 4;
-    const body = extrudePolygon(b.poly, h, M.terracottaRoof, M.plasterPale);
+  /* ---------------------------- Teaching quarter ------------------- */
+  function buildOffice(b) {
+    const group = new THREE.Group();
+    group.name = b.name;
+    const floors = 4;
+    const spacing = 1.62;
+    const height = floors * spacing;
+    // 2018 航拍可见朝学园的一侧是外廊。房间墙退至外廊后，楼板仍沿 OSM 轮廓。
+    const angle = deg(b.obb[2]);
+    const [cx, cz] = b.center;
+    const [nx, nz] = [-Math.sin(angle), Math.cos(angle)];
+    const roomFootprint = b.poly.map(([x, z]) => {
+      const onCourtyardSide = (x - cx) * nx + (z - cz) * nz > 0;
+      const inset = onCourtyardSide ? 0.82 : 0;
+      return [x - nx * inset, z - nz * inset];
+    });
+    const body = extrudePolygon(roomFootprint, height, M.roofDeck, M.plasterPale);
     body.position.y = 0.06;
-    body.name = '3号教学楼';
-    world.add(body);
-    addEdgeWindows(b.poly, 4, 1.8, 0.22);
-    const whiteLine = new THREE.LineBasicMaterial({ color: 0xe9e6de, transparent: true, opacity: 0.7 });
-    world.add(footprintOutline(b.poly, 0.06 + h + 0.02, whiteLine));
-    const stair = placeBox(world, 2.6, 1.5, 2.0, M.plasterPale, b.center[0], 0.06 + h + 0.8, b.center[1]);
-    stair.castShadow = true;
-    const stairRoof = createHipRoof({ w: 3.4, d: 2.8, h: 0.8, upturn: 0.1, materials: { ...M, roof: M.terracottaRoof, roofEdge: M.terracottaEdge, roofRidge: M.terracottaEdge }, detail: false });
-    stairRoof.position.set(b.center[0], 0.06 + h + 1.55, b.center[1]);
-    world.add(stairRoof);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x6b6354, transparent: true, opacity: 0.3 });
-    for (let f = 1; f < 4; f += 1) {
-      world.add(footprintOutline(b.poly, 0.06 + (f * h) / 4, lineMat));
+    group.add(body);
+    const coping = extrudePolygon(b.poly, 0.18, M.roofDeck, M.whiteBand);
+    coping.position.y = height + 0.06;
+    group.add(coping);
+    addEdgeWindows(roomFootprint, floors, spacing, 0.1, { parent: group, height: 0.65, dense: true });
+
+    const arcade = new THREE.Group();
+    arcade.name = 'office courtyard arcade';
+    arcade.position.set(cx, 0.06, cz);
+    arcade.rotation.y = -angle;
+    // 转到沿长边的坐标。留出两端墙垛，柱列和栏板落在屋檐投影内。
+    const start = -26.9;
+    const end = 18.7;
+    const span = end - start;
+    const mid = (end + start) / 2;
+    const bays = 18;
+    for (let level = 0; level < floors; level += 1) {
+      const y = level * spacing;
+      placeBox(arcade, span, 0.13, 0.93, M.whiteBand, mid, y, 2.55);
+      if (level > 0) {
+        // 二层连廊在两处接入，栏板在接入口两端收住。
+        const railRuns = level === 1 ? [[start, -17.6], [-14.5, 7.6], [10.5, end]] : [[start, end]];
+        for (const [left, right] of railRuns) {
+          const railMid = (left + right) / 2;
+          placeBox(arcade, right - left, 0.39, 0.12, M.plasterPale, railMid, y + 0.13, 2.82);
+          placeBox(arcade, right - left, 0.06, 0.16, M.whiteBand, railMid, y + 0.52, 2.82);
+        }
+      }
     }
-    world.add(footprintOutline(b.poly, 0.06 + h + 0.04, lineMat));
-    placeBox(world, 2.0, 0.8, 1.5, M.plasterPale, b.center[0], 0.06 + h + 0.1, b.center[1]);
-    return body;
+    for (let bay = 0; bay <= bays; bay += 1) {
+      const x = start + span * bay / bays;
+      placeBox(arcade, 0.18, height, 0.22, M.plasterPale, x, 0, 2.74);
+    }
+    placeBox(arcade, 4.9, 1.3, 3.9, M.plasterPale, 13.1, height + 0.18, 0);
+    placeBox(arcade, 5.3, 0.18, 4.2, M.whiteBand, 13.1, height + 1.48, 0);
+    placeBox(arcade, 2.75, 0.38, 0.1, M.glassBand, 13.1, height + 0.64, 2);
+    group.add(arcade);
+    world.add(group);
+    landmarkGroups.hall2 = markSpot(group, 'hall2', pickables);
   }
 
-  /* ---------------------------- Science Hall + Art Building ---------- */
-  function buildScienceArt(b) {
-    const sciH = FLOOR * 4;
-    // Inset the OSM footprint very slightly so the shared boundary with
-    // 3号教学楼 becomes a visible, physically valid gap.
-    const sciPoly = b.poly.map(([x, z]) => [
-      b.center[0] + (x - b.center[0]) * 0.97,
-      b.center[1] + (z - b.center[1]) * 0.97
-    ]);
-    const science = extrudePolygon(sciPoly, sciH, M.roofDeck, M.plasterPale);
-    science.position.y = 0.06;
-    science.name = '科学馆';
-    world.add(science);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x716b5c, transparent: true, opacity: 0.28 });
-    for (let f = 1; f < 4; f += 1) {
-      world.add(footprintOutline(sciPoly, 0.06 + (f * sciH) / 4, lineMat));
-    }
-    world.add(footprintOutline(sciPoly, 0.06 + sciH + 0.05, lineMat));
-    addEdgeWindows(sciPoly, 4, 1.8, 0.22);
-    placeBox(world, 2.2, 0.8, 1.4, M.plasterPale, b.center[0], 0.06 + sciH + 0.1, b.center[1]);
-    markSpot(science, 'science', pickables);
-    landmarkGroups.science = science;
-
-    // 艺术楼（需求 6b）：2015 年建、约 7000 ㎡、高约 23.5 m（见 README 参考资料 5）。
-    // 按用户要求「放大并往南门方向再走一点」：
-    //   - 体量 16×8 → 21×9.5 场景单位，高 23.5 m = 11.75 场景单位（6 层）；
-    //   - 组局部 -z 方向即「南门方向」：group.rotation.y = deg(-b.obb[2])，
-    //     b.obb[2] = 138.5°（科学馆长轴，xz 平面角度）。局部 -z 经旋转后的世界方向为
-    //     (+sin|θ|, +cos|θ|) ≈ (+0.663, +0.749)（东偏南），南门 (57.13, 84.34) 在
-    //     艺术楼东南方，因此局部 -z 就是朝南门一侧；artZ 从 -22 → -27（5 单位≈10 m）。
-    //   - 放大后与科学馆、3号教学楼、围墙的净距在 /tmp 自检脚本中验证（均 > 2 单位）；
-    //     曲水流觞随之向局部 -x 让开 2.5 单位，保证不穿插。
+  function buildThird(b) {
     const group = new THREE.Group();
-    group.position.set(b.center[0], 0.06, b.center[1]);
-    group.rotation.y = deg(-b.obb[2]);
-    const artLen = 21, artDep = 9.5, artH = 11.75;
-    const artX = -10.5, artZ = -27;
-    const roofMats = { ...M, roof: M.terracottaRoof, roofEdge: M.terracottaEdge, roofRidge: M.terracottaEdge };
-    const artFacade = M.facade({
-      width: artLen, height: artH, floors: 6, bays: 10,
-      style: 'modern', base: '#efeee8', stone: '#c8c9c3',
-      accent: '#9d5b43', glass: '#344b45', seed: 73
-    });
-    const artSide = M.facade({
-      width: artDep, height: artH, floors: 6, bays: 5,
-      style: 'modern', base: '#e8e7e1', stone: '#c4c5bf',
-      accent: '#9d5b43', glass: '#344b45', seed: 121
-    });
-    const artBody = new THREE.Mesh(new THREE.BoxGeometry(artLen, artH, artDep), [
-      artSide, artSide, M.plasterPale, M.plasterPale, artFacade, artFacade
-    ]);
-    artBody.position.set(artX, 0.16 + artH / 2, artZ);
-    artBody.castShadow = true; artBody.receiveShadow = true;
-    group.add(artBody);
-    // 白色水平饰带（每层一道，呼应官方资料「白色水平饰带 + 红瓦坡顶」）
-    for (let f = 1; f < 6; f += 1) {
-      placeBox(group, artLen * 0.94, 0.1, 0.13, M.whiteBand, artX, 0.16 + f * (artH / 6), artZ + artDep / 2 + 0.05);
-      placeBox(group, artLen * 0.94, 0.1, 0.13, M.whiteBand, artX, 0.16 + f * (artH / 6), artZ - artDep / 2 - 0.05);
-    }
-    placeBox(group, artLen + 0.6, 0.16, artDep + 0.6, M.stoneLight, artX, 0.08, artZ);
-    const artRoof = createHipRoof({
-      w: artLen + 0.4, d: artDep + 0.4, h: 1.45, upturn: 0.12, materials: roofMats, detail: false
-    });
-    artRoof.position.set(artX, 0.16 + artH, artZ);
-    group.add(artRoof);
-    // 艺术楼正门朝北门（用户 2026-11 反馈）：入口与标牌放在局部 +z 一侧。
-    // 组 rotation.y = deg(-b.obb[2]) = -138.5°，局部 +z 对应世界 (-0.663, -0.749)，
-    // 正是从艺术楼指向北门（校门）的方向。
-    const artSign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.7), M.artSign);
-    artSign.position.set(artX, 5.4, artZ + artDep / 2 + 0.08);
-    group.add(artSign);
-    // 正门雨棚 + 台阶（朝北门一侧）
-    placeBox(group, 7.2, 0.16, 2.0, M.plasterWarm, artX, 2.55, artZ + artDep / 2 + 1.0);
-    placeBox(group, 7.4, 0.08, 2.2, M.roofEdge, artX, 2.72, artZ + artDep / 2 + 1.0);
-    for (const sx of [-1, 1]) {
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 8), M.plasterPale);
-      col.position.set(artX + sx * 3.0, 1.25, artZ + artDep / 2 + 1.85);
-      col.castShadow = true;
-      group.add(col);
-    }
-    for (let st = 0; st < 3; st += 1) {
-      placeBox(group, 6.8 - st * 0.4, 0.1, 0.8, M.stoneLight,
-        artX, 0.1 + st * 0.08, artZ + artDep / 2 + 0.55 + st * 0.5);
-    }
+    group.name = b.name;
+    const height = FLOOR * 4;
+    // OSM 与卫星图显示三列横翼和一条连续长廊，屋面为浅色平顶。
+    const body = extrudePolygon(b.poly, height, M.plasterWarm, M.plasterPale);
+    body.position.y = 0.06;
+    group.add(body);
+    addEdgeWindows(b.poly, 4, FLOOR, 0.18, { parent: group, height: 0.44 });
+    const parapet = new THREE.LineBasicMaterial({ color: 0xe9e6de });
+    group.add(footprintOutline(b.poly, 0.06 + height, parapet));
     world.add(group);
-    // 现状保持与旧版一致：艺术楼与科学馆同属「科学馆」拾取点（数据层未单独立 art pickable）
-    markSpot(group, 'science', pickables);
-    group.updateMatrixWorld(true);
-    const labelPos = group.localToWorld(new THREE.Vector3(artX, 0.16 + artH + 3.0, artZ));
+    landmarkGroups.hall3 = markSpot(group, 'hall3', pickables);
+  }
 
-    // 曲水流觞：艺术楼旁的水庭。艺术楼放大并向南门平移后，水庭沿局部 -x 让开 2.5 单位，
-    // 保证池岸/石桥不插进新的艺术楼体量（自检净距 1.58 单位）。
-    addCurvedStream(group, -26, -22, 15);
-    group.updateMatrixWorld(true);
-    const waterLabel = group.localToWorld(new THREE.Vector3(-26, 2.2, -22));
+  function buildScience(b) {
+    const group = new THREE.Group();
+    group.name = b.name;
+    const spacing = 1.55;
+    const floors = 6; // 2013 图集上可辨认底层及上方五道横窗，层高用近似值。
+    const height = spacing * floors;
+    // 与三号楼相邻的折边保留。小幅退让给贴边的墙体和窗面留缝。
+    const poly = b.poly.map(([x, z]) => [
+      b.center[0] + (x - b.center[0]) * 0.984,
+      b.center[1] + (z - b.center[1]) * 0.984
+    ]);
+    const body = extrudePolygon(poly, height, M.roofDeck, M.plasterPale);
+    body.position.y = 0.06;
+    group.add(body);
+    const coping = extrudePolygon(poly, 0.18, M.roofDeck, M.whiteBand);
+    coping.position.y = height + 0.06;
+    group.add(coping);
+    const glass = new THREE.MeshStandardMaterial({ color: 0x544238, roughness: 0.33, metalness: 0.24 });
+    // 首层入口在雨棚下，二层起才有照片中的深色连续窗带。
+    addEdgeWindows(poly, floors - 1, spacing, spacing + 0.12, {
+      parent: group, glass, height: 0.66, dense: true, ribbon: true
+    });
+    addEdgeWindows(poly, 1, spacing, -0.2, { parent: group, glass, height: 0.9, dense: true });
 
-    return group;
+    // 玻璃楼梯间、向前挑出的绿雨棚和屋顶小梯房是弧面教学楼的辨识点。
+    const entrance = new THREE.Group();
+    entrance.position.set(b.center[0], 0.06, b.center[1]);
+    entrance.rotation.y = deg(-b.obb[2]);
+    group.add(entrance);
+    const x = -14.65;
+    const facadeZ = 3.43;
+    const towerGlass = new THREE.MeshStandardMaterial({
+      color: 0x553d2d, roughness: 0.28, metalness: 0.28
+    });
+    placeBox(entrance, 3.44, height - 0.32, 0.42, M.whiteBand, x, 0.2, facadeZ - 0.02);
+    placeBox(entrance, 2.48, height - 0.52, 0.16, towerGlass, x, 0.27, facadeZ + 0.25);
+    for (const dx of [-0.82, -0.41, 0, 0.41, 0.82]) {
+      placeBox(entrance, 0.035, height - 0.56, 0.045, M.darkMetal, x + dx, 0.28, facadeZ + 0.36);
+    }
+    for (let i = 1; i < floors * 2; i += 1) {
+      placeBox(entrance, 2.48, 0.055, 0.06, M.darkMetal, x, i * spacing / 2, facadeZ + 0.36);
+    }
+    // 屋顶梯房在正面露出一横二竖的暗色开口和略斜的白色挑檐。
+    placeBox(entrance, 3.62, 1.05, 2.22, M.plasterPale, x, height + 0.18, 1.6);
+    for (const dx of [-1.37, 1.37]) {
+      placeBox(entrance, 0.22, 0.76, 0.08, M.darkMetal, x + dx, height + 0.39, 2.74);
+    }
+    placeBox(entrance, 2.92, 0.19, 0.085, towerGlass, x, height + 0.42, 2.75);
+    const cap = placeBox(entrance, 4.28, 0.23, 2.72, M.whiteBand, x, height + 1.26, 1.6);
+    cap.rotation.z = 0.075;
+
+    const canopyWidth = 14.25;
+    placeBox(entrance, canopyWidth + 0.45, 0.12, 3.65, M.stoneLight, x, 0, 2.53);
+    const canopy = new THREE.MeshStandardMaterial({ color: 0x63887a, roughness: 0.79 });
+    placeBox(entrance, canopyWidth, 0.13, 2.95, canopy, x, 1.42, 2.83);
+    placeBox(entrance, canopyWidth, 0.17, 0.15, canopy, x, 1.37, 4.29);
+    for (const dx of [-6.1, -4.1, -2.1, 2.1, 4.1, 6.1]) {
+      placeBox(entrance, 0.18, 1.3, 0.23, M.plasterPale, x + dx, 0.12, 4.09);
+    }
+
+    world.add(group);
+    landmarkGroups.science = markSpot(group, 'science', pickables);
   }
 
   /* ---------------------------- landmark hall builder ---------------- */
@@ -1258,7 +1296,6 @@ export function buildCampus(scene, renderer, options = {}) {
     let greenRoof = false;
     if (b.name === '主教学楼') { floors = 5; height = floors * FLOOR; }
     if (b.name === '3号教学楼') { floors = 4; }
-    if (b.name === '办公楼') { floors = 3; height = floors * FLOOR; }
     if (b.name === '体育馆') {
       floors = 2; height = 4.6; style = 'gym'; roofHeight = 1.6; greenRoof = true;
     }
@@ -1379,16 +1416,6 @@ export function buildCampus(scene, renderer, options = {}) {
     group.traverse((o) => { if (o.isMesh && o.material === M.plasterPale) { o.castShadow = true; o.receiveShadow = true; } });
     world.add(group);
     if (b.name === '主教学楼') { markSpot(group, 'hall1', pickables); landmarkGroups.hall1 = group; }
-    if (b.name === '办公楼') {
-      for (let i = 0; i < 10; i += 1) {
-        const x = -length * 0.4 + (i / 9) * length * 0.8;
-        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 7), M.plasterPale);
-        col.position.set(x, 1.3, depth / 2 + 1.25);
-        col.castShadow = true;
-        group.add(col);
-      }
-      placeBox(group, length * 0.84, 0.16, 2.4, M.plasterWarm, 0, 2.6, depth / 2 + 1.35);
-    }
     if (b.name === '衍林堂') { markSpot(group, 'yanlin', pickables); landmarkGroups.yanlin = group; }
     if (b.name === '体育馆') { markSpot(group, 'gym', pickables); landmarkGroups.gym = group; }
     return group;
@@ -1610,9 +1637,12 @@ export function buildCampus(scene, renderer, options = {}) {
     body.castShadow = true;
     body.receiveShadow = true;
     group.add(body);
-    // 通长横向玻璃带 + 白色窗台线（三层，体育馆大跨立面语言）
+    // 球场位于体育馆东北侧。选最长边中朝向球场的一面，避免将照片立面建在运动场侧。
+    const longSide = Math.max(...edges.map((edge) => edge.len));
+    const courtFacade = edges.filter((edge) => edge.len >= longSide * 0.8)
+      .reduce((best, edge) => edge.nx > best.nx ? edge : best);
     for (const e of edges) {
-      if (e.len < 2.2) continue;
+      if (e === courtFacade || e.len < 2.2) continue;
       for (const y of [baseY + 1.05, baseY + 2.55, baseY + 3.95]) {
         const band = placeBox(group, e.len * 0.9, 0.52, 0.09, M.glassBand,
           e.mx + e.nx * 0.035, y, e.mz + e.nz * 0.035, e.yaw);
@@ -1624,6 +1654,35 @@ export function buildCampus(scene, renderer, options = {}) {
         sill.castShadow = false;
       }
     }
+    // 2013 校园风景图集：浅色墙面、深蓝窗带、下沿凸出的窗台和倾斜支撑。
+    const fascia = new THREE.Group();
+    fascia.name = 'court-facing gym facade';
+    fascia.position.set(courtFacade.mx, baseY, courtFacade.mz);
+    fascia.rotation.y = Math.atan2(courtFacade.nx, courtFacade.nz);
+    const faceWidth = courtFacade.len * 0.94;
+    const glass = new THREE.MeshStandardMaterial({ color: 0x285773, roughness: 0.24, metalness: 0.36 });
+    const frame = new THREE.MeshStandardMaterial({ color: 0x29363d, roughness: 0.56 });
+    placeBox(fascia, faceWidth, 1.13, 0.44, frame, 0, 2.39, 0.22);
+    placeBox(fascia, faceWidth - 0.22, 0.97, 0.08, glass, 0, 2.47, 0.46);
+    placeBox(fascia, faceWidth, 0.075, 0.08, frame, 0, 3.05, 0.52);
+    placeBox(fascia, faceWidth + 0.12, 0.42, 0.61, M.plasterPale, 0, 1.97, 0.28);
+    placeBox(fascia, faceWidth, 0.12, 0.2, M.whiteBand, 0, 3.53, 0.43);
+    const panes = 26;
+    for (let i = 1; i < panes; i += 1) {
+      const x = faceWidth * (i / panes - 0.5);
+      placeBox(fascia, 0.045, 1.02, 0.071, frame, x, 2.43, 0.52);
+    }
+    placeBox(fascia, faceWidth - 0.42, 0.81, 0.1, M.darkMetal, 0, 0.59, 0.065);
+    const supportY = 1.74;
+    const supportZ = 0.42;
+    for (let bay = 1; bay <= 8; bay += 1) {
+      const x = faceWidth * (bay / 9 - 0.5);
+      const pierHeight = Math.hypot(supportY, supportZ);
+      const pier = placeBox(fascia, 0.34, pierHeight, 0.36, M.stoneLight,
+        x, 0.25 + (supportY - pierHeight) / 2, 0.28 + supportZ / 2);
+      pier.rotation.x = Math.atan2(supportZ, supportY);
+    }
+    group.add(fascia);
     // 平屋面 + 女儿墙 + 屋面楼梯间/设备（取代旧的并排筒拱）
     const roofDeck = extrudePolygon(b.poly, 0.18, M.roofDeck, M.terracottaEdge);
     roofDeck.position.y = wallTop;
@@ -1774,11 +1833,23 @@ export function buildCampus(scene, renderer, options = {}) {
   }
   for (const b of site.buildings) {
     if (b.kind !== 'named' || b.name === '凤栖堂') continue;
-    if (b.name === '科学馆') { buildScienceArt(b); continue; }
+    if (b.name === '科学馆') { buildScience(b); continue; }
+    if (b.style === 'art') {
+      const art = buildArt({ M, building: b });
+      world.add(art);
+      landmarkGroups.art = markSpot(art, 'art', pickables);
+      const garden = new THREE.Group();
+      const [x, z] = b.garden.center;
+      garden.position.set(x, 0.06, z);
+      garden.rotation.y = art.rotation.y;
+      world.add(garden);
+      landmarkGroups.stream = markSpot(addCurvedStream(garden, 0, 0, b.garden.length), 'stream', pickables);
+      continue;
+    }
     if (b.name === '3号教学楼') { buildThird(b); continue; }
     if (b.name === '主教学楼') { buildLandmarkHall(b, 'teaching'); continue; }
     if (b.name === '衍林堂') { buildLandmarkHall(b, 'yanlin'); continue; }
-    if (b.name === '办公楼') { buildHall(b); continue; }
+    if (b.name === '办公楼') { buildOffice(b); continue; }
     if (b.name === '体育馆') { buildGym(b); continue; }
     // 生活建筑：等数据层（js/site.js）把研究确认的食堂 / 女生宿舍命名后自动生效，
     // 这里只按 style / name 做通用体量，不写死未确认的坐标。
@@ -1807,7 +1878,7 @@ export function buildCampus(scene, renderer, options = {}) {
    *   1165596686：2号↔科学馆连廊，长 8.86、宽 1.41，两端分别贴 办公楼与科学馆
    *               朝校门一侧的凸出体块（科学馆 poly 的 (11.05,1.12) 一带）。
    * 三条多边形的短边与相邻建筑 poly 共边（自检距离 0.00–0.04 单位），故端部贴合、
-   * 不会悬空；表现方式是两层开敞柱廊 + 楼板 + 坡瓦顶盖（宽即 OSM 轮廓宽度）。
+   * 不会悬空。两条朝主楼的连廊依 2018 航拍呈浅色平顶，通往科学馆的一条沿用坡瓦顶。
    */
   function buildCorridor(b) {
     const poly = b.poly.slice(0, -1);
@@ -1867,18 +1938,24 @@ export function buildCampus(scene, renderer, options = {}) {
     slab.castShadow = true;
     slab.receiveShadow = true;
     group.add(slab);
-    // 坡瓦顶盖：沿连廊长边方向出檐
-    const roofGroup = new THREE.Group();
-    roofGroup.position.set(c[0], 0, c[1]);
-    roofGroup.rotation.y = -Math.atan2(longEdges[0].tz, longEdges[0].tx);
-    const roofMats = { ...M, roof: M.terracottaRoof, roofEdge: M.terracottaEdge, roofRidge: M.terracottaEdge };
-    placeBox(roofGroup, maxLen + 0.7, 0.12, shortLen + 0.7, M.whiteBand, 0, 3.38, 0);
-    const roof = createHipRoof({
-      w: maxLen + 0.7, d: shortLen + 0.7, h: 0.5, upturn: 0.12, materials: roofMats, detail: false
-    });
-    roof.position.y = 3.5;
-    roofGroup.add(roof);
-    group.add(roofGroup);
+    if (b.id === '1165596686') {
+      const roofGroup = new THREE.Group();
+      roofGroup.position.set(c[0], 0, c[1]);
+      roofGroup.rotation.y = -Math.atan2(longEdges[0].tz, longEdges[0].tx);
+      const roofMats = { ...M, roof: M.terracottaRoof, roofEdge: M.terracottaEdge, roofRidge: M.terracottaEdge };
+      placeBox(roofGroup, maxLen + 0.7, 0.12, shortLen + 0.7, M.whiteBand, 0, 3.38, 0);
+      const roof = createHipRoof({
+        w: maxLen + 0.7, d: shortLen + 0.7, h: 0.5, upturn: 0.12, materials: roofMats, detail: false
+      });
+      roof.position.y = 3.5;
+      roofGroup.add(roof);
+      group.add(roofGroup);
+    } else {
+      const roof = extrudePolygon(poly, 0.18, M.plasterPale, M.whiteBand);
+      roof.name = 'flat link roof';
+      roof.position.y = 3.38;
+      group.add(roof);
+    }
     world.add(group);
     markSpot(group, b.id === '1165596686' ? 'science' : 'hall2', pickables);
     return group;
@@ -2165,12 +2242,11 @@ export function buildCampus(scene, renderer, options = {}) {
   markSpot(standGroup, 'stand', pickables);
 
   /* ---------------------------- teaching-quarter details ------------ */
-  // 细节保护区（避免随机树/行道树与新几何打架）：手形雕塑、艺术楼（新位置）、
-  // 曲水流觞（新位置）、衍林堂庭院、1号↔2号 之间的学园。
+  // 保护雕塑、水庭、科学馆入口前场、衍林堂庭院和学园。建筑另用 SITE 轮廓避让。
   const detailZones = [
     [21, -8, 4.0],
-    [52.8, 7.9, 9.0],
-    [61.1, -6.1, 8.0],
+    [...ART_BUILDING.garden.center, 7.0],
+    [35.5, -20.2, 6.5],
     [-2.6, -47.6, 8.0],
     [7.0, -25.6, 7.2]
   ];
@@ -2436,16 +2512,16 @@ export function buildCampus(scene, renderer, options = {}) {
     { name: 'gym', pts: [[-40, 18], [-36, 20], [-32, 27], [-32, 37], [-36, 43], [-40, 45]] },
     { name: 'yanlin', pts: [[-8, -70], [-2, -68], [4, -66], [10, -67], [12, -70], [10, -76], [-2, -85], [-6, -78]] },
     { name: 'fengqi', pts: [[-43, -40], [-38, -40], [-34, -43], [-32, -47], [-34, -52]] },
-    // 艺术楼放大并南移后，艺术楼/曲水流觞两条路线改为绕新体量外圈
-    { name: 'art', pts: [[30, 10], [36, 15], [42, 19], [48, 21], [54, 20], [59, 15], [63, 8], [65, 4], [65, 0], [62, -3], [58, -5], [52, -8], [46, -4], [42, -3], [35, 2], [31, 5], [30, 7]] },
-    { name: 'stream', pts: [[56.46, -11.34], [60.2, -11.92], [64.47, -9.08], [66.76, -4.5], [65.74, -0.86], [62.0, -0.28], [57.73, -3.12], [55.44, -7.7]] },
+    // 科学馆与艺术楼之间的室外通道。路径仍由建筑轮廓预检。
+    { name: 'art', pts: [[34, 10], [42, 3], [50, -3], [52, -8], [47, -5], [39, 1], [33, 6]] },
+    { name: 'stream', pts: [[55.02, -12.95], [59.72, -15.78], [63.75, -13.34], [67.02, -8.89], [64.28, -3.39], [58.4, -1.12], [54.65, -4.61], [52.01, -8.95]] },
     { name: 'southgate', pts: [[48, 81], [55, 77], [60, 80], [52, 86], [49, 87]] },
     { name: 'tree', pts: [[-12, -44], [-7, -43], [-2, -46], [-3, -50], [-9, -51], [-13, -48]] },
     { name: 'hand', pts: [[16, -4], [23, -2], [27, -7], [24, -13], [17, -12], [14, -8]] },
-    { name: 'east', pts: [[66, -15], [74, -8], [77, 2], [69, 6], [62, -2]] },
+    { name: 'east', pts: [[74.23, -3.91], [78.47, 0.88], [83.74, 7.3], [86.87, 11.74], [84.23, 11.01], [80.8, 6.83], [76.08, 1.8], [72.15, -3.54]] },
     { name: 'north', pts: [[-20, -55], [-12, -60], [-8, -68], [-18, -70], [-26, -64]] },
     { name: 'south', pts: [[56, 50], [48, 62], [42, 56], [50, 52]] },
-    { name: 'eastcourt', pts: [[65, 20], [73, 28], [70, 40], [62, 35], [60, 25]] }
+    { name: 'eastcourt', pts: [[87.31, 21.9], [82.24, 27.18], [76.48, 32.29], [69.06, 37.78], [69.12, 34.39], [74.38, 29.47], [80.08, 24.29], [85.31, 19.93]] }
   ];
   const walkers = [];
   const routeAudit = [];
@@ -2973,9 +3049,7 @@ export function buildCampus(scene, renderer, options = {}) {
     library: { p: [24, -72], r: 22 },
     // 学园（1号↔2号 之间的院落，几何中心由两条 OSM 连廊围合算出）
     study: { p: [7.0, -25.6], r: 13 },
-    // 艺术楼 / 曲水流觞随体量南移后的位置（标牌与数据层 anchor 需同步）
-    art: { p: [52.8, 7.9], r: 15 },
-    stream: { p: [61.1, -6.1], r: 11 },
+    stream: { p: ART_BUILDING.garden.center, r: 8 },
     // 操场看台（东南长直道、体育馆与跑道之间；中心比数据层 anchor 略向东北）
     stand: { p: [-60, 2], r: 26 }
   };
@@ -2988,6 +3062,9 @@ export function buildCampus(scene, renderer, options = {}) {
       pts.reduce((sum, p) => sum + p[1], 0) / pts.length
     ];
     const radius = Math.max(12, Math.max(b.obb[0], b.obb[1]) * 0.5 + 4);
+    if (b.style === 'art') selectionSizes.art = { p: b.center, r: radius };
+    if (b.name === '办公楼') selectionSizes.hall2 = { p: b.center, r: radius };
+    if (b.name === '3号教学楼') selectionSizes.hall3 = { p: b.center, r: radius };
     if (b.style === 'canteen' || b.name === '食堂') selectionSizes.canteen = { p: pc, r: radius };
     if (b.style === 'dorm' || b.name === '女生宿舍') selectionSizes.dorm = { p: pc, r: radius };
   }

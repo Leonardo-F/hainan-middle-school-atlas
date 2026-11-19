@@ -113,6 +113,15 @@ const nightButton = $('#nightButton');
 const toastEl = $('#toast');
 const cursorEl = $('#cursor');
 const minimap = $('#minimap');
+const planDialog = $('#planDialog');
+const planMap = $('#planMap');
+const planLandmarks = $('#planLandmarks');
+const planColors = {
+  hall1: '#86523d',
+  science: '#356759',
+  art: '#946538',
+  hall3: '#4d6179'
+};
 const aboutDialog = $('#aboutDialog');
 const interactionHint = $('#interactionHint');
 const stageEl = $('.stage');
@@ -201,13 +210,13 @@ const MOBILE_FRAME_WIDTH = {
   fengqi: 21,
   yanlin: 21,
   hall1: 65,
-  science: 65,
+  science: 26,
   gym: 44,
   field: 115,
   tree: 23,
   hall2: 56,
   hall3: 52,
-  art: 30,
+  art: 53,
   stream: 38,
   hand: 16,
   study: 16,
@@ -1313,6 +1322,7 @@ function setupEvents() {
         showToast('视角与日光已复位');
       }
       if (action === 'about') openAbout();
+      if (action === 'map') openPlan();
       if (action === 'night') toggleNight();
     });
   });
@@ -1353,6 +1363,18 @@ function setupEvents() {
 
   minimap.addEventListener('click', handleMapClick);
   minimap.addEventListener('pointermove', handleMapHover);
+  planMap?.addEventListener('click', handleMapClick);
+  $('#closePlan')?.addEventListener('click', () => planDialog.close());
+  planDialog?.addEventListener('click', (event) => {
+    if (event.target !== planDialog) return;
+    const { left, right, top, bottom } = planDialog.getBoundingClientRect();
+    const { clientX: x, clientY: y } = event;
+    if (x < left || x > right || y < top || y > bottom) planDialog.close();
+  });
+  planDialog?.addEventListener('close', () => {
+    state.modalOpen = planDialog.open || aboutDialog.open;
+    setModalCursor(state.modalOpen);
+  });
 
   window.addEventListener('keydown', handleKeyDown);
 
@@ -1566,7 +1588,7 @@ function openSpot(id, options = {}) {
   infoFacts.innerHTML = spot.facts
     .map(([label, value]) => `<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`)
     .join('');
-  infoDrawing.innerHTML = diagramSVG(spot.diagram);
+  infoDrawing.innerHTML = diagramSVG(spot.diagram, spot);
   renderSpotPhoto(spot);
   infoCard.scrollTop = 0;
 
@@ -2556,51 +2578,52 @@ function resizeMap() {
   minimap.width = Math.max(1, Math.round(mapW * mapDpr));
   minimap.height = Math.max(1, Math.round(mapH * mapDpr));
   drawMap();
+  if (planDialog?.open) drawPlanMap();
 }
 
-function mapTransform() {
+function mapTransform(width, height) {
   const pad = 12;
   const w = SITE.bounds.xMax - SITE.bounds.xMin;
   const h = SITE.bounds.zMax - SITE.bounds.zMin;
-  const s = Math.min((mapW - pad * 2) / w, (mapH - pad * 2) / h);
+  const s = Math.min((width - pad * 2) / w, (height - pad * 2) / h);
   const cx = (SITE.bounds.xMin + SITE.bounds.xMax) / 2;
   const cz = (SITE.bounds.zMin + SITE.bounds.zMax) / 2;
   return {
     s,
-    px: (x) => mapW / 2 + (x - cx) * s,
-    py: (z) => mapH / 2 + (z - cz) * s
+    px: (x) => width / 2 + (x - cx) * s,
+    py: (z) => height / 2 + (z - cz) * s,
+    xz: (x, y) => [cx + (x - width / 2) / s, cz + (y - height / 2) / s]
   };
 }
 
-function drawMap() {
-  if (!mapW || !mapH || !campus) return;
-  const ctx = minimap.getContext('2d');
+function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, expanded = false) {
+  if (!width || !height || !campus) return;
+  const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const css = getComputedStyle(document.body);
   const ink = css.getPropertyValue('--ink').trim() || '#18261f';
   const accent = css.getPropertyValue('--accent').trim() || '#b34c31';
-  const muted = css.getPropertyValue('--muted').trim() || '#677067';
   const paper = css.getPropertyValue('--paper').trim() || '#f2e9da';
-  const t = mapTransform();
+  const t = mapTransform(width, height);
 
-  ctx.setTransform(mapDpr, 0, 0, mapDpr, 0, 0);
-  ctx.clearRect(0, 0, mapW, mapH);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = alphaColor(paper, 0.18);
-  ctx.fillRect(0, 0, mapW, mapH);
+  ctx.fillRect(0, 0, width, height);
 
-  // survey grid
+  const grid = expanded ? 30 : 18;
   ctx.strokeStyle = alphaColor(ink, 0.06);
   ctx.lineWidth = 0.5;
-  for (let x = 0; x < mapW; x += 18) {
+  for (let x = 0; x < width; x += grid) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, mapH);
+    ctx.lineTo(x, height);
     ctx.stroke();
   }
-  for (let y = 0; y < mapH; y += 18) {
+  for (let y = 0; y < height; y += grid) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(mapW, y);
+    ctx.lineTo(width, y);
     ctx.stroke();
   }
 
@@ -2657,27 +2680,26 @@ function drawMap() {
     ctx.restore();
   }
 
-  // buildings
-  for (const b of SITE.buildings) {
-    const active = b.name && LANDMARKS.find((l) => l.id === state.activeId) &&
-      ((b.name === '主教学楼' && state.activeId === 'hall1') ||
-       (b.name === '科学馆' && state.activeId === 'science') ||
-       (b.name === '凤栖堂' && state.activeId === 'fengqi') ||
-       (b.name === '衍林堂' && state.activeId === 'yanlin') ||
-       (b.name === '体育馆' && state.activeId === 'gym') ||
-       false);
+  // 连廊走向与各栋地标并列，艺术楼用虚线标出估绘边界。
+  for (const building of SITE.buildings) {
+    const spot = LANDMARKS.find((item) => item.name === building.name);
+    const active = spot?.id === state.activeId;
+    const color = planColors[spot?.id];
     ctx.beginPath();
-    b.poly.forEach(([x, z], i) => {
+    building.poly.forEach(([x, z], i) => {
       if (i === 0) ctx.moveTo(t.px(x), t.py(z));
       else ctx.lineTo(t.px(x), t.py(z));
     });
     ctx.closePath();
-    const historic = ['凤栖堂', '衍林堂'].includes(b.name);
-    ctx.fillStyle = active ? accent : historic ? alphaColor('#9d5b43', 0.5) : alphaColor(ink, 0.25);
-    ctx.strokeStyle = active ? accent : alphaColor(ink, 0.24);
-    ctx.lineWidth = active ? 1.2 : 0.5;
+    const historic = ['凤栖堂', '衍林堂'].includes(building.name);
+    ctx.fillStyle = active ? accent : color ? alphaColor(color, 0.52)
+      : historic ? alphaColor('#9d5b43', 0.5) : alphaColor(ink, 0.26);
+    ctx.strokeStyle = active ? accent : color || alphaColor(ink, 0.32);
+    ctx.lineWidth = active || color ? 1.05 : 0.5;
+    if (building.source === 'imagery') ctx.setLineDash(expanded ? [4, 3] : [2, 2]);
     ctx.fill();
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   // gates
@@ -2727,50 +2749,114 @@ function drawMap() {
   ctx.arc(px, py, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // scale tick
-  ctx.strokeStyle = alphaColor(ink, 0.25);
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(mapW - 25, mapH - 8);
-  ctx.lineTo(mapW - 8, mapH - 8);
-  ctx.stroke();
-  ctx.fillStyle = alphaColor(muted, 0.65);
-  ctx.font = '5px "DM Mono", monospace';
-  ctx.textAlign = 'right';
-  ctx.fillText('示意', mapW - 8, mapH - 12);
+  if (expanded) {
+    ctx.font = '10px "DM Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const spot of LANDMARKS) {
+      const color = planColors[spot.id];
+      if (!color) continue;
+      const x = t.px(spot.map[0]);
+      const y = t.py(spot.map[1]);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fffdf6';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(spot.index, x, y + 0.4);
+    }
+  }
 }
 
-function handleMapClick(event) {
-  if (!mapW) return;
-  const rect = minimap.getBoundingClientRect();
+function drawPlanMap() {
+  const { width, height } = planMap.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  planMap.width = Math.max(1, Math.round(width * dpr));
+  planMap.height = Math.max(1, Math.round(height * dpr));
+  drawMap(planMap, width, height, dpr, true);
+}
+
+function openPlan() {
+  if (!planDialog || planDialog.open) return;
+  closePhotoViewer();
+  stopTour();
+  planLandmarks.replaceChildren();
+  for (const [id, color] of Object.entries(planColors)) {
+    const spot = LANDMARKS.find((item) => item.id === id);
+    if (!spot) continue;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.setProperty('--plan-color', color);
+    const number = document.createElement('span');
+    number.className = 'mono';
+    number.setAttribute('aria-hidden', 'true');
+    number.textContent = spot.index;
+    button.append(number, spot.name);
+    button.addEventListener('click', () => openFromMap(id));
+    planLandmarks.append(button);
+  }
+  state.modalOpen = true;
+  setModalCursor(true);
+  planDialog.showModal();
+  drawPlanMap();
+}
+
+function openFromMap(id) {
+  if (planDialog?.open) planDialog.close();
+  openSpot(id, { source: 'map' });
+}
+
+function mapSpotAt(event) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
-  const t = mapTransform();
+  const t = mapTransform(rect.width, rect.height);
+  const expanded = event.currentTarget === planMap;
   let closest = null;
   let distance = 12;
-  LANDMARKS.forEach((spot) => {
-    const dx = t.px(spot.map[0]) - x;
-    const dy = t.py(spot.map[1]) - y;
-    const d = Math.hypot(dx, dy);
+  let pin = null;
+  let pinDistance = 10;
+  for (const spot of LANDMARKS) {
+    const d = Math.hypot(t.px(spot.map[0]) - x, t.py(spot.map[1]) - y);
     if (d < distance) {
       distance = d;
       closest = spot;
     }
-  });
-  if (closest) {
-    stopTour();
-    openSpot(closest.id, { source: 'map' });
+    if (expanded && planColors[spot.id] && d <= pinDistance) {
+      pinDistance = d;
+      pin = spot;
+    }
   }
+  if (pin) return pin;
+  if (!expanded && distance <= 4) return closest;
+
+  const [wx, wz] = t.xz(x, y);
+  for (const building of SITE.buildings) {
+    if (!building.name) continue;
+    let inside = false;
+    for (let i = 1; i < building.poly.length; i += 1) {
+      const [x1, z1] = building.poly[i - 1];
+      const [x2, z2] = building.poly[i];
+      if ((z1 > wz) !== (z2 > wz) && wx < x1 + (x2 - x1) * (wz - z1) / (z2 - z1)) inside = !inside;
+    }
+    if (!inside) continue;
+    const spot = LANDMARKS.find((item) => item.name === building.name);
+    if (spot) return spot;
+  }
+  return closest;
+}
+
+function handleMapClick(event) {
+  const spot = mapSpotAt(event);
+  if (spot) openFromMap(spot.id);
 }
 
 function handleMapHover(event) {
-  if (!hasCustomCursor) return;
-  const rect = minimap.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  const t = mapTransform();
-  const near = LANDMARKS.some((spot) => Math.hypot(t.px(spot.map[0]) - x, t.py(spot.map[1]) - y) < 12);
-  cursorEl.classList.toggle('is-hover', near);
+  if (hasCustomCursor) cursorEl.classList.toggle('is-hover', Boolean(mapSpotAt(event)));
 }
 
 function degToRad(value) {
@@ -2797,7 +2883,7 @@ function alphaColor(hex, alpha) {
 /*  Informational diagrams                                             */
 /* ------------------------------------------------------------------ */
 
-function diagramSVG(type) {
+function diagramSVG(type, spot) {
   const frame = `
     <g class="dwg-soft">
       <path d="M0 112H360M18 126H342M18 118V134M342 118V134"/>
@@ -2830,6 +2916,40 @@ function diagramSVG(type) {
       </g>
       ${label(20, 126, 'ELEVATION / 牌楼式校门')}
       ${label(340, 126, '四柱三间', 'end')}
+    </svg>`;
+  }
+
+  if (type === 'footprint') {
+    const building = SITE.buildings.find((item) => item.name === spot?.name);
+    if (building) {
+      const xs = building.poly.map(([x]) => x);
+      const zs = building.poly.map(([, z]) => z);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+      const scale = Math.min(250 / (Math.max(...xs) - Math.min(...xs)), 85 / (Math.max(...zs) - Math.min(...zs)));
+      const points = building.poly.map(([x, z]) => `${(180 + (x - cx) * scale).toFixed(1)},${(63 + (z - cz) * scale).toFixed(1)}`).join(' ');
+      return `<svg viewBox="0 0 360 132" preserveAspectRatio="xMidYMid meet">
+        ${frame}
+        <polygon class="dwg-line" points="${points}" ${building.source === 'imagery' ? 'stroke-dasharray="3 2"' : ''}/>
+        <path class="dwg-soft" d="M305 60V36l-4 7m4-7 4 7"/>
+        ${label(305, 31, 'N', 'middle')}
+        ${label(20, 126, 'PLAN / ' + spot.name)}
+        ${label(340, 126, building.source === 'imagery' ? '影像估绘' : 'OPENSTREETMAP', 'end')}
+      </svg>`;
+    }
+  }
+
+  if (type === 'teaching') {
+    return `<svg viewBox="0 0 360 132" preserveAspectRatio="xMidYMid meet">
+      ${frame}
+      <g class="dwg-line">
+        <path d="M39 108h282M51 108V61H309v47M45 61l13-13h33l9 8 17-8h30m66 0h30l17 8 9-8h33l13 13"/>
+        <path d="M140 61l13-20h54l13 20zM141 61v47m78-47v47M51 96h258M51 73h258m-258 11h258"/>
+        <path d="M152 108V93l8-8h40l8 8v15m-56-15h56M163 93v15m34-15v15M136 82V66a3 3 0 0 1 6 0v16m76 0V66a3 3 0 0 1 6 0v16"/>
+      </g>
+      <path class="dwg-accent" d="M48 115h264" stroke-dasharray="3 2"/>
+      ${label(20, 126, 'ELEVATION / 主教学楼')}
+      ${label(340, 126, '五段屋面 · 三间门廊', 'end')}
     </svg>`;
   }
 

@@ -69,7 +69,10 @@ for (const name of fontNames) {
 }
 
 let html = await read('index.html');
+const emblemPath = 'assets/brand/hainan-middle-school-emblem.png';
+const emblem = await readFile(resolve(emblemPath));
 html = html
+  .replaceAll(emblemPath, `data:image/png;base64,${emblem.toString('base64')}`)
   .replace(/^\s*<link rel="preload"[^>]+>\s*$/gm, '')
   .replace(/^\s*<link rel="stylesheet" href="css\/style\.css">\s*$/m, '')
   .replace(/^\s*<script type="importmap">[\s\S]*?<\/script>\s*$/m, '')

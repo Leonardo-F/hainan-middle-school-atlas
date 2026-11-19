@@ -1,9 +1,50 @@
 /**
  * 校园空间数据
  * 依据 OpenStreetMap 建筑轮廓、运动场与出入口数据整理为本地场景坐标。
+ * 艺术楼为卫星影像与航拍比对所得的示意轮廓（见 docs/accuracy.md）。
  * 坐标单位：场景单位；1 场景单位 ≈ 2 m。x = 东，z = 南（north = -z）。
  * © OpenStreetMap contributors, ODbL 1.0
  */
+const artCenter = [61.2, 20.3];
+const artAngle = 138.5;
+const artYaw = -artAngle * Math.PI / 180;
+const artWings = {
+  front: { x: [-2.4, 14.3], z: [1.2, 16.5], eave: 9.5, bands: 4 },
+  rear: { x: [-7.6, 18.7], z: [-13.2, 1.2], eave: 8.6, bands: 4 },
+  east: { x: [-21.3, -13.3], z: [-3.9, 14.6], eave: 7.1, bands: 3 },
+  corner: { x: [-21.3, -7.6], z: [-13.2, -3.9], eave: 8.2, bands: 4 }
+};
+const { front, rear, east, corner } = artWings;
+
+function artToCampus(x, z) {
+  return [
+    artCenter[0] + Math.cos(artYaw) * x + Math.sin(artYaw) * z,
+    artCenter[1] - Math.sin(artYaw) * x + Math.cos(artYaw) * z
+  ];
+}
+
+export const ART_BUILDING = {
+  id: 'art-imagery',
+  name: '艺术楼',
+  kind: 'named',
+  style: 'art',
+  source: 'imagery',
+  center: artCenter,
+  obb: [rear.x[1] - east.x[0], front.z[1] - rear.z[0], artAngle],
+  area: 4 * Object.values(artWings).reduce((sum, { x, z }) => sum + (x[1] - x[0]) * (z[1] - z[0]), 0),
+  wings: artWings,
+  entrance: [-5.6, 18.2],
+  garden: { center: artToCampus(-17.4, 22.5), length: 9.2 },
+  poly: [
+    [east.x[0], rear.z[0]], [rear.x[1], rear.z[0]],
+    [rear.x[1], rear.z[1]], [front.x[1], front.z[0]],
+    [front.x[1], front.z[1]], [front.x[0], front.z[1]],
+    [front.x[0], rear.z[1]], [rear.x[0], rear.z[1]],
+    [rear.x[0], corner.z[1]], [east.x[1], corner.z[1]],
+    [east.x[1], east.z[1]], [east.x[0], east.z[1]], [east.x[0], rear.z[0]]
+  ].map(([x, z]) => artToCampus(x, z))
+};
+
 export const SITE = {
   "scale": 0.5,
   "center": [
@@ -607,6 +648,7 @@ export const SITE = {
       "kind": "named",
       "style": "academic"
     },
+    ART_BUILDING,
     {
       "id": "1165596688",
       "name": "3号教学楼",

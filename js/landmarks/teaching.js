@@ -4,13 +4,12 @@
  * 局部坐标（单位：米，finalize 后缩放为场景单位）：+z 正面（楼前广场方向），
  * +x 长向，基座 y=0。
  *
- * 依据照片（/tmp/refphotos/blob_02/04/05/12）与参考作品
- * Hainan_Campus_3D.html 的 teaching 分支还原：
- *   - 五层主楼：深色石材基座 + 4 层白色壁柱与连续深蓝绿玻璃窗带；
- *   - 中央体块略高、正面略凸，两座深色石材竖塔夹「1923」门架；
- *   - 门架上是红色抱厦（门廊）瓦顶，门前三级红毯台阶；
+ * 依据 2018 年航拍 00:08–00:25、2023 年《航拍海中》00:38–00:43 和学校图集：
+ *   - 五层主楼：深色石材基座 + 4 层白色壁柱与深色窗带；
+ *   - 中央体块略高、正面略凸，入口两侧的竖塔下半部为深色石材，上半部为白色拱窗；
+ *   - 红瓦门廊下留出进深，四根石柱分出三间，门前为红色宽阶；
  *   - 五个红瓦屋顶段：中央高顶 + 两翼长顶 + 两端小顶；
- *   - 楼前广场铺装、太湖石「虎踞龙盘」题字与草坪台座。
+ *   - 浅色铺砖与红砖收边；楼前太湖石和榄仁树单独定位。
  *
  * 尺度：总长 ≈ 115.6 m（含檐口），主体进深 16 m，总进深（含檐口/台阶/太湖石）
  * 控制在 ≈ 22 m，避免与周边建筑、道路穿插。
@@ -56,10 +55,6 @@ const GATE_TOP = 6.7;       // 门架顶（含「1923」横梁）
 const PORTICO_BASE = 7.15;  // 抱厦门廊柱顶 / 瓦顶下皮
 const PORTICO_FRONT = 11.25; // 抱厦瓦顶前檐
 
-const ISLAND_Z0 = 11.6;     // 太湖石草坪台座
-const ISLAND_Z1 = 13.3;
-const ISLAND_CZ = (ISLAND_Z0 + ISLAND_Z1) / 2;
-
 const WING_BAYS = 9;
 const WING_BAY = WING_LEN / WING_BAYS; // 3.5556
 
@@ -80,13 +75,13 @@ function makeTerracottaMaterial(repeatX, repeatY) {
   const surface = makeCanvas(128, 128);
   if (!surface) return null;
   const { ctx } = surface;
-  ctx.fillStyle = '#a8543c';
+  ctx.fillStyle = '#a03b33';
   ctx.fillRect(0, 0, 128, 128);
   const tile = 32;
   for (let row = 0; row < 4; row += 1) {
     for (let col = 0; col < 4; col += 1) {
       const v = 150 + ((row * 7 + col * 13) % 5) * 7;
-      ctx.fillStyle = `rgb(${v + 20},${Math.round(v * 0.54)},${Math.round(v * 0.4)})`;
+      ctx.fillStyle = `rgb(${v + 18},${Math.round(v * 0.39)},${Math.round(v * 0.34)})`;
       ctx.fillRect(col * tile + 1, row * tile + 1, tile - 2, tile - 2);
     }
     // 瓦垄横线（阴影 + 高光）
@@ -329,11 +324,11 @@ export function build(ctx) {
     /* 正立面窗阵 + 壁柱 + 楼板线脚 */
     for (const x of bayCenters) {
       for (const y of rowsWing) {
-        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.55, 2.3, 4);
+        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.28, 2.05, 3);
       }
     }
     for (let i = 1; i < WING_BAYS; i += 1) {
-      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT);
+      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT, 0.66);
     }
     for (let f = 1; f < WING_FLOORS; f += 1) {
       floorBand(group, cx, WING_GROUND_TOP + f * FLOOR_H, WING_FRONT, WING_LEN - 0.2);
@@ -463,7 +458,7 @@ export function build(ctx) {
   for (const bx of centerBays) {
     centerRows.forEach((y, f) => {
       const top = f === WING_FLOORS - 1;
-      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.6, top ? 2.6 : 2.3, 5);
+      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.15, top ? 2.42 : 2.14, 4);
     });
   }
   for (const px of [-3.35, 3.35]) pilasterAt(group, px, CENTER_GROUND_TOP, CENTER_TOP, CENTER_FRONT, 1.1, 0.3);
@@ -496,15 +491,40 @@ export function build(ctx) {
     box(back, stoneLight, 0, 0.18, 0.62, 8.8, 0.36, 0.5);
   }
 
-  // 两座深色石材竖塔
+  // 两座竖塔下部覆深石材，上段白墙中各有一扇狭长拱窗。
+  const towerStoneTop = 12.6;
   for (const side of [-1, 1]) {
     const cx = side * (TOWER_INNER + (CENTER_W / 2 - TOWER_INNER) / 2); // ±13
-    box(group, stone, cx, (PLINTH + CENTER_TOP - 0.25) / 2, BACK_Z + 0.05 + (9.3 - BACK_Z) / 2,
-      CENTER_W / 2 - TOWER_INNER, CENTER_TOP - 0.25 - PLINTH, 9.3 - BACK_Z);
-    box(group, stoneDark, cx, CENTER_TOP + 0.05, 0.75, CENTER_W / 2 - TOWER_INNER + 0.35, 0.5, 17.2);
-    // 竖塔窗
-    for (const y of centerRows) windowAt(group, cx, y, 9.32, 1.85, 2.0, 2);
+    const towerWidth = CENTER_W / 2 - TOWER_INNER;
+    box(group, stone, cx, (PLINTH + towerStoneTop) / 2, 9.03, towerWidth, towerStoneTop - PLINTH, 0.52);
+    box(group, stoneDark, cx, towerStoneTop, 9.11, towerWidth + 0.48, 0.28, 0.69);
+    box(group, wall, cx, (towerStoneTop + CENTER_TOP) / 2, 9.03, towerWidth, CENTER_TOP - towerStoneTop, 0.52);
+    box(group, trim, cx, CENTER_TOP - 0.5, 9.1, towerWidth + 0.28, 0.32, 0.72);
+    for (const y of [6.9, 9.6]) windowAt(group, cx, y, 9.32, 1.7, 1.7, 2);
     windowAt(group, cx, 3.4, 9.32, 1.6, 3.2, 3, { sill: false });
+    const arch = new THREE.Shape();
+    arch.moveTo(-0.93, 0);
+    arch.lineTo(0.93, 0);
+    arch.lineTo(0.93, 2.02);
+    arch.absarc(0, 2.02, 0.93, 0, Math.PI, false);
+    arch.closePath();
+    const surround = new THREE.Shape();
+    const radius = 1.08;
+    surround.moveTo(-radius, -0.12);
+    surround.lineTo(radius, -0.12);
+    surround.lineTo(radius, 2.02);
+    surround.absarc(0, 2.02, radius, 0, Math.PI, false);
+    surround.closePath();
+    surround.holes.push(arch);
+    const windowTrim = new THREE.Mesh(new THREE.ShapeGeometry(surround, 16), trim);
+    windowTrim.position.set(cx, 13.23, 9.36);
+    group.add(windowTrim);
+    const archedWindow = new THREE.Mesh(new THREE.ShapeGeometry(arch), recess);
+    archedWindow.position.set(cx, 13.23, 9.31);
+    group.add(archedWindow);
+    box(group, trim, cx, 14.54, 9.36, 0.08, 2.61, 0.05);
+    box(group, trim, cx, 14.7, 9.36, 1.78, 0.08, 0.05);
+    box(group, trim, cx, 13.12, 9.34, 2.15, 0.15, 0.18);
   }
 
   /* ---------------- 5. 「1923」深色石材门架 ---------------- */
@@ -556,31 +576,32 @@ export function build(ctx) {
     }
 
     // 门洞后的深色玻璃与白框门扇
-    box(group, recess, 0, (PLINTH + GATE_TOP) / 2, 8.7, GATE_HALF * 2, GATE_TOP - PLINTH, 0.12);
+    box(group, recess, 0, (PLINTH + GATE_TOP) / 2, 8.91, GATE_HALF * 2, GATE_TOP - PLINTH, 0.12);
     for (const dx of [-1.5, 1.5]) {
-      box(group, trim, dx, (PLINTH + 3.9) / 2, 8.78, 0.16, 3.9 - PLINTH, 0.08);
+      box(group, frame, dx, (PLINTH + 3.9) / 2, 9.02, 0.16, 3.9 - PLINTH, 0.08);
     }
-    box(group, trim, 0, 3.8, 8.78, 6.2, 0.16, 0.08);
+    box(group, frame, 0, 3.8, 9.02, 6.2, 0.16, 0.08);
     for (const side of [-1, 1]) {
-      box(group, trim, side * 6.5, (PLINTH + 3.8) / 2, 8.78, 2.6, 3.8 - PLINTH, 0.1);
+      box(group, frame, side * 6.5, (PLINTH + 3.8) / 2, 9.02, 0.12, 3.8 - PLINTH, 0.1);
     }
   }
 
   /* ---------------- 6. 红色抱厦门廊 ---------------- */
   {
-    const frontZ = 10.2; // 前柱中心
-    for (const side of [-1, 1]) {
-      // 白色方柱 + 柱头
-      box(group, wall, side * 6.3, (PLINTH + PORTICO_BASE - 0.32) / 2, frontZ, 1.12, PORTICO_BASE - 0.32 - PLINTH, 1.12);
-      box(group, trim, side * 6.3, PORTICO_BASE - 0.4, frontZ, 1.36, 0.3, 1.36);
-      box(group, trim, side * 6.3, PLINTH + 0.14, frontZ, 1.28, 0.28, 1.28);
+    const frontZ = 10.84;
+    for (const x of [-7.3, -3.8, 3.8, 7.3]) {
+      const columnTop = 6.6;
+      box(group, stone, x, (PLINTH + columnTop) / 2, frontZ, 1.12, columnTop - PLINTH, 1.12);
+      box(group, stoneDark, x, columnTop - 0.12, frontZ, 1.34, 0.26, 1.34);
+      box(group, stoneDark, x, PLINTH + 0.13, frontZ, 1.28, 0.26, 1.28);
     }
     // 门廊白色顶板（抱厦下的平顶）
     box(group, trim, 0, PORTICO_BASE - 0.12, 8.55, 15.2, 0.3, 4.9);
-    box(group, trim, 0, PORTICO_BASE - 0.36, 10.75, 15.6, 0.3, 0.32);
+    box(group, stoneDark, 0, 6.72, frontZ, 16.0, 0.37, 1.05);
+    box(group, trim, 0, PORTICO_BASE - 0.19, frontZ + 0.5, 16.3, 0.28, 0.29);
     // 红色抱厦瓦顶：中央高、两侧低（照片中的歇山式抱厦）
     roofAt(group, {
-      x: 0, y: PORTICO_BASE + 0.02, z: 8.6,
+      x: 0, y: PORTICO_BASE + 0.02, z: PORTICO_FRONT - 2.8,
       width: 15.8, depth: 5.6, height: 1.62, flare: 0.85
     });
     // 抱厦两侧红瓦小披檐：贴在竖塔内侧面，向门前伸出
@@ -624,28 +645,32 @@ export function build(ctx) {
 
   /* ---------------- 8. 楼前广场、红毯台阶与太湖石 ---------------- */
   // 广场铺装：中央浅色麻石 + 两翼深色铺装 + 红砖镶边（照片中的广场肌理）
-  box(group, pavingDark, 0, 0.035, (8.2 + 11.7) / 2, 66, 0.08, 11.7 - 8.2);
-  box(group, paving, 0, 0.06, (8.2 + 11.95) / 2, 30, 0.09, 11.95 - 8.2);
-  box(group, brickRed, 0, 0.11, 11.95, 30.6, 0.1, 0.6);
+  const squareStart = 8.2;
+  const squareEnd = 27.0;
+  const squareMid = (squareStart + squareEnd) / 2;
+  const squareDepth = squareEnd - squareStart;
+  box(group, pavingDark, 0, 0.035, squareMid, 66, 0.08, squareDepth);
+  box(group, paving, 0, 0.06, squareMid, 30, 0.09, squareDepth);
+  box(group, brickRed, 0, 0.11, squareEnd, 30.6, 0.1, 0.6);
   for (const side of [-1, 1]) {
-    box(group, brickRed, side * 15.4, 0.11, (8.2 + 11.95) / 2, 0.6, 0.1, 11.95 - 8.2);
-    box(group, brickRed, side * 32.9, 0.1, (8.2 + 11.7) / 2, 0.6, 0.1, 11.7 - 8.2);
+    box(group, brickRed, side * 15.4, 0.11, squareMid, 0.6, 0.1, squareDepth);
+    box(group, brickRed, side * 32.9, 0.1, squareMid, 0.6, 0.1, squareDepth);
   }
 
   // 门廊平台 + 三级红毯台阶（从广场升到门廊）
-  box(group, stoneLight, 0, PLINTH / 2, (8.2 + 10.3) / 2, 16.2, PLINTH, 10.3 - 8.2);
+  const stepStart = 11.44;
+  box(group, stoneLight, 0, PLINTH / 2, (8.2 + stepStart) / 2, 16.2, PLINTH, stepStart - 8.2);
   {
     const stepCount = 3;
     const run = 0.4;
-    const startZ = 10.3;
     for (let i = 0; i < stepCount; i += 1) {
       const top = PLINTH * ((stepCount - i) / stepCount);
-      const front = startZ + (i + 1) * run;
-      box(group, brickRed, 0, top / 2, (startZ + front) / 2, 15.4, top, run + 0.02);
+      const z = stepStart + (i + 0.5) * run;
+      box(group, brickRed, 0, top / 2, z, 15.4, top, run + 0.02);
       // 每一步踏面上的红毯
-      box(group, carpet, 0, top + 0.012, (startZ + front) / 2, 6.4, 0.03, run + 0.06);
+      box(group, carpet, 0, top + 0.012, z, 6.4, 0.03, run + 0.06);
     }
-    box(group, carpet, 0, PLINTH + 0.016, 9.35, 6.4, 0.03, 2.1);
+    box(group, carpet, 0, PLINTH + 0.016, (8.2 + stepStart) / 2, 6.4, 0.03, stepStart - 8.2);
     // 两侧花池
     for (const side of [-1, 1]) {
       box(group, stone, side * 10.6, 0.32, 10.7, 3.4, 0.64, 2.2);
