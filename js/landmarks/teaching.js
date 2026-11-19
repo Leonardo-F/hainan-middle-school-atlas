@@ -324,11 +324,11 @@ export function build(ctx) {
     /* 正立面窗阵 + 壁柱 + 楼板线脚 */
     for (const x of bayCenters) {
       for (const y of rowsWing) {
-        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.55, 2.3, 4);
+        windowAt(group, side * x, y, WING_FRONT - 0.02, 2.28, 2.05, 3);
       }
     }
     for (let i = 1; i < WING_BAYS; i += 1) {
-      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT);
+      pilasterAt(group, side * (WING_INNER + WING_BAY * i), WING_GROUND_TOP, WING_TOP, WING_FRONT, 0.66);
     }
     for (let f = 1; f < WING_FLOORS; f += 1) {
       floorBand(group, cx, WING_GROUND_TOP + f * FLOOR_H, WING_FRONT, WING_LEN - 0.2);
@@ -458,7 +458,7 @@ export function build(ctx) {
   for (const bx of centerBays) {
     centerRows.forEach((y, f) => {
       const top = f === WING_FLOORS - 1;
-      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.6, top ? 2.6 : 2.3, 5);
+      windowAt(group, bx, y + (top ? 0.15 : 0), CENTER_FRONT - 0.02, 5.15, top ? 2.42 : 2.14, 4);
     });
   }
   for (const px of [-3.35, 3.35]) pilasterAt(group, px, CENTER_GROUND_TOP, CENTER_TOP, CENTER_FRONT, 1.1, 0.3);
@@ -508,6 +508,17 @@ export function build(ctx) {
     arch.lineTo(0.93, 2.02);
     arch.absarc(0, 2.02, 0.93, 0, Math.PI, false);
     arch.closePath();
+    const surround = new THREE.Shape();
+    const radius = 1.08;
+    surround.moveTo(-radius, -0.12);
+    surround.lineTo(radius, -0.12);
+    surround.lineTo(radius, 2.02);
+    surround.absarc(0, 2.02, radius, 0, Math.PI, false);
+    surround.closePath();
+    surround.holes.push(arch);
+    const windowTrim = new THREE.Mesh(new THREE.ShapeGeometry(surround, 16), trim);
+    windowTrim.position.set(cx, 13.23, 9.36);
+    group.add(windowTrim);
     const archedWindow = new THREE.Mesh(new THREE.ShapeGeometry(arch), recess);
     archedWindow.position.set(cx, 13.23, 9.31);
     group.add(archedWindow);
@@ -565,13 +576,13 @@ export function build(ctx) {
     }
 
     // 门洞后的深色玻璃与白框门扇
-    box(group, recess, 0, (PLINTH + GATE_TOP) / 2, 8.7, GATE_HALF * 2, GATE_TOP - PLINTH, 0.12);
+    box(group, recess, 0, (PLINTH + GATE_TOP) / 2, 8.91, GATE_HALF * 2, GATE_TOP - PLINTH, 0.12);
     for (const dx of [-1.5, 1.5]) {
-      box(group, trim, dx, (PLINTH + 3.9) / 2, 8.78, 0.16, 3.9 - PLINTH, 0.08);
+      box(group, frame, dx, (PLINTH + 3.9) / 2, 9.02, 0.16, 3.9 - PLINTH, 0.08);
     }
-    box(group, trim, 0, 3.8, 8.78, 6.2, 0.16, 0.08);
+    box(group, frame, 0, 3.8, 9.02, 6.2, 0.16, 0.08);
     for (const side of [-1, 1]) {
-      box(group, trim, side * 6.5, (PLINTH + 3.8) / 2, 8.78, 2.6, 3.8 - PLINTH, 0.1);
+      box(group, frame, side * 6.5, (PLINTH + 3.8) / 2, 9.02, 0.12, 3.8 - PLINTH, 0.1);
     }
   }
 
