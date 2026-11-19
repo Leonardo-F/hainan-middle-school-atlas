@@ -5,7 +5,7 @@
  * - 零外部素材：绒毛身体、棒球帽、校徽、满月白肚印花、书包全部用 Three.js
  *   基础几何 + Canvas 贴图拼成，和整站「程序当美术」的做法一致；
  * - 不抢主场景：宠物挂在相机前方右下角，可拖到屏幕边缘的九个安全位，
- *   不参与主场景布局；屏幕尺度约为舞台高度的 12%，不遮挡视觉中心；
+ *   不参与主场景布局；屏幕高度约占舞台高度的 8%，宽屏下也不盖住建筑；
  * - 轻量状态机：饱腹/精力/亲密度按真实时间衰减，可抚摸、喂食、睡觉、隐藏；
  *   状态存 localStorage，下次打开继续养；
  * - 确定性：视觉回归（?still=1）下不读存档、不衰减、不使用用户拖动位置，
@@ -28,9 +28,10 @@ const WIDE_LIMITS = Object.freeze({ x: 0.82, yMin: -0.78, yMax: 0.55 });
 const NARROW_LIMITS = Object.freeze({ x: 0.65, yMin: -0.62, yMax: 0.5 });
 const NARROW_ASPECT = 0.9;
 
-// 相机前方 2.55 处；相对 halfH 的 0.25 让 1.0 高的模型约占舞台高度 12%。
+// 模型高度约 1.06；相对 halfH 的 0.145 约对应舞台高度的 8%。
 const PET_DISTANCE = 2.55;
-const PET_SCALE = 0.25;
+const PET_SCALE = 0.145;
+const PET_HEIGHT_CAP_PX = 80;
 
 const BODY_BLUE = 0x35a6d8;
 const BODY_DEEP = 0x2b93c6;
@@ -1082,7 +1083,9 @@ export function createPet({ camera, renderer, scene, reducedMotion = false, stil
     tmpVec.set(halfW * anchor.x, halfH * anchor.y, -distance).applyQuaternion(camera.quaternion);
     group.position.copy(camera.position).add(tmpVec);
     group.quaternion.copy(camera.quaternion);
-    group.scale.setScalar(PET_SCALE * halfH);
+    const height = renderer?.domElement?.clientHeight;
+    const scale = height > 0 ? Math.min(PET_SCALE, 2 * PET_HEIGHT_CAP_PX / height) : PET_SCALE;
+    group.scale.setScalar(scale * halfH);
   }
 
   function getAnchor() {
