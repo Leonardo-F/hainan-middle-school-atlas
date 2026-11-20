@@ -1487,6 +1487,40 @@ body[data-night='true'] .atmosphere {
   max-width: 46%;
 }
 
+.division-picker {
+  display: flex;
+  width: max-content;
+  margin-top: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--paper);
+  pointer-events: auto;
+}
+
+.division-picker button {
+  min-height: 32px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.division-picker button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.division-picker button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app[data-part="junior"] :is(#filmButton, #studentButton, #tourButton) {
+  display: none;
+}
+
 .stage-title__line {
   width: 2px;
   height: 34px;
@@ -2412,6 +2446,43 @@ body[data-night='true'] .rail-button .icon-moon {
   top: 10px;
   right: 12px;
   font-size: 11px;
+}
+
+.plan-dialog__views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 9px;
+}
+
+.plan-dialog__views--links {
+  margin-top: 10px;
+}
+
+.plan-dialog__views button {
+  min-height: 38px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.plan-dialog__views button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.plan-dialog__views button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.plan-dialog__views[hidden],
+.plan-dialog__landmarks[hidden] {
+  display: none;
 }
 
 .plan-dialog__landmarks {
