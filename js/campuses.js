@@ -59,6 +59,7 @@
  */
 
 import { SITE } from './site.js';
+import { FUCHENG_BOUNDS } from './fucheng-districts.js';
 import { FUCHENG_CAMPUS } from './data.js';
 
 /* ========================================================================== */
@@ -203,7 +204,7 @@ export const createCampus = defineCampus;
 const fuchengCampus = defineCampus(
   {
     ...FUCHENG_CAMPUS,
-    site: SITE,
+    site: { ...SITE, mapBounds: FUCHENG_BOUNDS },
     scene: {
       builder: 'fucheng',
       // 信息性元数据：说明该校区数据/构建器所在文件，供文档与工具使用，不参与运行时加载。
@@ -611,15 +612,16 @@ export function validateCampus(campus) {
           landmarkIds.add(landmarkId);
         }
       });
-      if (campus.site?.bounds) {
-        const { xMin, xMax, zMin, zMax } = campus.site.bounds;
+      const mapBounds = campus.site?.mapBounds ?? campus.site?.bounds;
+      if (mapBounds) {
+        const { xMin, xMax, zMin, zMax } = mapBounds;
         if ([xMin, xMax, zMin, zMax].every(isFiniteNumber)) {
           campus.landmarks.forEach((landmark, i) => {
             const point = landmark?.map;
             if (!isVec(point, 2)) return;
             if (point[0] < xMin - 20 || point[0] > xMax + 20 || point[1] < zMin - 20 || point[1] > zMax + 20) {
               warnings.push(
-                `landmarks[${i}].map 超出 site.bounds（请检查坐标系 / 比例是否按 1 场景单位 ≈ 2 米）`
+                `landmarks[${i}].map 超出校区地图范围（请检查坐标系 / 比例是否按 1 场景单位 ≈ 2 米）`
               );
             }
           });

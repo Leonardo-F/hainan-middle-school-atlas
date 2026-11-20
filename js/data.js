@@ -18,6 +18,9 @@
  * 由 js/campuses.js 注入），CAMPUS_META 是校区身份字段的单一来源。
  */
 import { ART_BUILDING } from './site.js';
+import { JUNIOR_SITE } from './fucheng-districts.js';
+
+const [juniorX, juniorZ] = JUNIOR_SITE.center;
 
 /* ------------------------------------------------------------------ */
 /*  校区身份（campus identity）                                        */
@@ -35,8 +38,7 @@ export const CAMPUS_META = {
   school: '海南中学',
   /** 校区名（同一学校下的区分名）。 */
   name: '府城校区',
-  /** 学段：本图志只绘制海南中学高中部（府城校区）；初中部为另一校区，未绘制。 */
-  division: '高中部',
+  division: '初中部与高中部',
   /** 大字标题 / 小地图标注用的短名。 */
   shortName: '府城',
   schoolEn: 'HAINAN MIDDLE SCHOOL',
@@ -51,7 +53,7 @@ export const CAMPUS_META = {
     lng: 110.342611,
     lat: 19.9978342
   },
-  summary: '海南中学府城校区包含高中部与初中部；本图志目前仅绘制高中部（初中部尚未绘制）。1923 年建校，凤栖堂、衍林堂与教学组团沿北门主轴展开。'
+  summary: '海南中学府城校区的高中部与初中部沿高登西街展开。高中部提供建筑导览，初中部按公开地图呈现校园轮廓与建筑体块。'
 };
 
 /* ------------------------------------------------------------------ */
@@ -650,6 +652,28 @@ export const LANDMARKS = [
       ['后排', '储物柜 · 海洋壁画 · 木书柜'],
       ['观察', '定点环视 · 拖动 360°']
     ]
+  },
+  {
+    id: 'junior',
+    index: '22',
+    name: '初中部',
+    en: 'JUNIOR DIVISION',
+    kind: '府城校区 · 建筑体块示意',
+    anchor: [juniorX, 7, juniorZ],
+    camera: {
+      position: [juniorX - 15, 190, juniorZ + 151],
+      target: [juniorX, 0, juniorZ + 8],
+      fov: 39
+    },
+    map: JUNIOR_SITE.center,
+    diagram: 'junior',
+    summary: '沿高登西街，初中部坐落在高中部西南侧。',
+    description: '初中部的校界、六处建筑轮廓和一处运动场来自 OpenStreetMap。建筑采用统一示意高度。2021 年考点图标注了初中部教学区、办公楼、实验楼、学生宿舍和第二食堂，这些名称还需与现状建筑逐一核对。',
+    facts: [
+      ['街道', '高登西街'],
+      ['模型', '公开轮廓 · 示意高度'],
+      ['待补资料', '建筑对应关系、层数与立面']
+    ]
   }
 ];
 
@@ -671,6 +695,14 @@ export const SOURCES = [
   {
     label: 'OpenStreetMap：海南中学高中部及周边建筑轮廓（ODbL）',
     url: 'https://www.openstreetmap.org/way/1127981105'
+  },
+  {
+    label: 'OpenStreetMap：府城初中部边界及周边街道（ODbL）',
+    url: 'https://www.openstreetmap.org/way/1013477322'
+  },
+  {
+    label: '中国计算机学会 2021 年考点平面图：府城初、高中部及当年通道示意',
+    url: 'https://noi.ccf.org.cn/gs/xw/hn/2021-10-22/745653.shtml'
   },
   {
     label: '海南日报：《一所中学的一个世纪 百年海中恰芳华》，2023-10-30',

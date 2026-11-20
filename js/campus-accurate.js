@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { makeTextures, applyDetailMaps } from './textures.js';
 import { ART_BUILDING, SITE as SITE_FALLBACK } from './site.js';
+import { FUCHENG_STREETS, JUNIOR_SITE } from './fucheng-districts.js';
 import {
   buildMaterials, createHipRoof, createPalm, createCanopyTree, addHedge,
   addTreeContactShadow, createStudent, createLampPost, createGoal, createBench,
@@ -909,6 +910,7 @@ export function buildCampus(scene, renderer, options = {}) {
   world.add(fill);
   const ambient = new THREE.AmbientLight(0xfff1df, 0.22);
   world.add(ambient);
+  const sharedRoots = new Set(world.children);
 
   /* ---------------------------- plinth ------------------------------ */
   // Follow the campus outline instead of a large rectangular plinth: this
@@ -944,6 +946,7 @@ export function buildCampus(scene, renderer, options = {}) {
   outerGround.receiveShadow = false;
   outerGround.castShadow = false;
   world.add(outerGround);
+  sharedRoots.add(outerGround);
 
   // campus lawn footprint from OSM boundary
   const lawnMap = tex.grass.clone();
@@ -953,8 +956,40 @@ export function buildCampus(scene, renderer, options = {}) {
   const campusGround = flatPolygon(site.campusOutline, lawnMat, 0.04);
   world.add(campusGround);
 
-  // The urban road ribbons in front of the gates are intentionally omitted.
-  // Only the campus ground, internal axial walk and internal roads are shown.
+  const junior = new THREE.Group();
+  junior.name = '府城校区初中部 · 体块示意';
+  const streets = new THREE.Group();
+  streets.name = '高登西街及海中后街';
+  if (site.center === SITE_FALLBACK.center) {
+    const districtGround = new THREE.MeshStandardMaterial({ color: 0xa0ac8a, roughness: 1 });
+    const blockRoof = new THREE.MeshStandardMaterial({ color: 0x998370, roughness: 0.95 });
+    const fieldGround = new THREE.MeshStandardMaterial({ color: 0x648361, roughness: 1 });
+    const base = extrudePolygon(JUNIOR_SITE.outline, 0.77, districtGround, plinthSide);
+    base.position.y = -0.735;
+    base.receiveShadow = false;
+    junior.add(base);
+    junior.add(footprintOutline(JUNIOR_SITE.outline, 0.042, M.courtLine));
+    junior.add(flatPolygon(JUNIOR_SITE.field, fieldGround, 0.05));
+    junior.add(footprintOutline(JUNIOR_SITE.field, 0.055, M.courtLine));
+    for (const outline of JUNIOR_SITE.buildings) {
+      const block = extrudePolygon(outline, 5, blockRoof, M.plasterPale);
+      block.position.y = 0.04;
+      junior.add(block);
+    }
+    markSpot(junior, 'junior', pickables);
+    const streetMaterial = new THREE.MeshStandardMaterial({
+      color: 0x8c7261,
+      roughness: 1,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -12
+    });
+    for (const street of FUCHENG_STREETS) {
+      addPath(streets, street.points, street.width, streetMaterial, -0.22);
+    }
+  }
+
+  // High school paths on the campus plinth.
   // one direct axial walk: 北门 → 主教学楼（主楼）正门，不经过凤栖堂
   const mainApproach = [[-39.3, -74.31], [-31, -66], [-22, -56], [-12, -45], [-4.5, -35]];
   addPath(world, mainApproach, 4.3, M.path, 0.075, 4);
@@ -3375,11 +3410,25 @@ export function buildCampus(scene, renderer, options = {}) {
     return released;
   }
 
+  const senior = new THREE.Group();
+  senior.name = '府城校区高中部';
+  // Campus geometry shares one origin. Keep lighting, sky and selection across views.
+  for (const child of [...world.children]) {
+    if (!sharedRoots.has(child) && child !== selection) senior.add(child);
+  }
+  world.add(senior, junior, streets);
+
   /* ---------------------------- API --------------------------------- */
   return {
     campus: world,
     world,
     pickables,
+    setDivision(part) {
+      senior.visible = part !== 'junior';
+      junior.visible = part !== 'senior';
+      streets.visible = part === 'both';
+      if (renderer) renderer.shadowMap.needsUpdate = true;
+    },
     setTime,
     getTime: () => hour,
     getNight: () => night,
