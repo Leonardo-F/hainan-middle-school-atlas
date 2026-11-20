@@ -231,6 +231,11 @@
           <div class="stage-title__text">
             <p class="stage-title__cn" id="sceneTitle">府城校园</p>
             <p class="stage-title__en mono"><span id="sceneEn">FUCHENG CAMPUS</span> <i aria-hidden="true">/</i> <span id="sceneKind">自由探索</span></p>
+            <div class="division-picker" role="group" aria-label="选择三维浏览范围">
+              <button type="button" data-division="senior" aria-pressed="true">高中部</button>
+              <button type="button" data-division="junior" aria-pressed="false">初中部</button>
+              <button type="button" data-division="both" aria-pressed="false">两区总览</button>
+            </div>
           </div>
         </div>
 
@@ -506,7 +511,7 @@
           <h3 class="mono">文献线索 / SOURCES</h3>
           <ul id="sourceList"></ul>
         </section>
-        <p class="about-dialog__disclaimer"><span data-campus-slot="campusScope">本图志仅绘制高中部（府城校区）；初中部校区尚未绘制。</span><br>本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。图志中的实景照片来自海南中学官网公开图集与公开校庆影像，仅作校园阅读与史实对照；版权归原作者与学校所有，如涉版权请联系删除。</p>
+        <p class="about-dialog__disclaimer"><span data-campus-slot="campusScope">府城初、高中部共用一张地图。初中部建筑以公开轮廓和示意高度呈现。</span><br>本页面为非官方数字文化项目，不用于测绘、导航或校园空间决策。建筑轮廓数据 © OpenStreetMap contributors，ODbL 1.0；历史与建筑信息以官方资料为准。图志中的实景照片来自海南中学官网公开图集与公开校庆影像，仅作校园阅读与史实对照；版权归原作者与学校所有，如涉版权请联系删除。</p>
         <div class="about-dialog__footer mono">
           <span data-campus-slot="fullEn">HAINAN MIDDLE SCHOOL · FUCHENG CAMPUS</span>
           <span>THREE.JS / WEBGL / 2026</span>
@@ -518,16 +523,25 @@
       <div class="plan-dialog__header">
         <div>
           <h2 id="planTitle">校园总平面</h2>
-          <p>府城校区 · 高中部</p>
+          <p>府城校区 · 高登西街沿线</p>
         </div>
         <button class="plan-dialog__close" id="closePlan" type="button" aria-label="关闭校园地图" autofocus>×</button>
       </div>
+      <div class="plan-dialog__views" aria-label="地图范围">
+        <button type="button" id="planBoth" aria-pressed="true">初、高中部</button>
+        <button type="button" id="planSenior" aria-pressed="false">高中部详图</button>
+        <button type="button" id="planJuniorMap" aria-pressed="false">初中部详图</button>
+      </div>
       <div class="plan-dialog__map">
-        <canvas id="planMap" aria-label="北向校园总平面，点选建筑可查看图志"></canvas>
+        <canvas id="planMap" aria-label="北向校园总平面，初中部和高中部沿高登西街分布"></canvas>
         <span class="map-panel__north mono" aria-hidden="true">N<i></i></span>
       </div>
       <div class="plan-dialog__landmarks" id="planLandmarks" role="group" aria-label="定位重点建筑"></div>
-      <p class="plan-dialog__note">建筑底图参考 OpenStreetMap。虚线为艺术楼影像估绘轮廓。</p>
+      <div class="plan-dialog__views plan-dialog__views--links" id="planDistrictLinks">
+        <button type="button" id="planOverview">查看两区三维总览</button>
+        <button type="button" id="planJunior">查看初中部三维</button>
+      </div>
+      <p class="plan-dialog__note" id="planNote">底图 © OpenStreetMap contributors。初中部建筑为体块示意。</p>
     </dialog>
 
     <div class="fatal" id="fatal" hidden>

@@ -2,7 +2,7 @@
 
 **English** | [中文](README.md)
 
-An interactive 3D campus atlas of Hainan Middle School (Fucheng campus, senior high section), built with Three.js: read a campus as a map you can walk through, revisiting its everyday spaces through buildings, massing, and light.
+An interactive 3D campus atlas of Hainan Middle School (Fucheng campus), built with Three.js: read a campus as a map you can walk through, revisiting its everyday spaces through buildings, massing, and light.
 
 **Live site**: <https://leonardo-f.github.io/hainan-middle-school-atlas/>
 
@@ -12,7 +12,7 @@ An interactive 3D campus atlas of Hainan Middle School (Fucheng campus, senior h
 
 [Preview the campus plan](assets/preview/campus-plan.jpg)
 
-> The campus plan is based on the OpenStreetMap outline and public imagery. Four key buildings — the North Gate, Main Teaching Building, Fengqi Hall, and Yanlin Hall — are reconstructed from public photographs and official materials using their architectural form and metric scale; other volumes and façades are design inferences. **This is not a survey product and must not be used for navigation, measurement, or campus planning decisions.** See [docs/accuracy.md](docs/accuracy.md) for the evidence boundaries. This is an unofficial digital culture project and is not affiliated with Hainan Middle School. The Fucheng campus includes both senior high and junior high sections; this atlas covers the **senior high section only**.
+> The campus plan is based on the OpenStreetMap outline and public imagery. Four key buildings — the North Gate, Main Teaching Building, Fengqi Hall, and Yanlin Hall — are reconstructed from public photographs and official materials using their architectural form and metric scale; other volumes and façades are design inferences. **This is not a survey product and must not be used for navigation, measurement, or campus planning decisions.** See [docs/accuracy.md](docs/accuracy.md) for the evidence boundaries. This is an unofficial digital culture project and is not affiliated with Hainan Middle School. The atlas places the senior and junior divisions on a shared map along Gaodeng West Street. The junior division uses schematic volumes based on mapped footprints. Use the selector in the upper-left corner of the scene to explore either division or see both together.
 
 **Latest update:** The home and opening screens use the green emblem supplied by the school. Updated models of the Main Teaching Building, Science Hall, Art Building, and Teaching Building 3 use public photos, aerial footage, and building outlines. Open the map from the scene toolbar to go directly to a building. See the [source and accuracy notes](docs/accuracy.md) for details.
 
