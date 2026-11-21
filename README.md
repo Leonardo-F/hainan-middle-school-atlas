@@ -16,7 +16,7 @@ An interactive 3D campus atlas of Hainan Middle School (Fucheng campus), built w
 
 > 校园总平面参考 OpenStreetMap 轮廓与公开影像整理；校门、主教学楼、凤栖堂、衍林堂四座重点建筑依据公开照片与官方资料按形制与米制尺度复原，其余建筑的体量与立面为设计推演。**非测绘成果，不用于导航、测量或校园空间决策**，逐条边界见 [docs/accuracy.md](docs/accuracy.md)。本项目为非官方数字文化项目，与海南中学无隶属关系；府城校区含高中部与初中部，本图志**仅绘制高中部**。
 
-**最近更新**：首页与开场使用学校供图的绿色校徽。主教学楼、科学馆、艺术楼和三号教学楼依据实拍、航拍与轮廓数据更新。点场景右侧的地图按钮可展开平面并定位建筑。来源和估绘范围见 [精度与证据](docs/accuracy.md)。
+**最近更新**：开场加载页升级为常驻「封面」主界面，点「进入图志」进入场景，顶部「封面」随时返回。主教学楼、科学馆、艺术楼和三号教学楼依据实拍、航拍与轮廓数据更新。点场景右侧的地图按钮可展开平面并定位建筑。来源和估绘范围见 [精度与证据](docs/accuracy.md)。
 
 ## 图集
 
@@ -52,7 +52,7 @@ npm run build      # 重新生成自包含单文件版
 npm run shots      # 视觉回归门控（shots:update 重建基准）
 ```
 
-URL 参数：`?campus=fucheng` · `?spot=fengqi` · `?spot=classroom` · `?hour=19.6` · `?view=top` · `?film=1` · `?weather=snow`；开发参数 `?still=1&nointro=1`、`?env=off`、`?detail=off`、`?pet=on/off`。
+URL 参数：`?campus=fucheng` · `?spot=fengqi` · `?spot=classroom` · `?hour=19.6` · `?view=top` · `?film=1` · `?weather=snow`；开发参数 `?still=1&nointro=1`、`?cover=0`、`?env=off`、`?detail=off`、`?pet=on/off`。
 
 ## 实景照片
 

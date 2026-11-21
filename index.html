@@ -14,8 +14,7 @@
 </head>
 <body data-night="false">
   <div id="app" class="app is-loading">
-    <div class="loading" id="loading">
-      <button class="loading__close" id="loadingClose" type="button">返回图志 <span class="mono">ESC</span></button>
+    <div class="loading" id="loading" role="region" aria-labelledby="coverTitle">
       <div class="loading__grid" aria-hidden="true"></div>
       <div class="loading__frame">
         <div class="loading__top mono">
@@ -67,8 +66,23 @@
         <div class="loading__copy">
           <img class="school-emblem loading__badge" src="assets/brand/hainan-middle-school-emblem.png" width="256" height="256" alt="海南中学校徽">
           <p class="loading__kicker mono" data-campus-slot="schoolEnShortEn">HAINAN MIDDLE SCHOOL · FUCHENG</p>
-          <h1 data-campus-slot="loadingTitle">海南中学<span>校园图志</span></h1>
-          <p class="loading__sub">把一座校园，读成一张可以行走的图。</p>
+          <h1 id="coverTitle" data-campus-slot="loadingTitle">海南中学<span>校园图志</span></h1>
+          <p class="loading__sub" data-campus-slot="introLead">把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访府城校区的日常。</p>
+          <p class="loading__meta mono">
+            <span data-campus-slot="yearRange">1923—2026</span>
+            <span id="coverSpotCount">— 处地景</span>
+            <span data-campus-slot="cityShortName">海口 · 府城</span>
+          </p>
+          <button class="loading__enter" id="coverEnter" type="button" disabled>
+            <span class="loading__enter-label" id="coverEnterLabel">进入图志</span>
+            <span class="loading__enter-en mono">ENTER THE ATLAS</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+          </button>
+          <a class="loading__source" href="https://github.com/Leonardo-F/hainan-middle-school-atlas" target="_blank" rel="noopener noreferrer">
+            <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>在 GitHub 查看源码</span>
+            <span class="loading__source-arrow" aria-hidden="true">↗</span>
+          </a>
         </div>
 
         <div class="loading__bottom">
@@ -85,7 +99,7 @@
       </div>
     </div>
 
-    <!-- ── 顶部品牌栏：品牌 / 校区切换 / 图志说明 ───────────────── -->
+    <!-- ── 顶部品牌栏：品牌 / 校区切换 / 封面 / 图志说明 ─────────── -->
     <header class="site-header">
       <div class="brand">
         <img class="school-emblem brand__mark" src="assets/brand/hainan-middle-school-emblem.png" width="256" height="256" alt="">
@@ -115,38 +129,25 @@
 
       <div class="site-header__actions">
         <span class="site-header__edition mono">交互建筑图志 <b>NO. 01</b></span>
+        <button class="text-button" type="button" data-action="cover" aria-label="返回封面">
+          <span>封面</span>
+          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3.2 13.2V6.4L8 2.8l4.8 3.6v6.8H9.6V9.4H6.4v3.8z"/></svg>
+        </button>
         <button class="text-button" type="button" data-action="about" aria-label="图志说明">
           <span>图志说明</span>
           <svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.4"/><path d="M8 7v4M8 4.8v.2"/></svg>
         </button>
+        <a class="text-button text-button--github" href="https://github.com/Leonardo-F/hainan-middle-school-atlas" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看项目源码">
+          <span>GitHub</span>
+          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
       </div>
     </header>
 
     <div class="workspace">
-      <!-- ── 左栏叙事：标题 / 导语 / 地景索引 / 当前图志 ─────────── -->
+      <!-- ── 左栏：地景索引 / 当前图志 ───────────────────────────── -->
       <aside class="narrative" aria-label="图志叙事与地景索引">
         <div class="narrative__scroll" id="narrativeScroll">
-          <section class="intro">
-            <p class="intro__eyebrow mono"><span class="intro__rule" aria-hidden="true"></span><span data-campus-slot="introEyebrow">FUCHENG, HAIKOU · 府城</span></p>
-            <div class="intro__title-row">
-              <h1 class="intro__title">
-                <span class="intro__title-cn" data-campus-slot="introTitleCn">海南中学</span>
-                <span class="intro__title-sub">校园图志</span>
-              </h1>
-              <img class="school-emblem intro__emblem" src="assets/brand/hainan-middle-school-emblem.png" width="256" height="256" alt="海南中学校徽">
-            </div>
-            <p class="intro__lead" data-campus-slot="introLead">把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访府城校区的日常。</p>
-            <p class="intro__note"><i aria-hidden="true"></i>交互三维 · 写意复原 <span class="mono">NOT TO SCALE</span></p>
-            <p class="intro__meta mono">
-              <span data-campus-slot="yearRange">1923—2026</span>
-              <span id="introSpotCount">— 处地景</span>
-              <span data-campus-slot="cityShortName">海口 · 府城</span>
-            </p>
-            <button class="intro__replay" id="loadingPreviewButton" type="button">
-              <span>重看开场</span><span class="mono">LOADING</span>
-            </button>
-          </section>
-
           <nav class="index" id="index" aria-label="校园地标索引">
             <div class="index__head">
               <span class="index__label">地景索引</span>

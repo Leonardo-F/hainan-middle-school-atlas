@@ -55,8 +55,8 @@ const loading = $('#loading');
 const loadingBar = $('#loadingBar');
 const loadingPct = $('#loadingPct');
 const loadingStage = $('#loadingStage');
-const loadingClose = $('#loadingClose');
-const loadingPreviewButton = $('#loadingPreviewButton');
+const coverEnter = $('#coverEnter');
+const coverEnterLabel = $('#coverEnterLabel');
 const canvas = $('#scene');
 const infoCard = $('#infoCard');
 const infoNumber = $('#infoNumber');
@@ -129,7 +129,7 @@ const narrativeEl = $('#narrativeScroll');
 const sceneTitleEl = $('#sceneTitle');
 const sceneEnEl = $('#sceneEn');
 const sceneKindEl = $('#sceneKind');
-const introSpotCount = $('#introSpotCount');
+const coverSpotCount = $('#coverSpotCount');
 const indexRange = $('#indexRange');
 const studentButton = $('#studentButton');
 const studentPickHint = $('#studentPickHint');
@@ -159,7 +159,8 @@ const state = {
   studentPickMode: false,
   studentFollow: null,
   photoViewerOpen: false,
-  loadingPreview: false,
+  coverOpen: false,
+  coverEntered: false,
   lookMode: null
 };
 
@@ -544,15 +545,96 @@ function finishBoot() {
   announceCampusFallback(route);
   app.classList.remove('is-loading');
   app.classList.add('is-ready');
+
+  if (shouldShowCover()) {
+    openCover({ initial: true });
+    maybeAutoStartFilm();
+    return;
+  }
+
+  dismissCover();
+  state.coverEntered = true;
+  revealAtlas({ delay: reducedMotion || params.get('nointro') ? 0 : 500 });
+  maybeAutoStartFilm();
+}
+
+/**
+ * 开场封面：加载页在场景就绪后不自动离场，而是作为主页长期保留；
+ * 点「进入图志」或按 Enter 进入场景，场景右上角的「封面」可随时返回。
+ * 深链接（?spot / ?view / ?film）与视觉回归（?still / ?nointro）直接进入场景。
+ */
+function shouldShowCover() {
+  if (STILL) return false;
+  if (params.get('cover') === '0') return false;
+  if (params.get('cover') === '1') return true;
+  if (params.get('nointro')) return false;
+  if (params.get('spot') || params.get('view')) return false;
+  if (params.get('film') === '1' || params.get('film') === 'true') return false;
+  if (params.get('record') === '1' || params.get('record') === 'true') return false;
+  return true;
+}
+
+function dismissCover() {
+  if (!loading || state.coverOpen) return;
   loading.classList.add('is-leaving');
   window.setTimeout(() => {
-    loading.hidden = true;
-  }, 980);
+    if (!state.coverOpen) loading.hidden = true;
+  }, reducedMotion ? 0 : 980);
+}
 
-  maybeAutoStartFilm();
+/** 封面占满整屏时，把后面的页面设为 inert，避免 Tab / 读屏器落到被遮住的控件上。 */
+function setChromeInert(inert) {
+  document
+    .querySelectorAll('#app > .site-header, #app > .workspace, #app > .site-footer')
+    .forEach((element) => {
+      element.inert = inert;
+    });
+}
+
+function syncCoverCta() {
+  if (!coverEnter) return;
+  coverEnter.disabled = !loading?.classList.contains('is-ready');
+  if (coverEnterLabel) coverEnterLabel.textContent = state.coverEntered ? '返回图志' : '进入图志';
+  const en = coverEnter.querySelector('.loading__enter-en');
+  if (en) en.textContent = state.coverEntered ? 'BACK TO ATLAS' : 'ENTER THE ATLAS';
+}
+
+function openCover({ initial = false } = {}) {
+  if (!loading) return;
+  if (film?.isPlaying?.()) stopFilm({ silent: true });
+  if (state.tourActive) stopTour();
+  state.coverOpen = true;
+  document.documentElement.classList.add('is-cover-open');
+  loading.hidden = false;
+  loading.classList.remove('is-leaving');
+  loading.classList.add('is-ready');
+  setChromeInert(true);
+  if (loadingBar) loadingBar.style.width = '100%';
+  if (loadingPct) loadingPct.textContent = '100';
+  if (loadingStage) loadingStage.textContent = '校园已就绪';
+  syncCoverCta();
+  if (!initial) coverEnter?.focus({ preventScroll: true });
+}
+
+function enterAtlas() {
+  if (!state.coverOpen) return;
+  const firstEntry = !state.coverEntered;
+  state.coverOpen = false;
+  state.coverEntered = true;
+  document.documentElement.classList.remove('is-cover-open');
+  setChromeInert(false);
+  loading?.classList.add('is-leaving');
+  window.setTimeout(() => {
+    if (!state.coverOpen && loading) loading.hidden = true;
+  }, reducedMotion ? 0 : 980);
+  // 封面滑走的同一帧恢复画面，避免画布在揭开时短暂空白。
+  if (campus && renderer) renderFrame(performance.now());
+  if (firstEntry) revealAtlas({ delay: 0 });
+}
+
+function revealAtlas({ delay = 0 } = {}) {
   const targetSpot = params.get('spot');
   const view = params.get('view');
-  const delay = reducedMotion || params.get('nointro') ? 0 : 500;
   window.setTimeout(() => {
     // 若启动延迟期间用户已经进入学生视角，不要再用总览机位覆盖。
     if (state.studentFollow) return;
@@ -648,7 +730,7 @@ function setupUI() {
 
   const countEl = $('.index__count');
   if (countEl) countEl.textContent = `${String(LANDMARKS.length).padStart(2, '0')} SPOTS`;
-  if (introSpotCount) introSpotCount.textContent = `${LANDMARKS.length} 处地景`;
+  if (coverSpotCount) coverSpotCount.textContent = `${LANDMARKS.length} 处地景`;
   // 编号区间跟随 LANDMARKS 数量，新增地标时无需再改 index.html。
   if (indexRange) {
     indexRange.textContent = `01—${String(LANDMARKS.length).padStart(2, '0')}`;
@@ -1321,6 +1403,7 @@ function setupEvents() {
         flyTo(getOverviewView(), reducedMotion ? 0 : 1500);
         showToast('视角与日光已复位');
       }
+      if (action === 'cover') openCover();
       if (action === 'about') openAbout();
       if (action === 'map') openPlan();
       if (action === 'night') toggleNight();
@@ -1406,8 +1489,7 @@ function setupEvents() {
     });
   }
 
-  loadingPreviewButton?.addEventListener('click', showLoadingPreview);
-  loadingClose?.addEventListener('click', hideLoadingPreview);
+  coverEnter?.addEventListener('click', () => enterAtlas());
   if (studentButton) {
     studentButton.title = '学生视角：直接单击画面里的同学，或按此按钮进入点选模式';
     studentButton.addEventListener('click', () => {
@@ -1460,8 +1542,9 @@ function handleCustomCursor(event) {
 }
 
 function handleKeyDown(event) {
-  if (state.loadingPreview) {
-    if (event.key === 'Escape') hideLoadingPreview();
+  if (state.coverOpen) {
+    // 首次开场封面按 Enter 进入；从图志返回封面后，Esc 也可退回图志。
+    if (event.key === 'Enter' || (event.key === 'Escape' && state.coverEntered)) enterAtlas();
     return;
   }
   if (state.modalOpen) return;
@@ -1780,7 +1863,6 @@ function applyCampusBranding() {
   const division = campusEntry.division || '';
   const city = campusEntry.location?.city || '';
   const cityShort = city ? `${city} · ${shortName}` : shortName;
-  const cityEn = city === '海口' ? 'HAIKOU' : city;
   const yearRange = campusYearRange(campusEntry);
   // 「本图志仅绘制…」的说明：只绘制当前学段校区，未绘制的兄弟校区点名（如初中部）。
   const drawnScope = division ? `${division}（${campusEntry.name}）` : campusEntry.name;
@@ -1801,8 +1883,6 @@ function applyCampusBranding() {
     loadingTitle: `${escapeHtml(school || shortName)}<span>校园图志</span>`,
     brandName: `${school || shortName}校园图志`,
     brandSub: `${school} · ${campusEntry.name}${division ? `（${division}）` : ''} / A CAMPUS ATLAS`,
-    introEyebrow: [campusEntry.shortEn, cityEn].filter(Boolean).join(', ') + ` · ${shortName}`,
-    introTitleCn: school || shortName,
     shortName,
     introLead: `把一座校园，读成一张可以行走的图。以建筑为线索，在体量与光影之间，重访${
       division ? `${school}${division}` : campusEntry.name
@@ -2446,39 +2526,6 @@ function toggleFilmRecording() {
   // 从片头重新播放，保证录到完整巡游。
   film.start({ restart: true });
   showToast('开始录制 · 影片将从头播放');
-}
-
-/**
- * ?film=1 → 自动放映；?record=1 → 自动放映并录制，结束时自动下载。
- * 与 ?hour / ?spot / ?weather / ?campus 兼容（其余参数照旧生效）。
- */
-function showLoadingPreview() {
-  if (!loading) return;
-  if (film?.isPlaying?.()) stopFilm({ silent: true });
-  if (state.studentFollow) exitStudentView({ silent: true });
-  if (state.studentPickMode) setStudentPickMode(false);
-  stopTour();
-  closeSpot({ stop: true });
-  state.loadingPreview = true;
-  loading.hidden = false;
-  loading.classList.remove('is-leaving');
-  loading.classList.add('is-preview');
-  if (loadingBar) loadingBar.style.width = '100%';
-  if (loadingPct) loadingPct.textContent = '100';
-  if (loadingStage) loadingStage.textContent = '加载页预览 · 海南中学校园图志';
-  loadingClose?.focus();
-  markInteracted();
-}
-
-function hideLoadingPreview() {
-  if (!state.loadingPreview || !loading) return;
-  state.loadingPreview = false;
-  loading.classList.remove('is-preview');
-  loading.classList.add('is-leaving');
-  window.setTimeout(() => {
-    loading.hidden = true;
-  }, 980);
-  loadingPreviewButton?.focus();
 }
 
 function maybeAutoStartFilm() {
@@ -3319,6 +3366,8 @@ function resize() {
 
 function renderFrame(now) {
   if (!campus || !renderer) return;
+  // 封面期间冻结画面；进入图志后恢复（paused 的补间会按真实时间收尾）。
+  if (state.coverOpen && !STILL) return;
   const delta = Math.min(clock ? clock.getDelta() : 0.016, 0.055);
   campus.tick(delta);
   weather?.tick?.(delta);

@@ -14,7 +14,7 @@ An interactive 3D campus atlas of Hainan Middle School (Fucheng campus, senior h
 
 > The campus plan is based on the OpenStreetMap outline and public imagery. Four key buildings — the North Gate, Main Teaching Building, Fengqi Hall, and Yanlin Hall — are reconstructed from public photographs and official materials using their architectural form and metric scale; other volumes and façades are design inferences. **This is not a survey product and must not be used for navigation, measurement, or campus planning decisions.** See [docs/accuracy.md](docs/accuracy.md) for the evidence boundaries. This is an unofficial digital culture project and is not affiliated with Hainan Middle School. The Fucheng campus includes both senior high and junior high sections; this atlas covers the **senior high section only**.
 
-**Latest update:** The home and opening screens use the green emblem supplied by the school. Updated models of the Main Teaching Building, Science Hall, Art Building, and Teaching Building 3 use public photos, aerial footage, and building outlines. Open the map from the scene toolbar to go directly to a building. See the [source and accuracy notes](docs/accuracy.md) for details.
+**Latest update:** The opening loading screen is now a persistent cover: enter the atlas with “进入图志” and return to the cover anytime from the top bar. Updated models of the Main Teaching Building, Science Hall, Art Building, and Teaching Building 3 use public photos, aerial footage, and building outlines. Open the map from the scene toolbar to go directly to a building. See the [source and accuracy notes](docs/accuracy.md) for details.
 
 ## Gallery
 
@@ -50,7 +50,7 @@ npm run build      # rebuild the self-contained single-file version
 npm run shots      # visual-regression gate (shots:update to rebuild baselines)
 ```
 
-URL parameters: `?campus=fucheng` · `?spot=fengqi` · `?spot=classroom` · `?hour=19.6` · `?view=top` · `?film=1` · `?weather=snow`; development parameters: `?still=1&nointro=1`, `?env=off`, `?detail=off`, `?pet=on/off`.
+URL parameters: `?campus=fucheng` · `?spot=fengqi` · `?spot=classroom` · `?hour=19.6` · `?view=top` · `?film=1` · `?weather=snow`; development parameters: `?still=1&nointro=1`, `?cover=0`, `?env=off`, `?detail=off`, `?pet=on/off`.
 
 ## Site photographs
 
