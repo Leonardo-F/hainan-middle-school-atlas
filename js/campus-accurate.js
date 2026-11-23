@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { makeTextures, applyDetailMaps } from './textures.js';
 import { ART_BUILDING, SITE as SITE_FALLBACK } from './site.js';
-import { FUCHENG_STREETS, JUNIOR_SITE } from './fucheng-districts.js';
+import { JUNIOR_GATE, JUNIOR_LINK, JUNIOR_SITE, JUNIOR_TRACK } from './fucheng-districts.js';
 import {
   buildMaterials, createHipRoof, createPalm, createCanopyTree, addHedge,
   addTreeContactShadow, createStudent, createLampPost, createGoal, createBench,
@@ -64,6 +64,54 @@ function flatPolygon(points, material, y = 0) {
   uv.needsUpdate = true;
   const mesh = new THREE.Mesh(geo, material);
   mesh.position.y = y;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+/**
+ * 体育场轮廓：直道 + 两端半圆，长轴朝 `angle`（弧度，+x 东，+z 南）。
+ * 用于初中部田径场的跑道与内场。
+ */
+function stadiumOutline({ center: [cx, cz], angle, straight, radius, segments = 20 }) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const points = [];
+  const push = (x, z) => points.push([cx + x * cos - z * sin, cz + x * sin + z * cos]);
+  for (let i = 0; i <= segments; i += 1) {
+    const a = -Math.PI / 2 + (Math.PI * i) / segments;
+    push(straight + Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  for (let i = 0; i <= segments; i += 1) {
+    const a = Math.PI / 2 + (Math.PI * i) / segments;
+    push(-straight + Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  return points;
+}
+
+/** 两条同构闭合折线之间的平面环带（跑道、分道线）。 */
+function ringMesh(outer, inner, y, material, tile = 8, flip = false) {
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  const n = Math.min(outer.length, inner.length);
+  for (let i = 0; i < n; i += 1) {
+    positions.push(outer[i][0], y, outer[i][1], inner[i][0], y, inner[i][1]);
+    uvs.push(outer[i][0] / tile, outer[i][1] / tile, inner[i][0] / tile, inner[i][1] / tile);
+  }
+  for (let i = 0; i < n; i += 1) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = ((i + 1) % n) * 2;
+    const d = c + 1;
+    if (flip) indices.push(a, c, b, b, c, d);
+    else indices.push(a, b, c, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, material);
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -957,36 +1005,322 @@ export function buildCampus(scene, renderer, options = {}) {
   world.add(campusGround);
 
   const junior = new THREE.Group();
-  junior.name = '府城校区初中部 · 体块示意';
-  const streets = new THREE.Group();
-  streets.name = '高登西街及海中后街';
-  if (site.center === SITE_FALLBACK.center) {
-    const districtGround = new THREE.MeshStandardMaterial({ color: 0xa0ac8a, roughness: 1 });
-    const blockRoof = new THREE.MeshStandardMaterial({ color: 0x998370, roughness: 0.95 });
-    const fieldGround = new THREE.MeshStandardMaterial({ color: 0x648361, roughness: 1 });
+  junior.name = '府城校区初中部';
+  // 初中部放在高中部之后构建，并使用独立随机流：提前构建会消耗 scene-kit
+  // 的随机流，改变主校区植被与人物既有的布局。
+  function buildJuniorDivision() {
+    if (site.center !== SITE_FALLBACK.center) return;
+    const juniorRandom = mulberry32(20261123);
+    const jrand = (a, b) => a + (b - a) * juniorRandom();
+
+    /* ------------------------ 场地与田径场 ------------------------ */
+    const districtGround = new THREE.MeshStandardMaterial({ color: 0xa7b18d, roughness: 1 });
+    const infieldGround = new THREE.MeshStandardMaterial({ color: 0x6d8d62, roughness: 1 });
+    const pitchGround = new THREE.MeshStandardMaterial({ color: 0x5e8a58, roughness: 0.98 });
+    const trackGround = new THREE.MeshStandardMaterial({ color: 0xa9583f, roughness: 0.95, side: THREE.DoubleSide });
+    const laneLine = new THREE.MeshBasicMaterial({
+      color: 0xefe5d2, transparent: true, opacity: 0.62, side: THREE.DoubleSide
+    });
+
     const base = extrudePolygon(JUNIOR_SITE.outline, 0.77, districtGround, plinthSide);
     base.position.y = -0.735;
     base.receiveShadow = false;
     junior.add(base);
     junior.add(footprintOutline(JUNIOR_SITE.outline, 0.042, M.courtLine));
-    junior.add(flatPolygon(JUNIOR_SITE.field, fieldGround, 0.05));
-    junior.add(footprintOutline(JUNIOR_SITE.field, 0.055, M.courtLine));
-    for (const outline of JUNIOR_SITE.buildings) {
-      const block = extrudePolygon(outline, 5, blockRoof, M.plasterPale);
-      block.position.y = 0.04;
-      junior.add(block);
+
+    // 田径场：内场沿用 OSM 足球场轮廓，跑道按影像比例放样。
+    const track = JUNIOR_TRACK;
+    const laneTotal = track.lanes * track.laneWidth;
+    junior.add(ringMesh(
+      stadiumOutline({ ...track, radius: track.radius }),
+      stadiumOutline({ ...track, radius: track.radius - laneTotal }),
+      0.05, trackGround, 10
+    ));
+    junior.add(flatPolygon(
+      stadiumOutline({ ...track, radius: track.radius - laneTotal - 0.06 }),
+      infieldGround, 0.045
+    ));
+    for (let lane = 1; lane <= track.lanes; lane += 1) {
+      const r = track.radius - lane * track.laneWidth;
+      junior.add(ringMesh(
+        stadiumOutline({ ...track, radius: r }),
+        stadiumOutline({ ...track, radius: r - 0.028 }),
+        0.058, laneLine, 6
+      ));
     }
-    markSpot(junior, 'junior', pickables);
-    const streetMaterial = new THREE.MeshStandardMaterial({
-      color: 0x8c7261,
-      roughness: 1,
-      polygonOffset: true,
-      polygonOffsetFactor: -3,
-      polygonOffsetUnits: -12
+    junior.add(flatPolygon(JUNIOR_SITE.field, pitchGround, 0.064));
+    junior.add(footprintOutline(JUNIOR_SITE.field, 0.072, M.courtLine));
+
+    /* ------------------------ 教学区与附属楼 ------------------------ */
+    // 立面贴图按「宽度 × 层数」缓存，同尺寸的翼楼共用一张，控制纹理数量。
+    const facadeCache = new Map();
+    const facadeFor = (width, height, storeys, seed) => {
+      const key = `${Math.round(width * 2)}|${Math.round(height * 2)}|${storeys}|${seed}`;
+      if (!facadeCache.has(key)) {
+        facadeCache.set(key, M.facade({
+          width, height, floors: storeys,
+          bays: Math.min(26, Math.max(4, Math.round(width / 2.7))),
+          style: 'modern',
+          base: '#eee5d3', stone: '#cdbfa5', accent: '#8f5b45', glass: '#2c423a',
+          seed
+        }));
+      }
+      return facadeCache.get(key);
+    };
+    const pitchedRoofMats = {
+      ...M, roof: M.genericRoofs[1], roofEdge: M.stoneDark, roofRidge: M.stoneDark
+    };
+    // 屋面与内院铺装：影像里初中部是白色卷材屋面 + 灰白石材内院，比主校区的暖色砖更素。
+    const juniorRoofDeck = new THREE.MeshStandardMaterial({ color: 0xd8d4c9, roughness: 0.92 });
+
+    for (const building of JUNIOR_SITE.buildings) {
+      const { length: length, depth: depth, angle, center: pivot } = building.obb;
+      const storeys = building.storeys;
+      const height = storeys * FLOOR;
+      const group = new THREE.Group();
+      group.position.set(pivot[0], 0.06, pivot[1]);
+      group.rotation.y = -angle;
+      const seed = (building.osm % 89) + 11;
+
+      const slab = (w, d, x, z) => {
+        const front = facadeFor(w, height, storeys, seed);
+        const side = facadeFor(d, height, storeys, seed + 7);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), [
+          side, side, M.plasterPale, M.plasterPale, front, front
+        ]);
+        mesh.position.set(x, 0.16 + height / 2, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+        placeBox(group, w + 0.18, 0.1, d + 0.18, M.stoneLight, x, 0.16 + height - 0.05, z);
+        return mesh;
+      };
+      const flatRoof = (w, d, x, z) => {
+        placeBox(group, w - 0.16, 0.08, d - 0.16, juniorRoofDeck, x, 0.16 + height + 0.02, z);
+        const t = 0.13;
+        const y = 0.16 + height + 0.04;
+        placeBox(group, w, 0.36, t, M.plasterPale, x, y, z - d / 2 + t / 2);
+        placeBox(group, w, 0.36, t, M.plasterPale, x, y, z + d / 2 - t / 2);
+        placeBox(group, t, 0.36, d - 2 * t, M.plasterPale, x - w / 2 + t / 2, y, z);
+        placeBox(group, t, 0.36, d - 2 * t, M.plasterPale, x + w / 2 - t / 2, y, z);
+      };
+
+      if (building.id === 'teaching') {
+        // 三面翼楼 + 端部连廊围合两进内院，对应影像中「日」字形体量。
+        const t = Math.min(6.4, depth * 0.24);
+        for (const z of [-(depth - t) / 2, (depth - t) / 2]) {
+          slab(length, t, 0, z);
+          flatRoof(length, t, 0, z);
+        }
+        for (const x of [-(length - t) / 2, (length - t) / 2]) {
+          slab(t, depth - 2 * t, x, 0);
+          flatRoof(t, depth - 2 * t, x, 0);
+        }
+        const yard = plane(length - 2 * t - 0.7, depth - 2 * t - 0.7, M.lawnDark);
+        yard.rotation.x = -Math.PI / 2;
+        yard.position.set(0, 0.12, 0);
+        yard.receiveShadow = true;
+        group.add(yard);
+        // 内院植栽：卫星影像里两进院子都有成片乔木。
+        for (const [fx, fz] of [[-0.26, -0.26], [0.28, 0.24], [0.1, -0.3], [-0.3, 0.3]]) {
+          const tree = createCanopyTree(M, {
+            height: jrand(3.4, 5.0), spread: jrand(1.6, 2.3), phase: jrand(0, TAU)
+          });
+          tree.position.set(fx * (length - 2 * t), 0.14, fz * (depth - 2 * t));
+          group.add(tree);
+        }
+      } else {
+        slab(length, depth, 0, 0);
+        if (building.roof === 'pitched') {
+          const roof = createHipRoof({
+            w: length + 1.1, d: depth + 1.1, h: 0.9, upturn: 0.12,
+            materials: pitchedRoofMats, detail: false
+          });
+          roof.position.set(0, 0.16 + height, 0);
+          group.add(roof);
+        } else {
+          flatRoof(length, depth, 0, 0);
+          placeBox(group, 1.7, 0.6, 1.2, M.plasterPale, length * 0.2, 0.16 + height + 0.02, 0);
+        }
+      }
+      junior.add(group);
+    }
+
+    /* ------------------------ 围墙与校门 ------------------------ */
+    const outline = JUNIOR_SITE.outline;
+    const cx = outline.reduce((sum, [x]) => sum + x, 0) / outline.length;
+    const cz = outline.reduce((sum, [, z]) => sum + z, 0) / outline.length;
+    // 校内环道：沿校界内收，串联校门、教学区与田径场。
+    const innerRing = outline.map(([x, z]) => [x + (cx - x) * 0.07, z + (cz - z) * 0.07]);
+    addPath(junior, [...innerRing, innerRing[0]], 2.2, M.pathDark, 0.07, 4);
+    const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const addWall = (a, b) => {
+      const dx = b[0] - a[0];
+      const dz = b[1] - a[1];
+      const length = Math.hypot(dx, dz);
+      if (length < 0.4) return;
+      const mesh = placeBox(junior, length, 0.86, 0.2, M.plasterPale,
+        (a[0] + b[0]) / 2, 0.12, (a[1] + b[1]) / 2, -Math.atan2(dz, dx));
+      mesh.castShadow = true;
+    };
+    // 在靠近 v 的位置留出缺口（供高初中通道穿墙）。
+    const addWallCut = (a, b, v, radius) => {
+      const dx = b[0] - a[0];
+      const dz = b[1] - a[1];
+      const length = Math.hypot(dx, dz);
+      if (length < 0.4) return;
+      const ux = dx / length;
+      const uz = dz / length;
+      const tv = (v[0] - a[0]) * ux + (v[1] - a[1]) * uz;
+      if (tv - radius > 0.4) addWall(a, [a[0] + ux * (tv - radius), a[1] + uz * (tv - radius)]);
+      if (tv + radius < length - 0.4) addWall([a[0] + ux * (tv + radius), a[1] + uz * (tv + radius)], b);
+    };
+    // 南面（高登西街一侧）留出校门开口，其余沿校界连续。
+    const gateA = outline[2];
+    const gateB = outline[3];
+    const gdx = gateB[0] - gateA[0];
+    const gdz = gateB[1] - gateA[1];
+    const gl = Math.hypot(gdx, gdz);
+    const tGate = (((JUNIOR_GATE.point[0] - gateA[0]) * gdx) + ((JUNIOR_GATE.point[1] - gateA[1]) * gdz)) / (gl * gl);
+    const half = (JUNIOR_GATE.width / 2) / gl;
+    for (let i = 0; i < outline.length; i += 1) {
+      const a = outline[i];
+      const b = outline[(i + 1) % outline.length];
+      if (i === 2) {
+        addWall(a, lerp(gateA, gateB, Math.max(0, tGate - half)));
+        addWall(lerp(gateA, gateB, Math.min(1, tGate + half)), b);
+      } else if (i === 5 || i === 0) {
+        addWallCut(a, b, JUNIOR_LINK.to, JUNIOR_LINK.width / 2 + 0.6);
+      } else {
+        addWall(a, b);
+      }
+    }
+
+    const gateGroup = new THREE.Group();
+    gateGroup.position.set(JUNIOR_GATE.point[0], 0.06, JUNIOR_GATE.point[1]);
+    gateGroup.rotation.y = -JUNIOR_GATE.angle;
+    const gateWidth = JUNIOR_GATE.width;
+    for (const x of [-gateWidth / 2 + 0.6, gateWidth / 2 - 0.6]) {
+      placeBox(gateGroup, 1.15, 2.45, 0.92, M.stoneLight, x, 0.12, 0);
+      placeBox(gateGroup, 1.35, 0.16, 1.06, M.stone, x, 2.6, 0);
+    }
+    placeBox(gateGroup, gateWidth, 0.46, 0.88, M.plasterPale, 0, 2.68, 0);
+    const plaqueTex = makeCanvasTexture(900, 168, (g, w, h) => {
+      g.fillStyle = '#1f4a37';
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = 'rgba(232,214,170,.55)';
+      g.lineWidth = 6;
+      g.strokeRect(10, 10, w - 20, h - 20);
+      g.fillStyle = '#f2e3bf';
+      g.font = '600 92px "Songti SC", "STSong", serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('海南中学初中部', w / 2, h / 2 + 4);
     });
-    for (const street of FUCHENG_STREETS) {
-      addPath(streets, street.points, street.width, streetMaterial, -0.22);
+    const plaque = plane(gateWidth * 0.7, gateWidth * 0.7 * 168 / 900, M.signMaterial(plaqueTex, true));
+    plaque.position.set(0, 2.94, 0.46);
+    gateGroup.add(plaque);
+    junior.add(gateGroup);
+
+    /* -------------------- 高初中通道（两区连接） -------------------- */
+    // 只在「两区总览」显示：单看一个校区时，这条通道会悬在空中。
+    const linkGroup = new THREE.Group();
+    linkGroup.name = '高初中通道';
+    junior.add(linkGroup);
+    junior.userData.link = linkGroup;
+    const link = JUNIOR_LINK;
+    const linkDx = link.to[0] - link.from[0];
+    const linkDz = link.to[1] - link.from[1];
+    const linkLen = Math.hypot(linkDx, linkDz);
+    const linkUx = linkDx / linkLen;
+    const linkUz = linkDz / linkLen;
+    const linkNx = -linkUz;
+    const linkNz = linkUx;
+    const linkHalf = link.width / 2;
+    const linkRect = (scale = 1) => [
+      [link.from[0] + linkNx * linkHalf * scale, link.from[1] + linkNz * linkHalf * scale],
+      [link.to[0] + linkNx * linkHalf * scale, link.to[1] + linkNz * linkHalf * scale],
+      [link.to[0] - linkNx * linkHalf * scale, link.to[1] - linkNz * linkHalf * scale],
+      [link.from[0] - linkNx * linkHalf * scale, link.from[1] - linkNz * linkHalf * scale]
+    ];
+    // 通道做成与两区底板同高的连接体，两侧校墙在这里断开。
+    const causeway = extrudePolygon(linkRect(1), 0.77, districtGround, plinthSide);
+    causeway.position.y = -0.735;
+    causeway.receiveShadow = false;
+    linkGroup.add(causeway);
+    linkGroup.add(flatPolygon(linkRect(0.52), M.path, 0.055));
+    // 通道两侧的行道树，让这条长连接读起来像校道而不是一条缝。
+    for (const side of [-1, 1]) {
+      for (let d = 6; d < linkLen - 4; d += 7.5) {
+        const tx = link.from[0] + linkUx * d + linkNx * linkHalf * 0.76 * side;
+        const tz = link.from[1] + linkUz * d + linkNz * linkHalf * 0.76 * side;
+        const tree = createCanopyTree(M, {
+          height: jrand(3.8, 5.6), spread: jrand(1.8, 2.6), phase: jrand(0, TAU)
+        });
+        tree.position.set(tx, 0.06, tz);
+        linkGroup.add(tree);
+      }
     }
+    // 两端门柱，标出通道口。
+    for (const end of [link.from, link.to]) {
+      for (const side of [-1, 1]) {
+        const px = end[0] + linkNx * (linkHalf + 0.42) * side;
+        const pz = end[1] + linkNz * (linkHalf + 0.42) * side;
+        placeBox(linkGroup, 0.44, 1.9, 0.44, M.stoneLight, px, 0.04, pz);
+        placeBox(linkGroup, 0.6, 0.15, 0.6, M.stone, px, 1.94, pz);
+      }
+    }
+
+    /* ------------------------ 引导路与行道树 ------------------------ */
+    const inward = [
+      [Math.sin(JUNIOR_GATE.angle), -Math.cos(JUNIOR_GATE.angle)],
+      [-Math.sin(JUNIOR_GATE.angle), Math.cos(JUNIOR_GATE.angle)]
+    ].find(([nx, nz]) => (
+      (nx * (JUNIOR_SITE.center[0] - JUNIOR_GATE.point[0]))
+      + (nz * (JUNIOR_SITE.center[1] - JUNIOR_GATE.point[1])) > 0
+    )) || [0, 1];
+    addPath(junior, [
+      [JUNIOR_GATE.point[0] + inward[0] * 2.4, JUNIOR_GATE.point[1] + inward[1] * 2.4],
+      [JUNIOR_GATE.point[0] + inward[0] * 30, JUNIOR_GATE.point[1] + inward[1] * 30]
+    ], 3.4, M.path, 0.09, 4);
+    // 校门内广场（影像中门外是一片浅色铺装）。
+    const apronGroup = new THREE.Group();
+    apronGroup.position.set(
+      JUNIOR_GATE.point[0] + inward[0] * 5.4, 0.075, JUNIOR_GATE.point[1] + inward[1] * 5.4
+    );
+    apronGroup.rotation.y = -JUNIOR_GATE.angle;
+    const apron = plane(13, 8, M.plaza);
+    apron.rotation.x = -Math.PI / 2;
+    apron.receiveShadow = true;
+    apronGroup.add(apron);
+    junior.add(apronGroup);
+
+    for (let i = 0; i < outline.length; i += 1) {
+      const a = outline[i];
+      const b = outline[(i + 1) % outline.length];
+      const count = Math.max(2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 7.5));
+      for (let k = 0; k < count; k += 1) {
+        const t = (k + 0.5) / count;
+        const x = a[0] + (b[0] - a[0]) * t;
+        const z = a[1] + (b[1] - a[1]) * t;
+        // 收进校界内约 6–8 m，避开围墙与跑道。
+        const tx = x + (cx - x) * 0.055;
+        const tz = z + (cz - z) * 0.055;
+        if (pointInPoly(tx, tz, JUNIOR_SITE.field)) continue;
+        if (JUNIOR_SITE.buildings.some((building) => pointInPoly(tx, tz, building.poly))) continue;
+        const tree = createCanopyTree(M, {
+          height: jrand(4.2, 7.2),
+          spread: jrand(2.2, 3.4),
+          phase: jrand(0, TAU),
+          palette: juniorRandom() > 0.6 ? 'olive' : 'deep'
+        });
+        tree.position.set(tx, 0.12, tz);
+        tree.scale.setScalar(0.9);
+        junior.add(tree);
+      }
+    }
+
+    markSpot(junior, 'junior', pickables);
   }
 
   // High school paths on the campus plinth.
@@ -1004,16 +1338,12 @@ export function buildCampus(scene, renderer, options = {}) {
   const wallMat = M.plasterPale;
   const copingMat = M.roofEdge;
   const outline = site.campusOutline;
-  for (let i = 0; i < outline.length; i += 1) {
-    if (i >= 13 && i <= 16) continue; // north gate cuts the short wall bend
-    if (i === 1 || i === 2) continue; // south gate is rebuilt flush below
-    const a = outline[i];
-    const b = outline[(i + 1) % outline.length];
+  function drawBoundaryWall(a, b) {
     const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     const dx = b[0] - a[0];
     const dz = b[1] - a[1];
     const len = Math.hypot(dx, dz);
-    if (len < 2) continue;
+    if (len < 2) return;
     const angle = -Math.atan2(dz, dx);
     const wall = placeBox(world, len, 0.8, 0.34, wallMat, mid[0], 0.04, mid[1], angle);
     wall.receiveShadow = true;
@@ -1021,6 +1351,29 @@ export function buildCampus(scene, renderer, options = {}) {
     if (len > 12) {
       placeBox(world, 0.42, 1.05, 0.42, M.stoneLight, a[0], 0.04, a[1], angle);
     }
+  }
+  /** 高初中通道从这一侧穿墙：在靠近 v 处留出缺口。 */
+  function drawBoundaryWallCut(a, b, v, radius) {
+    const dx = b[0] - a[0];
+    const dz = b[1] - a[1];
+    const len = Math.hypot(dx, dz);
+    if (len < 2) return;
+    const ux = dx / len;
+    const uz = dz / len;
+    const tv = (v[0] - a[0]) * ux + (v[1] - a[1]) * uz;
+    if (tv - radius > 1) drawBoundaryWall(a, [a[0] + ux * (tv - radius), a[1] + uz * (tv - radius)]);
+    if (tv + radius < len - 1) drawBoundaryWall([a[0] + ux * (tv + radius), a[1] + uz * (tv + radius)], b);
+  }
+  for (let i = 0; i < outline.length; i += 1) {
+    if (i >= 13 && i <= 16) continue; // north gate cuts the short wall bend
+    if (i === 1 || i === 2) continue; // south gate is rebuilt flush below
+    const a = outline[i];
+    const b = outline[(i + 1) % outline.length];
+    if (i === 23 || i === 24) {
+      drawBoundaryWallCut(a, b, JUNIOR_LINK.from, JUNIOR_LINK.width / 2 + 0.8);
+      continue;
+    }
+    drawBoundaryWall(a, b);
   }
 
   // The main gate sits on the north-west wall where the main-building axis
@@ -3410,13 +3763,15 @@ export function buildCampus(scene, renderer, options = {}) {
     return released;
   }
 
+  buildJuniorDivision();
+
   const senior = new THREE.Group();
   senior.name = '府城校区高中部';
   // Campus geometry shares one origin. Keep lighting, sky and selection across views.
   for (const child of [...world.children]) {
     if (!sharedRoots.has(child) && child !== selection) senior.add(child);
   }
-  world.add(senior, junior, streets);
+  world.add(senior, junior);
 
   /* ---------------------------- API --------------------------------- */
   return {
@@ -3426,7 +3781,8 @@ export function buildCampus(scene, renderer, options = {}) {
     setDivision(part) {
       senior.visible = part !== 'junior';
       junior.visible = part !== 'senior';
-      streets.visible = part === 'both';
+      if (junior.userData.link) junior.userData.link.visible = part === 'both';
+
       if (renderer) renderer.shadowMap.needsUpdate = true;
     },
     setTime,
