@@ -10,7 +10,7 @@ import {
 import { WEATHERS, createWeather } from './weather.js';
 import { createFilm, FILM_TITLE } from './film.js';
 import { createPet } from './pet.js';
-import { FUCHENG_BOUNDS, FUCHENG_STREETS, FUCHENG_VIEW, JUNIOR_BOUNDS, JUNIOR_SITE } from './fucheng-districts.js';
+import { FUCHENG_BOUNDS, FUCHENG_VIEW, JUNIOR_BOUNDS, JUNIOR_LINK, JUNIOR_SITE } from './fucheng-districts.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -2697,16 +2697,6 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
     ctx.stroke();
   }
 
-  if (both) {
-    for (const street of FUCHENG_STREETS) {
-      traceMapPath(ctx, t, street.points);
-      ctx.strokeStyle = '#a46642';
-      ctx.lineWidth = Math.max(2, street.width * t.s);
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    }
-  }
   if (both || juniorOnly) {
     traceMapPath(ctx, t, JUNIOR_SITE.outline, true);
     ctx.fillStyle = alphaColor('#738d65', 0.21);
@@ -2718,8 +2708,8 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
     traceMapPath(ctx, t, JUNIOR_SITE.field, true);
     ctx.fill();
     ctx.fillStyle = '#a2957e';
-    for (const outline of JUNIOR_SITE.buildings) {
-      traceMapPath(ctx, t, outline, true);
+    for (const building of JUNIOR_SITE.buildings) {
+      traceMapPath(ctx, t, building.poly, true);
       ctx.fill();
     }
   }
@@ -2816,12 +2806,17 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
   }
 
   if (both) {
+    // 高初中通道：两区之间唯一的连接。
+    ctx.strokeStyle = '#a46642';
+    ctx.lineWidth = Math.max(3, JUNIOR_LINK.width * t.s);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(t.px(JUNIOR_LINK.from[0]), t.py(JUNIOR_LINK.from[1]));
+    ctx.lineTo(t.px(JUNIOR_LINK.to[0]), t.py(JUNIOR_LINK.to[1]));
+    ctx.stroke();
     ctx.font = '600 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const streetPoints = FUCHENG_STREETS[0].points;
-    const [roadX, roadZ] = streetPoints[8];
-    mapLabel(ctx, '高登西街', t.px(roadX), t.py(roadZ) + 14, '#86492e', paper);
     mapLabel(ctx, '高中部', t.px(0), t.py(-16), '#274535', paper);
     mapLabel(ctx, '初中部', t.px(JUNIOR_SITE.center[0]), t.py(JUNIOR_SITE.center[1]), '#274535', paper);
     return;
