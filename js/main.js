@@ -3071,8 +3071,8 @@ function diagramSVG(type, spot) {
       ${frame}
       <polygon class="dwg-line" points="${points(JUNIOR_SITE.outline)}"/>
       <polygon class="dwg-soft" points="${points(JUNIOR_SITE.field)}"/>
-      ${JUNIOR_SITE.buildings.map((outline) =>
-        `<polygon class="dwg-line" points="${points(outline)}"/>`
+      ${JUNIOR_SITE.buildings.map((building) =>
+        `<polygon class="dwg-line" points="${points(building.poly)}"/>`
       ).join('')}
       ${label(20, 126, '初中部平面')}
       ${label(340, 126, 'OPENSTREETMAP', 'end')}
