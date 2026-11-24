@@ -18,9 +18,24 @@
  * 由 js/campuses.js 注入），CAMPUS_META 是校区身份字段的单一来源。
  */
 import { ART_BUILDING } from './site.js';
-import { JUNIOR_SITE } from './fucheng-districts.js';
+import { JUNIOR_GATE, JUNIOR_SITE, JUNIOR_TRACK } from './fucheng-districts.js';
 
 const [juniorX, juniorZ] = JUNIOR_SITE.center;
+const [juniorGateX, juniorGateZ] = JUNIOR_GATE.point;
+const [juniorTeachingX, juniorTeachingZ] = JUNIOR_SITE.buildings.find(({ id }) => id === 'teaching').obb.center;
+const [juniorFieldX, juniorFieldZ] = JUNIOR_TRACK.center;
+const juniorExamPhotos = {
+  label: '海拔新闻：2026 年中考现场（题字墙、临街立面）',
+  url: 'https://newscdn.hndnews.com/hb/html/mobile/750833.html'
+};
+const juniorArrivalPhotos = {
+  label: '海拔新闻：2026 年新生报到（照片及短视频入口）',
+  url: 'https://www.hndnews.com/p/757535.html'
+};
+const juniorArrivalGuide = {
+  label: '海南中学 2026 级初一入学指南（海口本地宝转载）',
+  url: 'https://haikou.bendibao.com/news/2026824/84871.shtm'
+};
 
 /* ------------------------------------------------------------------ */
 /*  校区身份（campus identity）                                        */
@@ -53,7 +68,7 @@ export const CAMPUS_META = {
     lng: 110.342611,
     lat: 19.9978342
   },
-  summary: '海南中学府城校区的高中部与初中部沿高登西街展开。高中部提供建筑导览，初中部按公开地图呈现校园轮廓与建筑体块。'
+  summary: '海南中学府城校区的高中部与初中部沿高登西街展开。初中部可独立查看校门、教学楼中庭与田径场。'
 };
 
 /* ------------------------------------------------------------------ */
@@ -667,14 +682,77 @@ export const LANDMARKS = [
     },
     map: JUNIOR_SITE.center,
     diagram: 'junior',
-    summary: '初中部坐落在高中部西南侧，两区以高初中通道相连。',
-    description: '校界、六处建筑轮廓和足球场来自 OpenStreetMap；楼名取自 2021 年 CSP-J/S 海南省考点平面图，层数与屋面按卫星影像判读：教学区五层白色平屋面、实验楼与办公楼四层、三栋附属楼三层深灰坡瓦，教学区以四条体块围合内院。田径场按影像放样为六道跑道，校门开在高登西街一侧。两区以一条连接体示意当年的「高初中通道」：起点在体育馆南侧、食堂一侧的校道，斜向接入初中部北角，两端校墙断开；通道实际走向与宽度、楼栋对应关系、大门形制仍待核对。',
+    summary: '初中部在高中部西南侧，主入口朝向高登西街。',
+    description: '从临街题字墙进入，前方是教学楼与中庭，田径场在教学楼西侧。校界与建筑轮廓综合公开地图、影像与 2021 年考点图。两区总览中的「高初中通道」取意于历史考点图，轴线为示意，实际走向与通行现状待核实。',
     facts: [
       ['位置', '高中部西南侧'],
-      ['连接', '体育馆南侧校道 → 初中部北角'],
-      ['楼名依据', '2021 年 CSP-J/S 考点平面图'],
-      ['体量依据', 'OSM 轮廓 · 影像判读层数'],
-      ['待补资料', '大门形制、附属楼用途、楼栋对应关系']
+      ['参观节点', '初中部大门 · 教学楼与中庭 · 田径场'],
+      ['待核实', '楼层、附属楼用途、跑道道数与通道现状']
+    ]
+  },
+  {
+    id: 'junior-gate',
+    index: '23',
+    name: '初中部大门',
+    en: 'JUNIOR ENTRANCE',
+    kind: '高登西街 · 校门',
+    anchor: [juniorGateX, 2.8, juniorGateZ],
+    camera: {
+      position: [juniorGateX + 7, 7, juniorGateZ + 20],
+      target: [juniorGateX, 1.1, juniorGateZ - 1.7],
+      fov: 38
+    },
+    map: JUNIOR_GATE.point,
+    diagram: 'junior',
+    summary: '浅色石墙上的红色校名沿高登西街展开，旁边是伸缩门。',
+    description: '2026 年中考现场照片可辨认低矮的浅色题字墙和右侧门卫房。模型依据卫星影像把入口对准教学楼前的铺装广场，并用伸缩门、墙帽和柱墩表现临街界面。',
+    facts: [
+      ['入口', '高登西街'],
+      ['尺寸', '由影像估绘']
+    ],
+    references: [juniorExamPhotos]
+  },
+  {
+    id: 'junior-teaching',
+    index: '24',
+    name: '教学楼与中庭',
+    en: 'TEACHING WINGS & COURTYARD',
+    kind: '教学区 · 架空柱廊',
+    anchor: [juniorTeachingX, 12, juniorTeachingZ],
+    camera: {
+      position: [juniorTeachingX + 22, 22, juniorTeachingZ + 47],
+      target: [juniorTeachingX, 4.2, juniorTeachingZ],
+      fov: 38
+    },
+    map: [juniorTeachingX, juniorTeachingZ],
+    diagram: 'junior',
+    summary: '两排教学翼围合中庭，首层柱廊通向院内。',
+    description: '2026 年报到照片可见开放的首层柱廊、浅米色面砖、铺装与绿化。中考报道拍到了临街一翼两处出屋面的梯间体量。模型依据这些照片细化立面，以卫星影像约束教学翼、连廊和庭院的相对位置。',
+    facts: [
+      ['公开资料', '2026 年初一注册地点为教学楼一楼中庭'],
+      ['待核实', '各翼的准确层数及连廊尺寸']
+    ],
+    references: [juniorArrivalPhotos, juniorArrivalGuide]
+  },
+  {
+    id: 'junior-field',
+    index: '25',
+    name: '初中部田径场',
+    en: 'JUNIOR ATHLETICS FIELD',
+    kind: '校园西侧 · 体育',
+    anchor: [juniorFieldX, 1.5, juniorFieldZ],
+    camera: {
+      position: [juniorFieldX - 8, 63, juniorFieldZ + 35],
+      target: [juniorFieldX + 4, 0, juniorFieldZ],
+      fov: 41
+    },
+    map: JUNIOR_TRACK.center,
+    diagram: 'junior',
+    summary: '绿色内场、红色跑道和东侧独立的青绿色活动带。',
+    description: '田径场位于初中部西侧。用 OSM 足球场轮廓绘制绿色内场，按卫星影像重画红色外圈及旁边的狭长活动带。跑道分道数与活动带的场线仍待核实。',
+    facts: [
+      ['跑道外包', '约 109 m × 53 m，影像估绘'],
+      ['数据', 'OpenStreetMap · Esri World Imagery']
     ]
   }
 ];
@@ -706,6 +784,9 @@ export const SOURCES = [
     label: '中国计算机学会 2021 年考点平面图：府城初、高中部及当年通道示意',
     url: 'https://noi.ccf.org.cn/gs/xw/hn/2021-10-22/745653.shtml'
   },
+  juniorExamPhotos,
+  juniorArrivalPhotos,
+  juniorArrivalGuide,
   {
     label: '海南日报：《一所中学的一个世纪 百年海中恰芳华》，2023-10-30',
     url: 'https://www.hinews.cn/news/system/2023/10/30/033065555.shtml'

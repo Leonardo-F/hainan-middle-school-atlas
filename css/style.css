@@ -1309,6 +1309,12 @@ svg {
   text-align: right;
 }
 
+.info-card__facts a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .info-card__pager {
   display: flex;
   align-items: center;

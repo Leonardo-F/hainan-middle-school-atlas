@@ -27,9 +27,36 @@ function obbOf(poly) {
     const zs = rotated.map(([, z]) => z);
     const w = Math.max(...xs) - Math.min(...xs);
     const h = Math.max(...zs) - Math.min(...zs);
-    if (!best || w * h < best.area) best = { length: Math.max(w, h), depth: Math.min(w, h), angle, area: w * h };
+    if (!best || w * h < best.area) {
+      const longAxis = w >= h ? angle : angle + Math.PI / 2;
+      best = {
+        length: Math.max(w, h),
+        depth: Math.min(w, h),
+        angle: Math.atan(Math.tan(longAxis)),
+        area: w * h
+      };
+    }
   }
   return best;
+}
+
+/**
+ * 体育场轮廓：直道 + 两端半圆，长轴朝 `angle`（弧度，+x 东，+z 南）。
+ */
+function stadiumOutline({ center: [cx, cz], angle, straight, radius, segments = 20 }) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const points = [];
+  const push = (x, z) => points.push([cx + x * cos - z * sin, cz + x * sin + z * cos]);
+  for (let i = 0; i <= segments; i += 1) {
+    const a = -Math.PI / 2 + (Math.PI * i) / segments;
+    push(straight + Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  for (let i = 0; i <= segments; i += 1) {
+    const a = Math.PI / 2 + (Math.PI * i) / segments;
+    push(-straight + Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  return points;
 }
 
 const OUTLINE_LONLAT = [
@@ -46,7 +73,7 @@ const OUTLINE_LONLAT = [
 const BUILDING_LONLAT = [
   {
     id: 'teaching', name: '初中部教学区', osm: 1444498478, storeys: 5, roof: 'flat',
-    note: '考点图「初中部教学区」两区相连；卫星影像可见南北两排长翼与中部连廊围合内院。',
+    note: '南北教学翼与两侧连廊围合中庭，南向立面见 2026 年中考报道。',
     points: [[110.3394592, 19.9952134], [110.3400734, 19.9955511], [110.3403495, 19.9951077], [110.3397353, 19.9947699]]
   },
   {
@@ -94,44 +121,31 @@ export const JUNIOR_SITE = {
   field: local([
     [110.3387776, 19.9946506], [110.3390651, 19.9941789], [110.3394359, 19.9943804], [110.3391635, 19.9948425]
   ]),
+  // Esri World Imagery 估绘：田径场东侧狭长活动带及教学楼前铺装。
+  activityStrip: local([
+    [110.3391222, 19.9950343], [110.3392778, 19.9951187], [110.3397345, 19.9943653], [110.3395835, 19.9942834]
+  ]),
+  entrancePlaza: local([
+    [110.3399356, 19.9947538], [110.3401865, 19.9948899], [110.3403685, 19.9945987], [110.3401153, 19.9944613]
+  ]),
   center: local([[110.3399000, 19.9951800]])[0]
 };
 
-/**
- * 田径场：内场沿用 OSM 足球场轮廓，外圈跑道按卫星影像比例向外放样。
- * 直道半长与弯道半径以米给出（影像量测约 150 m × 76 m），再换算为场景单位。
- */
-export const JUNIOR_TRACK = (() => {
-  const box = obbOf(JUNIOR_SITE.field);
-  return {
-    center: [
-      JUNIOR_SITE.field.reduce((sum, [x]) => sum + x, 0) / JUNIOR_SITE.field.length,
-      JUNIOR_SITE.field.reduce((sum, [, z]) => sum + z, 0) / JUNIOR_SITE.field.length
-    ],
-    angle: box.angle,
-    // 影像量测：跑道外沿约 150 m × 76 m，直道半长约 37 m、弯道半径约 38 m。
-    radius: toUnits(38),
-    straight: toUnits(37),
-    laneWidth: toUnits(1.22),
-    lanes: 6
-  };
-})();
+// 影像北向估绘：外包约 109 m × 53 m。影像无法可靠辨认分道数量。
+const juniorTrack = {
+  center: local([[110.3391220, 19.9945220]])[0],
+  angle: obbOf(JUNIOR_SITE.field).angle,
+  radius: toUnits(26.5),
+  straight: toUnits(28)
+};
+export const JUNIOR_TRACK = { ...juniorTrack, outline: stadiumOutline(juniorTrack) };
 
-/** 初中部大门：位于高登西街一侧（校区南边），位置按影像中的入口广场推定。 */
-export const JUNIOR_GATE = (() => {
-  const west = OUTLINE_LONLAT[3];   // 南边西段端点
-  const east = OUTLINE_LONLAT[2];   // 南边东段端点
-  const t = 0.42;
-  const [lng, lat] = [
-    west[0] + (east[0] - west[0]) * (1 - t),
-    west[1] + (east[1] - west[1]) * (1 - t)
-  ];
-  return {
-    point: local([[lng, lat]])[0],
-    angle: segmentAngle(local([west])[0], local([east])[0]),
-    width: toUnits(16)
-  };
-})();
+// 临街入口与教学楼前铺装沿同一轴线。门位对准影像中的入口，道宽为近似值。
+export const JUNIOR_GATE = {
+  point: JUNIOR_SITE.outline[2],
+  angle: segmentAngle(JUNIOR_SITE.outline[3], JUNIOR_SITE.outline[1]),
+  width: toUnits(24)
+};
 
 
 /**

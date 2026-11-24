@@ -10,7 +10,7 @@ import {
 import { WEATHERS, createWeather } from './weather.js';
 import { createFilm, FILM_TITLE } from './film.js';
 import { createPet } from './pet.js';
-import { FUCHENG_BOUNDS, FUCHENG_VIEW, JUNIOR_BOUNDS, JUNIOR_LINK, JUNIOR_SITE } from './fucheng-districts.js';
+import { FUCHENG_BOUNDS, FUCHENG_VIEW, JUNIOR_BOUNDS, JUNIOR_LINK, JUNIOR_SITE, JUNIOR_TRACK } from './fucheng-districts.js';
 
 /* ------------------------------------------------------------------ */
 /*  Elements & state                                                   */
@@ -23,9 +23,10 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(window.location.search);
 const divisionNames = { senior: '高中部', junior: '初中部', both: '两区总览' };
+const isJuniorSpot = (id) => id === 'junior' || id?.startsWith('junior-');
 const requestedDivision = params.get('part');
 let division = Object.hasOwn(divisionNames, requestedDivision) ? requestedDivision
-  : params.get('spot') === 'junior' ? 'junior' : 'senior';
+  : isJuniorSpot(params.get('spot')) ? 'junior' : 'senior';
 
 /* 视觉回归（tools/shot.mjs）：?still=1 时固定随机数、冻结时钟、只渲染一帧，
    让同一机位每次截图逐像素一致。仅开发/测试使用，不影响正常访问。 */
@@ -127,6 +128,11 @@ const planColors = {
   science: '#356759',
   art: '#946538',
   hall3: '#4d6179'
+};
+const juniorPlanColors = {
+  'junior-gate': '#86523d',
+  'junior-teaching': '#4d6179',
+  'junior-field': '#356759'
 };
 const aboutDialog = $('#aboutDialog');
 const interactionHint = $('#interactionHint');
@@ -230,7 +236,10 @@ const MOBILE_FRAME_WIDTH = {
   stone: 15,
   confucius: 11,
   bronze: 13,
-  stand: 42
+  stand: 42,
+  'junior-gate': 18,
+  'junior-teaching': 46,
+  'junior-field': 50
 };
 
 function isPhoneLayout() {
@@ -626,7 +635,7 @@ function setupUI() {
 
 function spotInDivision(id) {
   if (division === 'both') return true;
-  return division === 'junior' ? id === 'junior' : id !== 'junior';
+  return (division === 'junior') === isJuniorSpot(id);
 }
 
 function districtLandmarks() {
@@ -1662,6 +1671,21 @@ function openSpot(id, options = {}) {
   infoFacts.innerHTML = spot.facts
     .map(([label, value]) => `<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`)
     .join('');
+  for (const { label, url } of spot.references ?? []) {
+    const item = document.createElement('div');
+    item.className = 'fact';
+    const term = document.createElement('dt');
+    term.textContent = '参考资料';
+    const detail = document.createElement('dd');
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = label;
+    detail.append(link);
+    item.append(term, detail);
+    infoFacts.append(item);
+  }
   infoDrawing.innerHTML = diagramSVG(spot.diagram, spot);
   renderSpotPhoto(spot);
   infoCard.scrollTop = 0;
@@ -1765,7 +1789,6 @@ function stepSpot(direction) {
 }
 
 function startTour() {
-  if (division === 'junior') return;
   if (state.studentFollow) exitStudentView();
   exitLookMode();
   if (state.tourActive) return;
@@ -1775,23 +1798,24 @@ function startTour() {
   app.classList.add('is-touring');
   tourButton.setAttribute('aria-pressed', 'true');
   tourLabel.textContent = '暂停导览';
-  openSpot(TOUR_ORDER[0], { fromTour: true, duration: reducedMotion ? 0 : 2200 });
-  scheduleTourStep();
-  showToast(`自动导览 · ${String(TOUR_ORDER.length).padStart(2, '0')} 处校园地景`);
+  const order = division === 'junior' ? Object.keys(juniorPlanColors) : TOUR_ORDER;
+  openSpot(order[0], { fromTour: true, duration: reducedMotion ? 0 : 2200 });
+  scheduleTourStep(order);
+  showToast(`自动导览 · ${String(order.length).padStart(2, '0')} 处校园地景`);
 }
 
-function scheduleTourStep() {
+function scheduleTourStep(order) {
   if (state.tourTimer) window.clearTimeout(state.tourTimer);
   state.tourTimer = window.setTimeout(() => {
     if (!state.tourActive) return;
     state.tourIndex += 1;
-    if (state.tourIndex >= TOUR_ORDER.length) {
+    if (state.tourIndex >= order.length) {
       stopTour(false);
       showToast('导览结束 · 可自由漫游');
       return;
     }
-    openSpot(TOUR_ORDER[state.tourIndex], { fromTour: true, duration: reducedMotion ? 0 : 2100 });
-    scheduleTourStep();
+    openSpot(order[state.tourIndex], { fromTour: true, duration: reducedMotion ? 0 : 2100 });
+    scheduleTourStep(order);
   }, reducedMotion ? 3600 : 6800);
 }
 
@@ -1858,7 +1882,7 @@ function applyCampusBranding() {
   const cityShort = city ? `${city} · ${shortName}` : shortName;
   const cityEn = city === '海口' ? 'HAIKOU' : city;
   const yearRange = campusYearRange(campusEntry);
-  const campusScope = '府城初、高中部共用一张地图。高中部提供建筑导览，初中部建筑以公开轮廓和示意高度呈现。';
+  const campusScope = '府城初、高中部共用一张地图。初中部校门、教学楼与田径场依据公开地图及影像估绘。';
   const slots = {
     fullName: [school, campusEntry.name].filter(Boolean).join(' · '),
     loadingYears: `三维校园图志 / ${yearRange}`,
@@ -2704,8 +2728,17 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
     ctx.strokeStyle = alphaColor(ink, 0.38);
     ctx.lineWidth = 1;
     ctx.stroke();
+    ctx.fillStyle = '#aa6c57';
+    traceMapPath(ctx, t, JUNIOR_TRACK.outline, true);
+    ctx.fill();
     ctx.fillStyle = '#92a489';
     traceMapPath(ctx, t, JUNIOR_SITE.field, true);
+    ctx.fill();
+    ctx.fillStyle = '#6a8f83';
+    traceMapPath(ctx, t, JUNIOR_SITE.activityStrip, true);
+    ctx.fill();
+    ctx.fillStyle = '#dbccae';
+    traceMapPath(ctx, t, JUNIOR_SITE.entrancePlaza, true);
     ctx.fill();
     ctx.fillStyle = '#a2957e';
     for (const building of JUNIOR_SITE.buildings) {
@@ -2715,10 +2748,7 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
   }
 
   if (juniorOnly) {
-    ctx.font = '600 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    mapLabel(ctx, '初中部', t.px(JUNIOR_SITE.center[0]), t.py(JUNIOR_SITE.center[1]), '#274535', paper);
+    drawMapPins(ctx, t, juniorPlanColors, expanded);
     return;
   }
 
@@ -2861,22 +2891,26 @@ function drawMap(canvas = minimap, width = mapW, height = mapH, dpr = mapDpr, ex
   ctx.arc(px, py, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  if (expanded) {
-    ctx.font = '10px "DM Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (const spot of LANDMARKS) {
-      const color = planColors[spot.id];
-      if (!color) continue;
-      const x = t.px(spot.map[0]);
-      const y = t.py(spot.map[1]);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#fffdf6';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+  if (expanded) drawMapPins(ctx, t, planColors, true);
+}
+
+function drawMapPins(ctx, transform, colors, expanded) {
+  ctx.font = '10px "DM Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const spot of LANDMARKS) {
+    const color = colors[spot.id];
+    if (!color) continue;
+    const x = transform.px(spot.map[0]);
+    const y = transform.py(spot.map[1]);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, expanded ? 10 : 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fffdf6';
+    ctx.lineWidth = state.activeId === spot.id ? 2 : 1;
+    ctx.stroke();
+    if (expanded) {
       ctx.fillStyle = '#fff';
       ctx.fillText(spot.index, x, y + 0.4);
     }
@@ -2907,15 +2941,16 @@ function setPlanScope(scope) {
   $('#planSenior').setAttribute('aria-pressed', String(senior));
   $('#planJuniorMap').setAttribute('aria-pressed', String(scope === 'junior'));
   $('#planOverview').hidden = !both;
-  planLandmarks.hidden = !senior;
+  planLandmarks.hidden = both;
+  renderPlanLandmarks(senior ? planColors : juniorPlanColors);
   $('#planDistrictLinks').hidden = senior;
   $('#planNote').textContent = senior
     ? '底图 © OpenStreetMap contributors。艺术楼为影像估绘轮廓。'
-    : '底图 © OpenStreetMap contributors。初中部建筑为体块示意。';
+    : '底图 © OpenStreetMap contributors。初中部建筑与场地为影像估绘。';
   planMap.setAttribute('aria-label', {
     both: '北向校园总平面，初中部和高中部沿高登西街分布',
     senior: '高中部总平面，点选建筑可查看图志',
-    junior: '初中部总平面，点击校园打开初中部图志'
+    junior: '初中部总平面，点选校门、教学楼或田径场可查看图志'
   }[scope]);
   drawPlanMap();
 }
@@ -2928,12 +2963,9 @@ function drawPlanMap() {
   drawMap(planMap, width, height, dpr, true);
 }
 
-function openPlan() {
-  if (!planDialog || planDialog.open) return;
-  closePhotoViewer();
-  stopTour();
+function renderPlanLandmarks(colors) {
   planLandmarks.replaceChildren();
-  for (const [id, color] of Object.entries(planColors)) {
+  for (const [id, color] of Object.entries(colors)) {
     const spot = LANDMARKS.find((item) => item.id === id);
     if (!spot) continue;
     const button = document.createElement('button');
@@ -2947,6 +2979,12 @@ function openPlan() {
     button.addEventListener('click', () => openFromMap(id));
     planLandmarks.append(button);
   }
+}
+
+function openPlan() {
+  if (!planDialog || planDialog.open) return;
+  closePhotoViewer();
+  stopTour();
   state.modalOpen = true;
   setModalCursor(true);
   planDialog.showModal();
@@ -2955,7 +2993,7 @@ function openPlan() {
 
 function openFromMap(id) {
   if (planDialog?.open) planDialog.close();
-  if (!spotInDivision(id)) showDivision(id === 'junior' ? 'junior' : 'senior', { moveCamera: false });
+  if (!spotInDivision(id)) showDivision(isJuniorSpot(id) ? 'junior' : 'senior', { moveCamera: false });
   openSpot(id, { source: 'map' });
 }
 
@@ -3011,7 +3049,17 @@ function handleMapClick(event) {
     const rect = event.currentTarget.getBoundingClientRect();
     const bounds = scope === 'both' ? FUCHENG_BOUNDS : JUNIOR_BOUNDS;
     const transform = mapTransform(rect.width, rect.height, bounds);
-    const [x, z] = transform.xz(event.clientX - rect.left, event.clientY - rect.top);
+    const px = event.clientX - rect.left;
+    const py = event.clientY - rect.top;
+    if (scope === 'junior') {
+      const pin = LANDMARKS.find((spot) => juniorPlanColors[spot.id] &&
+        Math.hypot(transform.px(spot.map[0]) - px, transform.py(spot.map[1]) - py) <= (isPlan ? 12 : 7));
+      if (pin) {
+        openFromMap(pin.id);
+        return;
+      }
+    }
+    const [x, z] = transform.xz(px, py);
     if (containsPoint(JUNIOR_SITE.outline, x, z)) openFromMap('junior');
     else if (scope === 'both' && containsPoint(SITE.campusOutline, x, z)) {
       if (isPlan) setPlanScope('senior');
@@ -3063,9 +3111,9 @@ function diagramSVG(type, spot) {
     `<text x="${x}" y="${y}" text-anchor="${anchor}">${text}</text>`;
 
   if (type === 'junior') {
-    const [cx, cz] = JUNIOR_SITE.center;
+    const t = mapTransform(360, 112, JUNIOR_BOUNDS);
     const points = (polygon) => polygon.map(([x, z]) =>
-      `${(185 + (x - cx) * 0.82).toFixed(1)},${(53 + (z - cz) * 0.82).toFixed(1)}`
+      `${t.px(x).toFixed(1)},${t.py(z).toFixed(1)}`
     ).join(' ');
     return `<svg viewBox="0 0 360 132" aria-label="初中部轮廓平面示意">
       ${frame}
@@ -3074,6 +3122,8 @@ function diagramSVG(type, spot) {
       ${JUNIOR_SITE.buildings.map((building) =>
         `<polygon class="dwg-line" points="${points(building.poly)}"/>`
       ).join('')}
+      <polygon class="dwg-soft" points="${points(JUNIOR_SITE.activityStrip)}"/>
+      <circle cx="${t.px(spot.map[0])}" cy="${t.py(spot.map[1])}" r="3" fill="currentColor"/>
       ${label(20, 126, '初中部平面')}
       ${label(340, 126, 'OPENSTREETMAP', 'end')}
     </svg>`;
